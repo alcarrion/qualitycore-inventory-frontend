@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Lock, CheckCircle2 } from "lucide-react";
+import { API_URL } from "../services/api";
 import "../styles/pages/ResetPassword.css"; 
 
 export default function ResetPassword() {
@@ -27,7 +28,7 @@ export default function ResetPassword() {
     }
     setLoading(true);
 
-    const response = await fetch("http://localhost:8000/api/productos/reset-password/", {
+    const response = await fetch(`${API_URL}/reset-password/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ uid, token, new_password: password }),
