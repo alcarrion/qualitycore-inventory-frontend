@@ -1,0 +1,225 @@
+/* =============================
+   VISTA GENERAL DE MOVIMIENTOS
+============================= */
+.transactions-page {
+  padding: 2rem;
+  background-color: #f7f8fa;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.transactions-header {
+  margin-bottom: 2rem;
+}
+
+.transactions-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.transactions-subtitle {
+  font-size: 1rem;
+  color: #555;
+}
+
+/* =============================
+   BOTONES DE ACCIÓN
+============================= */
+.botonesAccion {
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.entradaBtn {
+  background-color: #e0f7e9;
+  color: #1a7f37;
+}
+
+.salidaBtn {
+  background-color: #ffecec;
+  color: #b91c1c;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+/* =============================
+   MENSAJES DE ESTADO
+============================= */
+.mensaje {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  max-width: 100%;
+}
+
+.mensajeOk {
+  background-color: #e6fce9;
+  color: #207d2c;
+}
+
+.mensajeError {
+  background-color: #fdeaea;
+  color: #b91c1c;
+}
+
+/* =============================
+   TÍTULOS DE TABLAS
+============================= */
+.table-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 2rem 0 0.5rem;
+  color: #333;
+}
+
+/* =============================
+   TABLAS DE MOVIMIENTOS
+============================= */
+.tabla-movimientos {
+  width: 100%;
+  border-collapse: separate; /* Para permitir bordes redondeados */
+  border-spacing: 0;         /* Elimina el espacio entre celdas */
+  font-size: 0.95rem;
+  overflow: hidden;
+  border-radius: 12px;
+  background-color: white; /* opcional para contraste */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.tabla-movimientos th {
+  background-color: #f1f1f1;
+  text-align: left;
+  padding: 12px;
+  border-bottom: 2px solid #ddd;
+}
+
+.tabla-movimientos td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+/* Redondear esquinas superiores e inferiores */
+.tabla-movimientos th:first-child {
+  border-top-left-radius: 12px;
+}
+
+.tabla-movimientos th:last-child {
+  border-top-right-radius: 12px;
+}
+
+.tabla-movimientos tr:last-child td:first-child {
+  border-bottom-left-radius: 12px;
+}
+
+.tabla-movimientos tr:last-child td:last-child {
+  border-bottom-right-radius: 12px;
+}
+
+
+.table-container {
+  overflow-x: auto;
+}
+
+
+
+.quantity-positive {
+  color: #1a7f37;
+  background-color: #d1fadf;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.quantity-negative {
+  color: #b91c1c;
+  background-color: #fee2e2;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.date-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* =============================
+   FORMULARIO DEL MODAL
+============================= */
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.input,
+.select {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: #1a7f37;
+  box-shadow: 0 0 0 2px rgba(26, 127, 55, 0.1);
+}
+
+.formButton {
+  padding: 0.8rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: #1a7f37;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.formButton:hover {
+  background-color: #166c2e;
+}

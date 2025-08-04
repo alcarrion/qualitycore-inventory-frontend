@@ -1,0 +1,156 @@
+/* src/styles/pages/InventoryPage.css */
+.inventory-page-container {
+  max-width: 750px;
+  margin: 30px auto;
+  padding: 10px;
+}
+
+/* Header del inventario */
+.inventory-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.inventory-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 15px 0 25px 0;
+  gap: 14px;
+}
+
+.btn-add-product {
+  background: #ccf500;
+  color: #181a1b;
+  font-weight: 700;
+  border: none;
+  border-radius: 7px;
+  padding: 13px 22px;
+  font-size: 17px;
+  box-shadow: 0 2px 8px rgba(130,170,2,0.08);
+  cursor: pointer;
+  transition: background .17s;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.btn-add-product:hover {
+  background: #b1d200;
+}
+
+.inventory-search-bar {
+  background: #fff;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1.2px solid #e0e3e4;
+}
+.inventory-search-bar input {
+  border: none;
+  outline: none;
+  font-size: 16px;
+  background: transparent;
+  color: #333;
+  width: 170px;
+}
+
+/* Lista de productos estilo columna */
+.product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Tarjeta de producto */
+.product-card {
+  border: 3px solid #111;
+  border-radius: 15px;
+  background: #fff;
+  padding: 22px 23px 20px 23px;
+  box-shadow: 0 2px 10px rgba(140,140,140,0.08);
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  position: relative;
+  transition: box-shadow .14s, border .13s;
+}
+.product-card:hover {
+  box-shadow: 0 8px 18px rgba(200, 235, 10, 0.14);
+  border-color: #171715;
+}
+
+/* Imagen en la tarjeta */
+.product-card-img {
+  width: 84px;
+  height: 84px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #f6f8fb;
+  margin-right: 16px;
+  border: 1.2px solid #f4f4f4;
+}
+
+.product-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Nombre producto */
+.product-card-title {
+  font-weight: 700;
+  font-size: 1.22rem;
+  color: #181b29;
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+/* Info secundaria: categoría, precio, stock */
+.product-card-info {
+  font-size: 1.02rem;
+  color: #474747;
+  margin-bottom: 3px;
+  word-break: break-word;
+}
+.product-card-info strong {
+  color: #0e0f0b;
+  font-weight: 700;
+}
+
+/* Acciones (editar, eliminar) */
+.product-card-actions {
+  margin-top: 7px;
+  display: flex;
+  gap: 16px;
+  font-size: 1.3rem;
+}
+.product-card-actions .btn-icon {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #2c2c2c;
+  padding: 4px 7px;
+  font-size: 1.19rem;
+  border-radius: 6px;
+  transition: background .13s;
+}
+.product-card-actions .btn-icon:hover {
+  background: #e6e6e6;
+}
+.product-card-actions .btn-delete {
+  color: #e22929;
+}
+
+.no-data {
+  text-align: center;
+  color: #999;
+  padding: 35px 0;
+  font-size: 1.13rem;
+}

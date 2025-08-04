@@ -1,0 +1,114 @@
+/* src/styles/pages/UsersPage.css */
+.users-page-container {
+  max-width: 980px;
+  margin: 38px auto 0 auto;
+  padding: 36px 22px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 36px rgba(91,105,135,0.10);
+  min-height: 70vh;
+}
+
+.users-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  gap: 18px;
+}
+
+.users-page-header h2 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #222b3d;
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #f7fafd;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 5px rgba(41,201,138,0.07);
+}
+
+.users-table th, .users-table td {
+  padding: 15px 12px;
+  font-size: 1rem;
+  text-align: left;
+}
+
+.users-table th {
+  background: #e6eeff;
+  color: #222b3d;
+  font-weight: 700;
+  border-bottom: 2px solid #d2e2f4;
+}
+
+.users-table tr {
+  transition: background 0.13s;
+}
+
+.users-table tr:hover {
+  background: #f1fff7;
+}
+
+.users-table td {
+  background: #fff;
+  border-bottom: 1.3px solid #e8eef3;
+}
+
+.users-table td select,
+.users-table td button {
+  font-size: 0.96rem;
+}
+
+.users-table td select {
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1.2px solid #d2e2f4;
+  background: #f7fafd;
+  transition: border-color .19s;
+}
+
+.users-table td select:focus {
+  border-color: #41d1a7;
+  outline: none;
+}
+
+.users-table .btn-secondary {
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: 1.2px solid #e2e8f0;
+  background: #f7fafd;
+  color: #41d1a7;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .13s, color .13s;
+}
+
+.users-table .btn-secondary:active,
+.users-table .btn-secondary:focus,
+.users-table .btn-secondary:hover {
+  background: #fff;
+  color: #1bbbad;
+}
+
+/* Responsive para mobile */
+@media (max-width: 700px) {
+  .users-page-container {
+    padding: 12px 2vw;
+    margin-top: 12px;
+    min-width: 98vw;
+  }
+  .users-page-header h2 {
+    font-size: 1.1rem;
+  }
+  .users-table th, .users-table td {
+    font-size: 0.97rem;
+    padding: 8px 4px;
+  }
+}

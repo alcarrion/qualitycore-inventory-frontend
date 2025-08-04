@@ -1,0 +1,179 @@
+.cotiz-bg {
+  min-height: 100vh;
+  background: #f9f9fb;
+  padding: 40px 16px;
+  display: flex;
+  justify-content: center;
+  font-family: 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.cotiz-main {
+  background: #ffffff;
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  max-width: 800px;
+  width: 100%;
+  padding: 36px;
+}
+
+.cotiz-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.cotiz-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #444;
+}
+
+.cotiz-select,
+.cotiz-input,
+textarea.cotiz-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.cotiz-select:focus,
+.cotiz-input:focus,
+textarea.cotiz-input:focus {
+  border-color: #10b981;
+  outline: none;
+}
+
+.cotiz-btn {
+  background-color: #10b981;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.cotiz-btn:hover {
+  background-color: #0e9e6e;
+}
+
+.cotiz-section {
+  margin-bottom: 30px;
+}
+
+.cotiz-prod-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 1px solid #ddd;
+}
+
+.cotiz-prod-list {
+  margin-top: 10px;
+}
+
+.cotiz-prod-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.cotiz-prod-row select,
+.cotiz-prod-row input {
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  flex: 1;
+}
+
+.cotiz-remove-btn {
+  background-color: transparent;
+  border: none;
+  color: #e53935;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.cotiz-remove-btn:hover {
+  transform: scale(1.1);
+}
+
+.cotiz-empty {
+  font-style: italic;
+  color: #999;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.cotiz-summary {
+  border-top: 1px solid #ddd;
+  padding-top: 16px;
+  margin-top: 24px;
+}
+
+.cotiz-summary h3 {
+  font-size: 1.2rem;
+  color: #222;
+  margin-bottom: 10px;
+}
+
+.cotiz-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.98rem;
+  margin: 4px 0;
+}
+
+.cotiz-summary-row span:last-child {
+  font-weight: bold;
+}
+
+.cotiz-pdf-link {
+  display: inline-block;
+  margin-top: 14px;
+  text-align: center;
+  padding: 10px 16px;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.cotiz-pdf-link:hover {
+  background-color: #1e40af;
+}
+
+
+.cotiz-title {
+  color: #16a34a;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.cotiz-icon-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 8px;
+  margin-right: 8px;
+  background-color: #f3f4f6; /* gris clarito */
+  color: #1f2937; /* negro suave */
+}

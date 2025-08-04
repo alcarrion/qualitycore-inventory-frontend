@@ -1,0 +1,141 @@
+.report-bg {
+  min-height: 100vh;
+  padding: 50px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  font-family: 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.report-card {
+  background-color: #fff;
+  border-radius: 2rem;
+  padding: 40px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 550px;
+}
+
+.report-title {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+  margin-bottom: 24px;
+}
+
+.report-label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+  display: block;
+  font-size: 0.97rem;
+}
+
+.report-select,
+.report-date {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  background: #f0fdf4;
+  border: 2px solid #bbf7d0;
+  border-radius: 1rem;
+  margin-bottom: 20px;
+  outline: none;
+  transition: border 0.2s ease;
+}
+
+.report-select:focus,
+.report-date:focus {
+  border-color: #10b981;
+  background: #dcfce7;
+}
+
+.report-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(90deg, #34d399, #10b981);
+  color: white;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+}
+
+.report-btn:hover {
+  transform: scale(1.03);
+  background: linear-gradient(90deg, #059669, #10b981);
+}
+
+.report-msg {
+  background-color: #e6fff5;
+  color: #117865;
+  border: 2px solid #3ee1af;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.report-pdf-link {
+  display: inline-block;
+  margin-top: 18px;
+  background: #d1fae5;
+  color: #065f46;
+  font-weight: bold;
+  text-decoration: none;
+  padding: 0.8rem 2rem;
+  border-radius: 2rem;
+  transition: background 0.2s ease;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+}
+
+.report-pdf-link:hover {
+  background: #a7f3d0;
+  color: #064e3b;
+}
+
+.report-input {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  background: #f0fdf4;
+  border: 2px solid #bbf7d0;
+  border-radius: 1rem;
+  margin-bottom: 20px;
+  outline: none;
+  transition: border 0.2s ease;
+  color: #333;
+}
+
+.report-input:focus {
+  border-color: #10b981;
+  background: #dcfce7;
+}
+
+.report-input::-webkit-calendar-picker-indicator {
+  background: url("data:image/svg+xml;utf8,<svg fill='black' xmlns='http://www.w3.org/2000/svg' height='20' viewBox='0 0 24 24' width='20'><path d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM5 7V6h14v1H5z'/></svg>") no-repeat center;
+  background-size: 20px;
+  opacity: 1;
+  filter: none;
+  cursor: pointer;
+}

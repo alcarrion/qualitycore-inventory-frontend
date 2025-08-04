@@ -1,0 +1,92 @@
+/* src/styles/components/Form.css */
+.form-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1bbbad;
+  margin-bottom: 14px;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.custom-form label {
+  color: #343a40;
+  font-weight: 500;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+
+.custom-form input, 
+.custom-form select {
+  padding: 11px 15px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f7fafd;
+  font-size: 15px;
+  transition: border 0.2s;
+}
+
+.custom-form input:focus,
+.custom-form select:focus {
+  border-color: #41d1a7;
+  outline: none;
+  background: #fff;
+}
+
+.form-error {
+  background: #ffeaea;
+  color: #c7362c;
+  font-size: 14px;
+  border-radius: 8px;
+  padding: 7px 12px;
+  margin-bottom: 7px;
+  border: 1px solid #ffd6d6;
+  text-align: center;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 11px 0;
+  flex: 1 1 0;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(41,201,138,0.07);
+  transition: background .18s, color .18s;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #68e470 0%, #41d1a7 100%);
+  color: #fff;
+}
+.btn-primary:active,
+.btn-primary:focus,
+.btn-primary:hover {
+  background: linear-gradient(90deg, #48d658 0%, #1bbbad 100%);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #f7fafd;
+  color: #41d1a7;
+  border: 1.2px solid #e2e8f0;
+}
+.btn-secondary:hover {
+  background: #fff;
+  color: #1bbbad;
+}
