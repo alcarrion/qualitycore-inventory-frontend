@@ -17,155 +17,127 @@ export function getCookie(name) {
   return cookieValue;
 }
 
+// Función genérica para peticiones API (maneja CSRF y errores)
+async function apiFetch(endpoint, options = {}) {
+  const csrftoken = getCookie("csrftoken");
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    credentials: "include",
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(csrftoken ? { "X-CSRFToken": csrftoken } : {}),
+      ...(options.headers || {})
+    },
+    ...options,
+  });
+
+  const text = await res.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = text;
+  }
+
+  return { ok: res.ok, ...data };
+}
+
+// Función para peticiones que devuelven PDF/Blob
+async function apiFetchBlob(endpoint, options = {}) {
+  const csrftoken = getCookie("csrftoken");
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    credentials: "include",
+    headers: {
+      ...(csrftoken ? { "X-CSRFToken": csrftoken } : {}),
+      ...(options.headers || {})
+    },
+    ...options,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}`);
+  }
+  return await res.blob();
+}
+
 // ✅ Login
 export async function loginUser(email, password) {
-  const csrftoken = getCookie("csrftoken");
-  try {
-    const res = await fetch(`${API_URL}/login/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": csrftoken,
-      },
-      credentials: "include",
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok && data.user) {
-      localStorage.setItem("user", JSON.stringify(data.user));
-    }
-
-    return { ok: res.ok, ...data };
-  } catch {
-    return { ok: false, message: "Error de conexión con el servidor" };
+  const result = await apiFetch(`/login/`, {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  if (result.ok && result.user) {
+    localStorage.setItem("user", JSON.stringify(result.user));
   }
+  return result;
 }
 
 // ✅ Recuperación de contraseña
 export async function forgotPassword(email) {
-  try {
-    const res = await fetch(`${API_URL}/forgot-password/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    const data = await res.json();
-    return { ok: res.ok, ...data };
-  } catch {
-    return { ok: false, message: "Error de conexión con el servidor" };
-  }
+  return await apiFetch(`/forgot-password/`, {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
 }
 
 // ✅ Obtener lista de movimientos
 export async function getMovimientos() {
-  const res = await fetch(`${API_URL}/movements/`, {
-    credentials: "include",
-  });
-  return await res.json();
+  return await apiFetch(`/movements/`);
 }
 
 // ✅ Crear nuevo movimiento
 export async function postMovimiento(data) {
-  const csrftoken = getCookie("csrftoken");
-  const res = await fetch(`${API_URL}/movements/`, {
+  return await apiFetch(`/movements/`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrftoken,
-    },
-    credentials: "include",
     body: JSON.stringify(data),
   });
-  return res;
 }
 
 // ✅ Obtener lista de productos
 export async function getProductos() {
-  const res = await fetch(`${API_URL}/products/`, {
-    credentials: "include",
-  });
-  return await res.json();
+  return await apiFetch(`/products/`);
 }
 
 // ✅ Obtener lista de clientes
 export async function getClientes() {
-  const res = await fetch(`${API_URL}/customers/`, {
-    credentials: "include",
-  });
-  return await res.json();
+  return await apiFetch(`/customers/`);
 }
 
-// ✅ Crear nueva cotización (ruta corregida)
+// ✅ Crear nueva cotización
 export async function postCotizacion(data) {
-  const csrftoken = getCookie("csrftoken");
-  const res = await fetch(`${API_URL}/quotations/create/`, {
+  return await apiFetch(`/quotations/create/`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrftoken,
-    },
-    credentials: "include",
     body: JSON.stringify(data),
   });
-  const result = await res.json();
-  return { ok: res.ok, ...result };
 }
 
 // ✅ Generar PDF de una cotización por ID
 export async function getCotizacionPDF(cotizacionId) {
-  const res = await fetch(`${API_URL}/quotations/pdf/${cotizacionId}/`, {
-    method: "GET",
-    credentials: "include",
-  });
-  const result = await res.json();
-  return { ok: res.ok, ...result };
+  const blob = await apiFetchBlob(`/quotations/pdf/${cotizacionId}/`, { method: "GET" });
+  const url = window.URL.createObjectURL(blob);
+  return { ok: true, url };
 }
 
 // ✅ Obtener reportes generados
 export async function getReportes() {
-  const res = await fetch(`${API_URL}/reports/`, {
-    credentials: "include",
-  });
-  return await res.json();
+  return await apiFetch(`/reports/`);
 }
 
 // ✅ Generar nuevo reporte PDF (por tipo y fechas)
 export async function postReporte(data) {
-  const csrftoken = getCookie("csrftoken");
-  const res = await fetch(`${API_URL}/reports/generate/`, {
+  return await apiFetch(`/reports/generate/`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrftoken,
-    },
-    credentials: "include",
     body: JSON.stringify(data),
   });
-  const result = await res.json();
-  return { ok: res.ok, ...result };
 }
 
 // ✅ Obtener alertas
 export async function getAlertas() {
-  const res = await fetch(`${API_URL}/alerts/`, {
-    credentials: "include",
-  });
-  return await res.json();
+  return await apiFetch(`/alerts/`);
 }
 
 // ✅ Marcar alerta como resuelta
 export async function dismissAlerta(alertId) {
-  const csrftoken = getCookie("csrftoken");
-  const res = await fetch(`${API_URL}/alerts/${alertId}/dismiss/`, {
+  return await apiFetch(`/alerts/${alertId}/dismiss/`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrftoken,
-    },
-    credentials: "include",
   });
-  const result = await res.json();
-  return { ok: res.ok, ...result };
 }
