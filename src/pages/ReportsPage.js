@@ -45,7 +45,35 @@ export default function ReportsPage() {
   return (
     <div className="report-bg">
       <div className="report-card">
-        {/* …inputs… */}
+        <div className="report-title">Generador de Reportes</div>
+        <div className="report-subtitle">Selecciona el tipo y el rango de fechas</div>
+
+        <label className="report-label">Tipo de reporte:</label>
+        <select
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value)}
+          className="report-select"
+        >
+          <option value="movements">Movimientos recientes</option>
+          <option value="top_vendidos">Productos más vendidos</option>
+        </select>
+
+        <label className="report-label">Fecha de inicio:</label>
+        <input
+          type="date"
+          className="report-input"
+          value={fechaInicio}
+          onChange={(e) => setFechaInicio(e.target.value)}
+        />
+
+        <label className="report-label">Fecha de fin:</label>
+        <input
+          type="date"
+          className="report-input"
+          value={fechaFin}
+          onChange={(e) => setFechaFin(e.target.value)}
+        />
+
         <button onClick={generarReporte} className="report-btn">⬇️ Generar Reporte PDF</button>
 
         {mensaje && <div className="report-msg"><FileText size={18} /> {mensaje}</div>}
