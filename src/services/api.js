@@ -220,3 +220,12 @@ export async function postSupplier(data) {
     body: JSON.stringify(data),
   });
 }
+
+
+// Crear usuario
+export async function postUser(data) {
+  return await apiFetch(`/users/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}

@@ -1,6 +1,6 @@
 // src/components/AddUserForm.js
 import React, { useState } from "react";
-import { API_URL, getCookie } from "../services/api";
+import { postUser } from "../services/api";
 import "../styles/components/Form.css";
 
 export function AddUserForm({ onSave, onCancel }) {
@@ -17,39 +17,33 @@ export function AddUserForm({ onSave, onCancel }) {
     setLoading(true);
     setError("");
 
+    // si el teléfono es requerido:
     if (!/^\d{10}$/.test(phone)) {
       setError("El número de teléfono debe tener exactamente 10 dígitos.");
       setLoading(false);
       return;
     }
-
-    const csrftoken = getCookie("csrftoken");
+    // si NO fuera requerido, usa:
+    // if (phone && !/^\d{10}$/.test(phone)) { ... }
 
     try {
-      const res = await fetch(`${API_URL}/users/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrftoken,
-        },
-        credentials: "include",
-        body: JSON.stringify({ name, email, phone, role, password }),
-      });
+      const resp = await postUser({ name, email, phone, role, password });
 
-      if (!res.ok) {
-        const data = await res.json();
-        let errorMsg = "No se pudo crear el usuario.";
-        if (typeof data === "object" && data !== null) {
-          const detalles = Object.entries(data)
-            .map(([campo, errores]) => `${campo}: ${errores.join(", ")}`)
-            .join(" | ");
-          errorMsg += ` Motivo: ${detalles}`;
-        }
-        throw new Error(errorMsg);
+      if (!resp.ok) {
+        const d = resp.data;
+        const msg =
+          d?.detail ||
+          (d && typeof d === "object"
+            ? Object.entries(d)
+                .map(([campo, errs]) =>
+                  Array.isArray(errs) ? `${campo}: ${errs.join(", ")}` : `${campo}: ${String(errs)}`
+                )
+                .join(" | ")
+            : "No se pudo crear el usuario.");
+        throw new Error(msg);
       }
 
-      const data = await res.json();
-      onSave(data);
+      onSave?.(resp.data);
     } catch (err) {
       setError(err.message || "Hubo un error al crear el usuario.");
     } finally {
@@ -73,7 +67,7 @@ export function AddUserForm({ onSave, onCancel }) {
 
       <div className="form-group">
         <label>Teléfono</label>
-        <input value={phone} onChange={e => setPhone(e.target.value)} />
+        <input value={phone} onChange={e => setPhone(e.target.value)} required />
       </div>
 
       <div className="form-group">
@@ -95,7 +89,7 @@ export function AddUserForm({ onSave, onCancel }) {
         <button className="btn-primary" type="submit" disabled={loading}>
           {loading ? "Guardando..." : "Añadir"}
         </button>
-        <button className="btn-secondary" type="button" onClick={onCancel}>
+        <button className="btn-secondary" type="button" onClick={onCancel} disabled={loading}>
           Cancelar
         </button>
       </div>
