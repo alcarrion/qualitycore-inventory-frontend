@@ -20,7 +20,7 @@ export default function SuppliersPage({ user }) {
   const isAdmin = currentUser?.role === "Administrator";
 
   const loadSuppliers = async () => {
-    const res = await getSuppliers(); // { ok, status, data }
+    const res = await getSuppliers(); 
     const list = Array.isArray(res.data) ? res.data : [];
     setSuppliers(list.filter(p => !p.deleted_at));
   };

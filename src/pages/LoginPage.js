@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import LoginForm from "../components/LoginForm";
 import ForgotPasswordForm from "../components/ForgotPasswordForm";
 import { useNavigate } from "react-router-dom";
-import { initCsrf } from "../services/api";  // ✅ usa wrapper
+import { initCsrf } from "../services/api";  
 import "../styles/pages/LoginPage.css";
 
 export default function LoginPage({ setUsuario }) {
@@ -12,9 +12,7 @@ export default function LoginPage({ setUsuario }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Coloca la cookie csrftoken (si no la puso ya tu init global)
     initCsrf();
-    // Si ya hay sesión, redirige
     const u = JSON.parse(localStorage.getItem("user") || "null");
     if (u) navigate("/dashboard");
   }, [navigate]);

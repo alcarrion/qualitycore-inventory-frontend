@@ -6,7 +6,7 @@ import "../styles/components/Form.css";
 export default function AddSupplierForm({ onSave, onCancel }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [taxId, setTaxId] = useState("");     // RUC/Cédula
+  const [taxId, setTaxId] = useState("");     
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
@@ -37,13 +37,12 @@ export default function AddSupplierForm({ onSave, onCancel }) {
       const resp = await postSupplier({
         name,
         email,
-        tax_id: taxId,  // ajusta el nombre del campo según tu modelo/serializer
+        tax_id: taxId,  
         phone,
         address,
       });
 
       if (!resp.ok) {
-        // si DRF devuelve errores de validación, muéstralos
         const msg =
           resp.data?.detail ||
           (resp.data && typeof resp.data === "object"

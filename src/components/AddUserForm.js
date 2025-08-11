@@ -17,14 +17,11 @@ export function AddUserForm({ onSave, onCancel }) {
     setLoading(true);
     setError("");
 
-    // si el teléfono es requerido:
     if (!/^\d{10}$/.test(phone)) {
       setError("El número de teléfono debe tener exactamente 10 dígitos.");
       setLoading(false);
       return;
     }
-    // si NO fuera requerido, usa:
-    // if (phone && !/^\d{10}$/.test(phone)) { ... }
 
     try {
       const resp = await postUser({ name, email, phone, role, password });

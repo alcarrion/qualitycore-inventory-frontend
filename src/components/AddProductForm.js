@@ -23,7 +23,6 @@ export default function AddProductForm({ onSave, onCancel }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Cargar proveedores y categorías
   useEffect(() => {
     (async () => {
       const ps = await getSuppliers();
@@ -68,15 +67,15 @@ export default function AddProductForm({ onSave, onCancel }) {
     const formData = new FormData();
     formData.append("name", name);
     if (description) formData.append("description", description);
-    formData.append("category", category);               // id
+    formData.append("category", category);             
     formData.append("price", String(price));
     formData.append("minimum_stock", String(minimumStock));
     formData.append("status", status);
-    formData.append("supplier", supplier);               // id
+    formData.append("supplier", supplier);            
     if (image) formData.append("image", image);
 
     try {
-      const res = await postProduct(formData);           // 🟢 usa wrapper multipart
+      const res = await postProduct(formData);          
       if (!res.ok) throw new Error(res.data?.detail || "No se pudo crear el producto.");
       onSave?.(res.data);
     } catch (e) {

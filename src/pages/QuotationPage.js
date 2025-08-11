@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 
 import {
-  getClientes,
-  getProductos,
-  postCotizacion,
-  getCotizacionPDF,
+  getCustomers,
+  getProducts,
+  postQuotation,
+  getQuotationPDF,
 } from "../services/api";
 
 import "../styles/pages/QuotationPage.css";
@@ -41,13 +41,13 @@ export default function QuotationPage() {
   }, []);
 
   const fetchClientes = async () => {
-    const res = await getClientes(); // { ok, status, data }
+    const res = await getCustomers(); 
     const list = Array.isArray(res.data) ? res.data : [];
     setClientes(list.filter(c => !c.deleted_at));
   };
 
   const fetchProductos = async () => {
-    const res = await getProductos(); // { ok, status, data }
+    const res = await getProducts(); 
     const list = Array.isArray(res.data) ? res.data : [];
     setProductos(list.filter(p => !p.deleted_at));
   };
@@ -100,7 +100,6 @@ export default function QuotationPage() {
   const handleGuardar = async () => {
     setMensaje("");
 
-    // Validaciones mínimas
     if (!cliente) {
       setMensaje("❌ Selecciona un cliente.");
       return;
@@ -125,10 +124,10 @@ export default function QuotationPage() {
         unit_price: Number(p.unit_price),
       })),
       observations: observaciones,
-      vat: Number(iva), // si tu backend espera string, usa iva tal cual
+      vat: Number(iva), 
     };
 
-    const res = await postCotizacion(payload); // { ok, status, data }
+    const res = await postQuotation(payload); 
 
     if (res.ok && res.data?.quotation?.id) {
       setMensaje("✅ Cotización guardada correctamente");
@@ -139,10 +138,9 @@ export default function QuotationPage() {
       setTotal(0);
       setObservaciones("");
 
-      // PDF: el wrapper devuelve blob -> URL de objeto
-      const pdfData = await getCotizacionPDF(res.data.quotation.id);
+      const pdfData = await getQuotationPDF(res.data.quotation.id);
       if (pdfData?.url) {
-        setPdfUrl(pdfData.url); // 👈 ya es un blob:, no armes URL manual
+        setPdfUrl(pdfData.url); 
       }
     } else {
       console.error("Error al guardar:", res.data);
@@ -332,7 +330,7 @@ export default function QuotationPage() {
         {pdfUrl && (
           <div style={{ textAlign: "center", marginTop: "16px" }}>
             <a
-              href={pdfUrl}                // 👈 blob: URL
+              href={pdfUrl}               
               target="_blank"
               rel="noopener noreferrer"
               className="cotiz-pdf-link"

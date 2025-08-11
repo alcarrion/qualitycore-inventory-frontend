@@ -1,6 +1,6 @@
 // src/components/EditCustomerForm.js
 import React, { useState } from "react";
-import { patchCliente } from "../services/api";
+import { patchCustomer } from "../services/api";
 import "../styles/components/Form.css";
 
 export default function EditCustomerForm({ cliente, onSave, onCancel }) {
@@ -34,7 +34,7 @@ export default function EditCustomerForm({ cliente, onSave, onCancel }) {
     }
 
     try {
-      const resp = await patchCliente(cliente.id, {
+      const resp = await patchCustomer(cliente.id, {
         name,
         email,
         phone,

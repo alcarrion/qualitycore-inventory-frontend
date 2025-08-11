@@ -17,7 +17,7 @@ export default function EditProductForm({ producto, onSave, onCancel }) {
   const [supplier, setSupplier] = useState(String(producto.supplier || ""));
   const [suppliers, setSuppliers] = useState([]);
   const [price, setPrice] = useState(producto.price);
-  const [currentStock] = useState(producto.current_stock ?? producto.currentStock); // solo mostrar
+  const [currentStock] = useState(producto.current_stock ?? producto.currentStock); 
   const [minimumStock, setMinimumStock] = useState(producto.minimum_stock ?? producto.minimumStock);
   const [status, setStatus] = useState(producto.status);
   const [image, setImage] = useState(null);
@@ -67,16 +67,15 @@ export default function EditProductForm({ producto, onSave, onCancel }) {
     const formData = new FormData();
     formData.append("name", name);
     if (description) formData.append("description", description);
-    formData.append("category", String(category));            // FK (id)
+    formData.append("category", String(category));          
     formData.append("price", String(price));
-    // ⚠️ normalmente current_stock NO se edita aquí; lo dejamos solo de lectura
-    formData.append("minimum_stock", String(minimumStock));   // usar snake_case del modelo
+    formData.append("minimum_stock", String(minimumStock));   
     formData.append("status", status);
-    formData.append("supplier", String(supplier));            // FK (id)
+    formData.append("supplier", String(supplier));         
     if (image) formData.append("image", image);
 
     try {
-      const res = await patchProduct(producto.id, formData);  // ✅ multipart + CSRF
+      const res = await patchProduct(producto.id, formData); 
       if (!res.ok) throw new Error(res.data?.detail || "No se pudo editar el producto.");
       onSave?.(res.data);
     } catch (e) {

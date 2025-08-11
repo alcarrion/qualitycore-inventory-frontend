@@ -4,8 +4,6 @@ import { useNavigate } from "react-router-dom";
 import Modal from "../components/Modal";
 import { AddUserForm } from "../components/AddUserForm";
 import "../styles/pages/UsersPage.css";
-
-// ✅ wrappers del servicio
 import { getUsers, patchUser } from "../services/api";
 
 export default function UsersPage({ user }) {
@@ -18,16 +16,14 @@ export default function UsersPage({ user }) {
 
   const isAdmin = currentUser?.role === "Administrator";
 
-  // 🔁 Redirigir si NO es admin (el hook SIEMPRE se llama)
   useEffect(() => {
     if (!isAdmin) navigate("/dashboard", { replace: true });
   }, [isAdmin, navigate]);
 
-  // 📥 Cargar usuarios (el hook SIEMPRE se llama; salimos si no es admin)
   useEffect(() => {
     if (!isAdmin) return;
     (async () => {
-      const res = await getUsers(); // { ok, status, data }
+      const res = await getUsers(); 
       setUsers(Array.isArray(res.data) ? res.data : []);
     })();
   }, [isAdmin, showAdd]);
@@ -58,7 +54,6 @@ export default function UsersPage({ user }) {
     }
   };
 
-  // 👇 Este return condicional ya es seguro porque los hooks están arriba
   if (!isAdmin) return null;
 
   return (

@@ -6,7 +6,7 @@ import EditProfileForm from "../components/EditProfileForm";
 import { ChangePasswordForm } from "../components/ChangePasswordForm";
 import { AddUserForm } from "../components/AddUserForm";
 import { Package, DollarSign, Users, Activity, Bell } from "lucide-react";
-import { getAlertas, dismissAlerta, getDashboardSummary } from "../services/api"; // ✅ wrappers
+import { getAlerts, dismissAlert, getDashboardSummary } from "../services/api"; 
 import "../styles/pages/DashboardPage.css";
 
 export default function DashboardPage() {
@@ -36,18 +36,17 @@ export default function DashboardPage() {
   }, []);
 
   const fetchAlertas = async () => {
-    const res = await getAlertas();                 // { ok, status, data }
+    const res = await getAlerts();                 
     setAlertas(Array.isArray(res.data) ? res.data : []);
   };
 
   const fetchDashboard = async () => {
-    const res = await getDashboardSummary();        // { ok, status, data }
+    const res = await getDashboardSummary();        
     if (res.ok && res.data) setDashboardData(res.data);
-    // opcional: si res.status === 401 → redirigir a login
   };
 
   const cerrarAlerta = async (id) => {
-    const res = await dismissAlerta(id);            // { ok, status, data }
+    const res = await dismissAlert(id);           
     if (res.ok) {
       setAlertas(prev => prev.filter(a => a.id !== id));
       setMensaje(res.data?.message || "✅ Alerta cerrada correctamente");

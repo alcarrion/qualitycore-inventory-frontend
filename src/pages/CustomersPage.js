@@ -4,7 +4,7 @@ import Modal from "../components/Modal";
 import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import AddCustomerForm from "../components/AddCustomerForm";
 import EditCustomerForm from "../components/EditCustomerForm";
-import { getClientes, patchCliente } from "../services/api"; // ✅ wrappers
+import { getCustomers, patchCustomer } from "../services/api";
 import "../styles/pages/CustomersPage.css";
 
 export default function CustomersPage({ user }) {
@@ -17,16 +17,14 @@ export default function CustomersPage({ user }) {
 
   const isAdmin = currentUser?.role === "Administrator";
 
-  // Cargar clientes
   useEffect(() => {
     (async () => {
-      const res = await getClientes();
+      const res = await getCustomers();
       const list = Array.isArray(res.data) ? res.data : [];
       setClientes(list.filter(c => !c.deleted_at));
     })();
-  }, [showAdd, showEdit]); // al cerrar modales, recarga
+  }, [showAdd, showEdit]); 
 
-  // Filtrado (usa "document" en lugar de tax_id)
   const filtered = clientes.filter(c =>
     (c.name && c.name.toLowerCase().includes(search.toLowerCase())) ||
     (c.document && c.document.includes(search)) ||
@@ -37,7 +35,7 @@ export default function CustomersPage({ user }) {
   const handleDelete = async (cliente) => {
     if (!window.confirm("¿Seguro que deseas eliminar este cliente?")) return;
     try {
-      const resp = await patchCliente(cliente.id, {
+      const resp = await patchCustomer(cliente.id, {
         deleted_at: new Date().toISOString(),
       });
       if (!resp.ok) throw new Error(resp.data?.detail || "No se pudo eliminar.");

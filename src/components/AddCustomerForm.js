@@ -1,19 +1,19 @@
 // src/components/AddCustomerForm.js
 import React, { useState } from "react";
-import { postCliente } from "../services/api";   // ✅ usar wrapper
+import { postCustomer } from "../services/api";  
 import "../styles/components/Form.css";
 
 export default function AddCustomerForm({ onSave, onCancel }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [document, setDocument] = useState("");   // cédula/RUC
+  const [document, setDocument] = useState("");   
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();       // ✅ evita GET
+    e.preventDefault();       
     setLoading(true);
     setError("");
 
@@ -34,13 +34,10 @@ export default function AddCustomerForm({ onSave, onCancel }) {
     }
 
     try {
-      // 👇 usa el wrapper (mete CSRF y cookies)
-      const resp = await postCliente({
+      const resp = await postCustomer({
         name,
         email,
         document,
-        // ajusta el nombre del campo según tu serializer:
-        // si tu API espera 'cedula_ruc', cambia 'document' por 'cedula_ruc'
         phone,
         address
       });

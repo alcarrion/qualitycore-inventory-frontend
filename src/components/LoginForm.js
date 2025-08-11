@@ -16,7 +16,7 @@ export default function LoginForm({ setMessage, navigate, setUsuario }) {
     setLoading(true);
 
     try {
-      const result = await loginUser(email, password); // { ok, status, data }
+      const result = await loginUser(email, password); 
       const user = result?.data?.user;
       const msg  = result?.data?.message;
 

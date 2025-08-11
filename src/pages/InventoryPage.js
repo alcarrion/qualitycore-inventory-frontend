@@ -7,12 +7,11 @@ import EditProductForm from "../components/EditProductForm";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import "../styles/pages/InventoryPage.css";
 
-// ✅ wrappers del servicio (CSRF + credentials + retry integrado)
 import {
-  getProductos,
+  getProducts,
   getSuppliers,
   getCategories,
-  patchProductJson,   // para soft delete
+  patchProductJson,   
 } from "../services/api";
 
 export default function InventoryPage({ user }) {
@@ -28,7 +27,7 @@ export default function InventoryPage({ user }) {
   const [search, setSearch] = useState("");
 
   const loadProducts = async () => {
-    const res = await getProductos(); // { ok, status, data }
+    const res = await getProducts(); 
     const list = Array.isArray(res.data) ? res.data : [];
     setProducts(list.filter(p => !p.deleted_at));
   };
@@ -125,7 +124,6 @@ export default function InventoryPage({ user }) {
 
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
-          {/* Los formularios ya cargan proveedores/categorías por dentro */}
           <AddProductForm
             onSave={() => setShowAdd(false)}
             onCancel={() => setShowAdd(false)}

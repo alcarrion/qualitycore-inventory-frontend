@@ -37,7 +37,6 @@ export default function EditProfileForm({ user, onSave, onCancel }) {
         throw new Error(msg);
       }
 
-      // Actualiza almacenamiento local si lo usas en la app
       try {
         const updated = { ...user, ...(resp.data || {}) };
         localStorage.setItem("user", JSON.stringify(updated));

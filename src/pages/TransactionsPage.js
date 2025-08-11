@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../components/Modal";
 import {
-  getMovimientos,
-  postMovimiento,
-  getProductos,
-  getClientes,
+  getMovements,
+  postMovement,
+  getProducts,
+  getCustomers,
 } from "../services/api";
 
 import {
@@ -45,18 +45,18 @@ function TransactionsPage() {
   }, []);
 
   const fetchMovimientos = async () => {
-    const res = await getMovimientos(); // { ok, status, data }
+    const res = await getMovements(); 
     setMovimientos(Array.isArray(res.data) ? res.data : []);
   };
 
   const fetchProductos = async () => {
-    const res = await getProductos(); // { ok, status, data }
+    const res = await getProducts(); 
     const list = Array.isArray(res.data) ? res.data : [];
     setProductos(list.filter((p) => p.status === "Activo" && !p.deleted_at));
   };
 
   const fetchClientes = async () => {
-    const res = await getClientes(); // { ok, status, data }
+    const res = await getCustomers(); 
     const list = Array.isArray(res.data) ? res.data : [];
     setClientes(list.filter((c) => !c.deleted_at));
   };
@@ -103,7 +103,7 @@ function TransactionsPage() {
       ...(tipo === "output" ? { customer: Number(formData.customer) } : {}),
     };
 
-    const resp = await postMovimiento(movimiento); // { ok, status, data }
+    const resp = await postMovement(movimiento); 
 
     if (resp.ok) {
       await fetchMovimientos();

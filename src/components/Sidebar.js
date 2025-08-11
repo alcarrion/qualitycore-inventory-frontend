@@ -8,7 +8,6 @@ import {
 import "../styles/components/Sidebar.css";
 
 export default function Sidebar({ user, onLogout, onShowPerfil }) {
-  // 🔄 Función para traducir el rol
   const traducirRol = (rol) => {
     switch (rol?.toLowerCase()) {
       case "administrator":

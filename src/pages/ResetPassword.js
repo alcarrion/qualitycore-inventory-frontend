@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Lock, CheckCircle2 } from "lucide-react";
-import { postResetPassword } from "../services/api"; // ✅ usa wrapper
+import { postResetPassword } from "../services/api"; 
 import "../styles/pages/ResetPassword.css";
 
 export default function ResetPassword() {
@@ -30,7 +30,6 @@ export default function ResetPassword() {
     e.preventDefault();
     setMessage("");
 
-    // Django MinimumLengthValidator por defecto exige 8
     if (password.length < 8) {
       setMessage("La contraseña debe tener al menos 8 caracteres.");
       return;
@@ -42,10 +41,10 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      const resp = await postResetPassword({ uid, token, new_password: password }); // { ok, status, data }
+      const resp = await postResetPassword({ uid, token, new_password: password }); 
       if (resp.ok) {
         setMessage("¡Contraseña cambiada correctamente! Ahora puedes iniciar sesión.");
-        setTimeout(() => navigate("/login"), 2000); // 👈 lleva al login
+        setTimeout(() => navigate("/login"), 2000); 
       } else {
         const d = resp.data || {};
         setMessage(d.message || d.detail || "Error al cambiar la contraseña.");

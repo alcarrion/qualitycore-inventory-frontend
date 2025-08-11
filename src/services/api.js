@@ -1,10 +1,28 @@
-// src/services/api.js
+// ============================================================
+// services/api.js
+// SDK de consumo del backend (fetch con manejo de CSRF + helpers)
+// ============================================================
+
+// ===================== 0) CONFIGURACIÓN BASE =====================
 export const API_URL = process.env.REACT_APP_API_URL;
 
-// Guardamos aquí el token CSRF que devuelve el backend en /csrf/
-let CSRF_TOKEN = null;
+// (Opcional) Raíz del backend, por si necesitas enlaces absolutos a /media, etc.
 export const API_ROOT = API_URL.replace(/\/api\/productos\/?$/, "");
 
+// Guardamos el token CSRF que expone el backend en /csrf/
+let CSRF_TOKEN = null;
+
+// Utilidad para unir URL base + endpoint sin barras duplicadas
+const join = (b, p) => b.replace(/\/+$/, "") + "/" + p.replace(/^\/+/, "");
+
+
+// ===================== 1) CSRF & FETCH WRAPPERS =====================
+
+/**
+ * initCsrf
+ * - Pide al backend el token CSRF y lo cachea en memoria.
+ * - Se usa al inicio y cuando Django rota el token (por ejemplo, tras login).
+ */
 export async function initCsrf() {
   try {
     const res = await fetch(`${API_URL}/csrf/`, { credentials: "include" });
@@ -15,16 +33,21 @@ export async function initCsrf() {
   }
 }
 
-const join = (b, p) => b.replace(/\/+$/, "") + "/" + p.replace(/^\/+/, "");
-
-// 👇 apiFetch ahora reintenta 1 vez si el 403 es por CSRF
+/**
+ * apiFetch
+ * - Envoltorio de fetch que:
+ *   a) incluye credenciales (cookies) automáticamente
+ *   b) agrega X-CSRFToken si existe
+ *   c) reintenta 1 vez si recibe 403 por CSRF rotado
+ *   d) intenta parsear JSON; si no, retorna el texto crudo
+ */
 async function apiFetch(endpoint, options = {}) {
   const doFetch = () =>
     fetch(join(API_URL, endpoint), {
       credentials: "include",
       headers: {
         ...(options.body ? { "Content-Type": "application/json" } : {}),
-        ...(CSRF_TOKEN ? { "X-CSRFToken": CSRF_TOKEN } : {}), // usa header canonical
+        ...(CSRF_TOKEN ? { "X-CSRFToken": CSRF_TOKEN } : {}),
         ...(options.headers || {}),
       },
       ...options,
@@ -32,21 +55,30 @@ async function apiFetch(endpoint, options = {}) {
 
   let res = await doFetch();
 
+  // Reintento automático si parece error de CSRF
   if (res.status === 403) {
     const text = await res.clone().text().catch(() => "");
     if (/csrf/i.test(text)) {
-      await initCsrf();      // refresca token
-      res = await doFetch(); // reintenta una vez
+      await initCsrf();
+      res = await doFetch();
     }
   }
 
   const raw = await res.text();
   let data;
-  try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    data = raw;
+  }
+
   return { ok: res.ok, status: res.status, data };
 }
 
-// --- Wrapper para Blob/PDF ---
+/**
+ * apiFetchBlob
+ * - Igual que apiFetch pero devuelve Blob (ej. PDF).
+ */
 async function apiFetchBlob(endpoint, options = {}) {
   const res = await fetch(join(API_URL, endpoint), {
     credentials: "include",
@@ -60,157 +92,16 @@ async function apiFetchBlob(endpoint, options = {}) {
   return await res.blob();
 }
 
-// ================== ENDPOINTS ==================
-
-// ✅ Login
-// ✅ tras login exitoso, refresca el CSRF (Django lo rota al autenticarse)
-export async function loginUser(email, password) {
-  const r = await apiFetch(`/login/`, {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-  if (r.ok) await initCsrf();
-  return r;
-}
-
-// ✅ Recuperación de contraseña
-export async function forgotPassword(email) {
-  return await apiFetch(`/forgot-password/`, {
-    method: "POST",
-    body: JSON.stringify({ email }),
-  });
-}
-
-// ✅ Movimientos
-export async function getMovimientos() {
-  return await apiFetch(`/movements/`);
-}
-export async function postMovimiento(data) {
-  return await apiFetch(`/movements/`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
-// ✅ Productos
-export async function getProductos() {
-  return await apiFetch(`/products/`);
-}
-
-// ✅ Clientes
-export async function getClientes() {
-  return await apiFetch(`/customers/`);
-}
-
-// ✅ Cotizaciones
-export async function postCotizacion(data) {
-  return await apiFetch(`/quotations/create/`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-// export async function getCotizacionPDF(cotizacionId) {
-//   const blob = await apiFetchBlob(`/quotations/pdf/${cotizacionId}/`, { method: "GET" });
-//   const url = window.URL.createObjectURL(blob);
-//   return { ok: true, url };
-// }
-
-// ✅ Obtener PDF de una cotización por ID (soporta JSON o PDF directo)
-export async function getCotizacionPDF(cotizacionId) {
-  const res = await fetch(`${API_URL}/quotations/pdf/${cotizacionId}/`, {
-    method: "GET",
-    credentials: "include",
-  });
-
-  const ct = (res.headers.get("Content-Type") || "").toLowerCase();
-
-  // Caso 1: el backend devuelve directamente el PDF
-  if (ct.includes("application/pdf")) {
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    return { ok: true, url, type: "blob" };
-  }
-
-  // Caso 2: el backend devuelve JSON { url: "/media/...pdf" }
-  const data = await res.json().catch(() => ({}));
-  if (res.ok && data?.url) {
-    // construir URL absoluta al backend
-    const backendBase = API_URL.replace(/\/api\/productos\/?$/, "");
-    return { ok: true, url: backendBase + data.url, type: "absolute" };
-  }
-
-  return { ok: false, error: `Respuesta inesperada (${res.status})`, data };
-}
-
-
-
-// ✅ Reportes
-export async function getReportes() {
-  return await apiFetch(`/reports/`);
-}
-export async function postReporte(data) {
-  return await apiFetch(`/reports/generate/`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
-// ✅ Alertas
-export async function getAlertas() {
-  return await apiFetch(`/alerts/`);
-}
-export async function dismissAlerta(alertId) {
-  return await apiFetch(`/alerts/${alertId}/dismiss/`, { method: "PATCH" });
-}
-
-
-
-// Parche temporal: evita errores de import
-export function getCookie() {
-  return null; // ya no se usa; el CSRF viene de initCsrf()
-}
-
-
-
-// crea cliente
-export async function postCliente(data) {
-  return await apiFetch(`/customers/`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
-
-
-
-
-
-
-
-
-// --- para GETs simples ---
-export async function getSuppliers() {
-  return await apiFetch(`/suppliers/`);
-}
-
-export async function getCategories() {
-  return await apiFetch(`/categories/`);
-}
-
-export async function postCategory(name) {
-  return await apiFetch(`/categories/`, {
-    method: "POST",
-    body: JSON.stringify({ name }),
-  });
-}
-
-// --- helper para FormData (multipart) ---
-// NO seteamos Content-Type para que el navegador ponga el boundary.
-// Incluimos credenciales y X-CSRFToken automáticamente y reintentamos si el CSRF rota.
+/**
+ * apiFetchForm
+ * - Pensado para multipart/form-data (FormData).
+ * - NO seteamos Content-Type (el navegador define el boundary).
+ * - Reintenta si el CSRF rota (403).
+ */
 export async function apiFetchForm(endpoint, formData, options = {}) {
   const url = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   const doFetch = () =>
-    fetch(`${API_URL.replace(/\/+$/,"")}${url}`, {
+    fetch(`${API_URL.replace(/\/+$/, "")}${url}`, {
       method: options.method || "POST",
       credentials: "include",
       headers: {
@@ -233,65 +124,48 @@ export async function apiFetchForm(endpoint, formData, options = {}) {
 
   const raw = await res.text();
   let data;
-  try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    data = raw;
+  }
   return { ok: res.ok, status: res.status, data };
 }
 
-export async function postProduct(formData) {
-  return await apiFetchForm(`/products/`, formData);
+/**
+ * Compat: getCookie()
+ * - Dejado por compatibilidad; ya no se usa porque el CSRF viene de /csrf/.
+ */
+export function getCookie() {
+  return null;
 }
 
 
+// ===================== 2) AUTENTICACIÓN =====================
 
-// Crear proveedor
-export async function postSupplier(data) {
-  return await apiFetch(`/suppliers/`, {
+/**
+ * loginUser
+ * - Autenticación por email/password.
+ * - Tras login exitoso, refresca CSRF porque Django lo rota al autenticarse.
+ */
+export async function loginUser(email, password) {
+  const r = await apiFetch(`/login/`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({ email, password }),
   });
+  if (r.ok) await initCsrf();
+  return r;
 }
 
-
-// Crear usuario
-export async function postUser(data) {
-  return await apiFetch(`/users/`, {
+/** forgotPassword - Envía correo de recuperación */
+export async function forgotPassword(email) {
+  return await apiFetch(`/forgot-password/`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({ email }),
   });
 }
 
-
-// Editar cliente (PATCH)
-export async function patchCliente(id, data) {
-  return await apiFetch(`/customers/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
-}
-
-// PATCH producto (multipart)
-export async function patchProduct(id, formData) {
-  // usa el helper multipart que reintenta si el CSRF rota
-  return await apiFetchForm(`/products/${id}/`, formData, { method: "PATCH" });
-}
-
-// Editar usuario (perfil) por id
-export async function patchUser(id, data) {
-  return await apiFetch(`/users/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
-}
-
-// Editar proveedor (PATCH)
-export async function patchSupplier(id, data) {
-  return await apiFetch(`/suppliers/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
-}
-
-// Cambiar contraseña
+/** changePassword - Cambiar contraseña autenticado */
 export async function changePassword(old_password, new_password) {
   return await apiFetch(`/change-password/`, {
     method: "POST",
@@ -299,15 +173,57 @@ export async function changePassword(old_password, new_password) {
   });
 }
 
+/** postResetPassword - Usado desde enlace de recuperación */
+export async function postResetPassword(payload) {
+  return await apiFetch(`/reset-password/`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
 
 
-// Resumen del dashboard
+// ===================== 3) DASHBOARD =====================
+
+/** Resumen del dashboard */
 export async function getDashboardSummary() {
   return await apiFetch(`/dashboard/summary/`);
 }
 
 
-// PATCH JSON para producto (soft delete u otros campos simples)
+// ===================== 4) MOVIMIENTOS =====================
+
+/** Listar movimientos */
+export async function getMovements() {
+  return await apiFetch(`/movements/`);
+}
+
+/** Crear movimiento */
+export async function postMovement(data) {
+  return await apiFetch(`/movements/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+
+// ===================== 5) PRODUCTOS =====================
+
+/** Listar productos */
+export async function getProducts() {
+  return await apiFetch(`/products/`);
+}
+
+/** Crear producto (multipart) */
+export async function postProduct(formData) {
+  return await apiFetchForm(`/products/`, formData);
+}
+
+/** PATCH producto (multipart) */
+export async function patchProduct(id, formData) {
+  return await apiFetchForm(`/products/${id}/`, formData, { method: "PATCH" });
+}
+
+/** PATCH JSON producto (soft delete u otros campos simples) */
 export async function patchProductJson(id, data) {
   return await apiFetch(`/products/${id}/`, {
     method: "PATCH",
@@ -316,33 +232,169 @@ export async function patchProductJson(id, data) {
 }
 
 
-// Generar reporte (PDF) y devolver un Blob
-// export async function generateReport(payload) {
-//   // payload: { type, start_date, end_date }
-//   return await apiFetchBlob(`/reports/generate/`, {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify(payload),
-//   });
-// }
-// ✅ Reportes (JSON: {message, url})
+// ===================== 6) CATEGORÍAS =====================
+
+/** Listar categorías */
+export async function getCategories() {
+  return await apiFetch(`/categories/`);
+}
+
+/** Crear categoría */
+export async function postCategory(name) {
+  return await apiFetch(`/categories/`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+
+// ===================== 7) CLIENTES =====================
+
+/** Listar clientes */
+export async function getCustomers() {
+  return await apiFetch(`/customers/`);
+}
+
+/** Crear cliente */
+export async function postCustomer(data) {
+  return await apiFetch(`/customers/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/** Editar cliente (PATCH) */
+export async function patchCustomer(id, data) {
+  return await apiFetch(`/customers/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+
+// ===================== 8) PROVEEDORES =====================
+
+/** Listar proveedores */
+export async function getSuppliers() {
+  return await apiFetch(`/suppliers/`);
+}
+
+/** Crear proveedor */
+export async function postSupplier(data) {
+  return await apiFetch(`/suppliers/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/** Editar proveedor (PATCH) */
+export async function patchSupplier(id, data) {
+  return await apiFetch(`/suppliers/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+
+// ===================== 9) USUARIOS =====================
+
+/** Listar usuarios */
+export async function getUsers() {
+  return await apiFetch(`/users/`);
+}
+
+/** Crear usuario */
+export async function postUser(data) {
+  return await apiFetch(`/users/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/** Editar usuario (perfil) por id */
+export async function patchUser(id, data) {
+  return await apiFetch(`/users/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+
+// ===================== 10) COTIZACIONES =====================
+
+/** Crear cotización */
+export async function postQuotation(data) {
+  return await apiFetch(`/quotations/create/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * getCotizacionPDF
+ * - Devuelve { ok, url, type }
+ *   type: "blob" si el backend responde application/pdf directamente
+ *         "absolute" si el backend responde JSON con { url } a un PDF en /media
+ */
+export async function getQuotationPDF(cotizacionId) {
+  const res = await fetch(`${API_URL}/quotations/pdf/${cotizacionId}/`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const ct = (res.headers.get("Content-Type") || "").toLowerCase();
+
+  // Caso 1: PDF directo
+  if (ct.includes("application/pdf")) {
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    return { ok: true, url, type: "blob" };
+  }
+
+  // Caso 2: JSON { url: "/media/..." }
+  const data = await res.json().catch(() => ({}));
+  if (res.ok && data?.url) {
+    const backendBase = API_URL.replace(/\/api\/productos\/?$/, "");
+    return { ok: true, url: backendBase + data.url, type: "absolute" };
+  }
+
+  return { ok: false, error: `Respuesta inesperada (${res.status})`, data };
+}
+
+
+// ===================== 11) REPORTES =====================
+
+/** Listar historial de reportes */
+export async function getReports() {
+  return await apiFetch(`/reports/`);
+}
+
+/** Generar reporte (alias 1) */
+export async function postReport(data) {
+  return await apiFetch(`/reports/generate/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/** Generar reporte (alias 2, mismo endpoint que arriba) */
 export async function generateReport(payload) {
-  // payload: { type, start_date, end_date }
   return await apiFetch(`/reports/generate/`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export async function postResetPassword(payload) {
-  return await apiFetch(`/reset-password/`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+
+// ===================== 12) ALERTAS =====================
+
+/** Listar alertas */
+export async function getAlerts() {
+  return await apiFetch(`/alerts/`);
 }
 
-// Listar usuarios
-// src/services/api.js (o donde tengas los wrappers)
-export async function getUsers() {
-  return await apiFetch(`/users/`);   // devuelve { ok, status, data }
+/** Descartar alerta */
+export async function dismissAlert(alertId) {
+  return await apiFetch(`/alerts/${alertId}/dismiss/`, { method: "PATCH" });
 }
+

@@ -26,7 +26,6 @@ export function ChangePasswordForm({ onSave, onCancel }) {
 
       if (!resp.ok) {
         const d = resp.data;
-        // DRF suele devolver errores por campo: { old_password: [...], new_password: [...] }
         const msg =
           d?.detail ||
           (d && typeof d === "object"
@@ -40,8 +39,8 @@ export function ChangePasswordForm({ onSave, onCancel }) {
       }
 
       alert("Contraseña cambiada con éxito. Debes volver a iniciar sesión.");
-      onSave?.();                 // cerrar modal u otras acciones
-      window.location.href = "/login"; // redirige a login
+      onSave?.();                 
+      window.location.href = "/login"; 
     } catch (err) {
       setError(err.message || "Hubo un error al cambiar la contraseña.");
     } finally {
