@@ -141,3 +141,36 @@ export async function dismissAlerta(alertId) {
     method: "PATCH",
   });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export async function initCsrf() {
+  try {
+    // llama a /api/productos/csrf/ (API_URL ya incluye /api/productos)
+    await fetch(`${API_URL}/csrf/`, { credentials: "include" });
+  } catch (e) {
+    console.error("initCsrf failed", e);
+  }
+}
