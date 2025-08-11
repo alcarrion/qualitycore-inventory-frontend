@@ -238,3 +238,9 @@ export async function patchCliente(id, data) {
     body: JSON.stringify(data),
   });
 }
+
+// PATCH producto (multipart)
+export async function patchProduct(id, formData) {
+  // usa el helper multipart que reintenta si el CSRF rota
+  return await apiFetchForm(`/products/${id}/`, formData, { method: "PATCH" });
+}
