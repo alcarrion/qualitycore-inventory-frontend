@@ -1,18 +1,18 @@
 // src/components/AddSupplierForm.js
 import React, { useState } from "react";
-import { API_URL, getCookie } from "../services/api";
+import { postSupplier } from "../services/api";
 import "../styles/components/Form.css";
 
 export default function AddSupplierForm({ onSave, onCancel }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [taxId, setTaxId] = useState("");
+  const [taxId, setTaxId] = useState("");     // RUC/Cédula
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -22,13 +22,11 @@ export default function AddSupplierForm({ onSave, onCancel }) {
       setLoading(false);
       return;
     }
-
     if (!/^[0-9]{10,13}$/.test(taxId)) {
       setError("La cédula o RUC debe tener entre 10 y 13 dígitos numéricos.");
       setLoading(false);
       return;
     }
-
     if (!/^[0-9]+$/.test(phone)) {
       setError("El teléfono solo debe contener números.");
       setLoading(false);
@@ -36,27 +34,25 @@ export default function AddSupplierForm({ onSave, onCancel }) {
     }
 
     try {
-      const res = await fetch(`${API_URL}/suppliers/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          name,
-          email,
-          tax_id: taxId,
-          phone,
-          address,
-        }),
+      const resp = await postSupplier({
+        name,
+        email,
+        tax_id: taxId,  // ajusta el nombre del campo según tu modelo/serializer
+        phone,
+        address,
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "No se pudo crear el proveedor.");
+
+      if (!resp.ok) {
+        // si DRF devuelve errores de validación, muéstralos
+        const msg =
+          resp.data?.detail ||
+          (resp.data && typeof resp.data === "object"
+            ? Object.values(resp.data).flat().join(" ")
+            : "No se pudo crear el proveedor.");
+        throw new Error(msg);
       }
-      const data = await res.json();
-      onSave(data);
+
+      onSave?.(resp.data);
     } catch (err) {
       setError(err.message || "Error al crear proveedor.");
     } finally {

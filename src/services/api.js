@@ -210,3 +210,13 @@ export async function apiFetchForm(endpoint, formData, options = {}) {
 export async function postProduct(formData) {
   return await apiFetchForm(`/products/`, formData);
 }
+
+
+
+// Crear proveedor
+export async function postSupplier(data) {
+  return await apiFetch(`/suppliers/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
