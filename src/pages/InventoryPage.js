@@ -4,13 +4,21 @@ import ProductCard from "../components/ProductCard";
 import Modal from "../components/Modal";
 import AddProductForm from "../components/AddProductForm";
 import EditProductForm from "../components/EditProductForm";
-import { API_URL, getCookie } from "../services/api";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import "../styles/pages/InventoryPage.css";
+
+// ✅ wrappers del servicio (CSRF + credentials + retry integrado)
+import {
+  getProductos,
+  getSuppliers,
+  getCategories,
+  patchProductJson,   // para soft delete
+} from "../services/api";
 
 export default function InventoryPage({ user }) {
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
   const isAdmin = currentUser?.role === "Administrator";
+
   const [products, setProducts] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -19,16 +27,10 @@ export default function InventoryPage({ user }) {
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
 
-  const loadProducts = () => {
-    fetch(`${API_URL}/products/`, {
-      credentials: "include",
-      headers: {
-        "X-CSRFToken": getCookie("csrftoken"),
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => setProducts(data.filter((p) => !p.deleted_at)))
-      .catch(() => setProducts([]));
+  const loadProducts = async () => {
+    const res = await getProductos(); // { ok, status, data }
+    const list = Array.isArray(res.data) ? res.data : [];
+    setProducts(list.filter(p => !p.deleted_at));
   };
 
   useEffect(() => {
@@ -42,17 +44,17 @@ export default function InventoryPage({ user }) {
   }, []);
 
   useEffect(() => {
-    fetch(`${API_URL}/suppliers/`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setSuppliers(data.filter((p) => !p.deleted_at)))
-      .catch(() => setSuppliers([]));
+    (async () => {
+      const ps = await getSuppliers();
+      setSuppliers(Array.isArray(ps.data) ? ps.data.filter(p => !p.deleted_at) : []);
+    })();
   }, []);
 
   useEffect(() => {
-    fetch(`${API_URL}/categories/`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setCategories(data))
-      .catch(() => setCategories([]));
+    (async () => {
+      const cs = await getCategories();
+      setCategories(Array.isArray(cs.data) ? cs.data : []);
+    })();
   }, []);
 
   const productsWithNames = products.map((p) => {
@@ -71,19 +73,14 @@ export default function InventoryPage({ user }) {
     (p.supplier_name && p.supplier_name.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const handleDelete = (product) => {
+  const handleDelete = async (product) => {
     if (!window.confirm("¿Seguro que deseas eliminar este producto?")) return;
-    fetch(`${API_URL}/products/${product.id}/`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      },
-      credentials: "include",
-      body: JSON.stringify({ deleted_at: new Date().toISOString() }),
-    })
-      .then((res) => res.json())
-      .then(() => setProducts((prev) => prev.filter((p) => p.id !== product.id)));
+    const resp = await patchProductJson(product.id, { deleted_at: new Date().toISOString() });
+    if (resp.ok) {
+      setProducts(prev => prev.filter(p => p.id !== product.id));
+    } else {
+      alert(resp.data?.detail || "No se pudo eliminar el producto.");
+    }
   };
 
   return (
@@ -91,6 +88,7 @@ export default function InventoryPage({ user }) {
       <div className="inventory-header">
         <h2>INVENTARIO</h2>
       </div>
+
       <div className="inventory-actions">
         <div className="inventory-search-bar">
           <FaSearch />
@@ -106,6 +104,7 @@ export default function InventoryPage({ user }) {
           </button>
         )}
       </div>
+
       <div className="product-list">
         {filtered.map((product) => (
           <ProductCard
@@ -123,21 +122,17 @@ export default function InventoryPage({ user }) {
           <div className="no-data">No hay productos para mostrar.</div>
         )}
       </div>
+
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
+          {/* Los formularios ya cargan proveedores/categorías por dentro */}
           <AddProductForm
-            proveedores={suppliers}
-            categorias={categories}
             onSave={() => setShowAdd(false)}
             onCancel={() => setShowAdd(false)}
-            recargarCategorias={() => {
-              fetch(`${API_URL}/categories/`, { credentials: "include" })
-                .then((res) => res.json())
-                .then((data) => setCategories(data));
-            }}
           />
         </Modal>
       )}
+
       {showEdit && editingProduct && (
         <Modal onClose={() => {
           setShowEdit(false);
@@ -145,8 +140,6 @@ export default function InventoryPage({ user }) {
         }}>
           <EditProductForm
             producto={editingProduct}
-            proveedores={suppliers}
-            categorias={categories}
             onSave={() => {
               setShowEdit(false);
               setEditingProduct(null);
@@ -154,11 +147,6 @@ export default function InventoryPage({ user }) {
             onCancel={() => {
               setShowEdit(false);
               setEditingProduct(null);
-            }}
-            recargarCategorias={() => {
-              fetch(`${API_URL}/categories/`, { credentials: "include" })
-                .then((res) => res.json())
-                .then((data) => setCategories(data));
             }}
           />
         </Modal>

@@ -268,3 +268,38 @@ export async function changePassword(old_password, new_password) {
     body: JSON.stringify({ old_password, new_password }),
   });
 }
+
+
+
+// Resumen del dashboard
+export async function getDashboardSummary() {
+  return await apiFetch(`/dashboard/summary/`);
+}
+
+
+// PATCH JSON para producto (soft delete u otros campos simples)
+export async function patchProductJson(id, data) {
+  return await apiFetch(`/products/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+
+// Generar reporte (PDF) y devolver un Blob
+export async function generateReport(payload) {
+  // payload: { type, start_date, end_date }
+  return await apiFetchBlob(`/reports/generate/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+
+export async function postResetPassword(payload) {
+  return await apiFetch(`/reset-password/`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

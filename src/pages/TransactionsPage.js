@@ -45,19 +45,20 @@ function TransactionsPage() {
   }, []);
 
   const fetchMovimientos = async () => {
-    const data = await getMovimientos();
-    setMovimientos(data);
+    const res = await getMovimientos(); // { ok, status, data }
+    setMovimientos(Array.isArray(res.data) ? res.data : []);
   };
 
   const fetchProductos = async () => {
-    const data = await getProductos();
-    const activos = data.filter((p) => p.status === "Activo");
-    setProductos(activos);
+    const res = await getProductos(); // { ok, status, data }
+    const list = Array.isArray(res.data) ? res.data : [];
+    setProductos(list.filter((p) => p.status === "Activo" && !p.deleted_at));
   };
 
   const fetchClientes = async () => {
-    const data = await getClientes();
-    setClientes(data);
+    const res = await getClientes(); // { ok, status, data }
+    const list = Array.isArray(res.data) ? res.data : [];
+    setClientes(list.filter((c) => !c.deleted_at));
   };
 
   const handleInputChange = (e) => {
@@ -80,9 +81,9 @@ function TransactionsPage() {
     }
 
     const productoSeleccionado = productos.find(
-      (p) => p.id === parseInt(formData.product)
+      (p) => p.id === Number(formData.product)
     );
-    const cantidad = parseInt(formData.quantity);
+    const cantidad = Number(formData.quantity);
 
     if (
       tipo === "output" &&
@@ -97,27 +98,23 @@ function TransactionsPage() {
     const movimiento = {
       date: formData.date,
       quantity: cantidad,
-      product: parseInt(formData.product),
+      product: Number(formData.product),
       movement_type: tipo,
+      ...(tipo === "output" ? { customer: Number(formData.customer) } : {}),
     };
 
-    if (tipo === "output") {
-      movimiento.customer = parseInt(formData.customer);
-    }
+    const resp = await postMovimiento(movimiento); // { ok, status, data }
 
-    const res = await postMovimiento(movimiento);
-    const data = await res.json();
-
-    if (res.ok) {
-      fetchMovimientos();
-      fetchProductos();
+    if (resp.ok) {
+      await fetchMovimientos();
+      await fetchProductos();
       window.dispatchEvent(new Event("recargarInventario"));
       setShowModal(false);
       setFormData({ date: "", quantity: "", product: "", customer: "" });
       setMensaje("✅ Movimiento guardado con éxito.");
       setTimeout(() => setMensaje(""), 3000);
     } else {
-      console.error("Error al guardar movimiento:", data);
+      const data = resp.data || {};
       let errorMsg = "Ocurrió un error al guardar el movimiento.";
       if (data.detail) errorMsg += ` ${data.detail}`;
       else if (data.message) errorMsg += ` ${data.message}`;
@@ -279,9 +276,7 @@ function TransactionsPage() {
       {/* Modal */}
       {showModal && (
         <Modal
-          title={`${
-            tipo === "input" ? "📈 Añadir Entrada" : "📉 Añadir Salida"
-          }`}
+          title={`${tipo === "input" ? "📈 Añadir Entrada" : "📉 Añadir Salida"}`}
           onClose={() => setShowModal(false)}
         >
           <div className="formContainer">
@@ -296,7 +291,7 @@ function TransactionsPage() {
                 value={formData.date}
                 onChange={(e) => {
                   handleInputChange(e);
-                  e.target.blur(); // cierre automático del calendario
+                  e.target.blur();
                 }}
                 className="input"
               />

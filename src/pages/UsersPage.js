@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../components/Modal";
 import { AddUserForm } from "../components/AddUserForm";
-import { API_URL, getCookie } from "../services/api";
 import "../styles/pages/UsersPage.css";
+
+// ✅ wrappers del servicio
+import { getUsers, patchUser } from "../services/api";
 
 export default function UsersPage({ user }) {
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
@@ -11,67 +13,46 @@ export default function UsersPage({ user }) {
   const [showAdd, setShowAdd] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
 
-  useEffect(() => {
-    fetch(`${API_URL}/users/`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setUsers(data))
-      .catch(() => setUsers([]));
-  }, [showAdd]);
-
-  const handleChangeRol = (userId, nuevoRol) => {
-    setLoadingId(userId);
-    fetch(`${API_URL}/users/${userId}/`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      },
-      credentials: "include",
-      body: JSON.stringify({ role: nuevoRol }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Error cambiando rol");
-        return res.json();
-      })
-      .then(() => {
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.id === userId ? { ...u, role: nuevoRol } : u
-          )
-        );
-      })
-      .finally(() => setLoadingId(null));
-  };
-
-  const handleToggleActive = (userId, isActive) => {
-    setLoadingId(userId);
-    fetch(`${API_URL}/users/${userId}/`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      },
-      credentials: "include",
-      body: JSON.stringify({ is_active: !isActive }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Error cambiando estado");
-        return res.json();
-      })
-      .then(() => {
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.id === userId ? { ...u, is_active: !isActive } : u
-          )
-        );
-      })
-      .finally(() => setLoadingId(null));
-  };
-
+  // Solo admins
   if (currentUser?.role !== "Administrator") {
     window.location.href = "/dashboard";
     return null;
   }
+
+  const loadUsers = async () => {
+    const res = await getUsers(); // { ok, status, data }
+    setUsers(Array.isArray(res.data) ? res.data : []);
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, [showAdd]);
+
+  const handleChangeRol = async (userId, nuevoRol) => {
+    try {
+      setLoadingId(userId);
+      const resp = await patchUser(userId, { role: nuevoRol });
+      if (!resp.ok) throw new Error(resp.data?.detail || "Error cambiando rol");
+      setUsers(prev => prev.map(u => (u.id === userId ? { ...u, role: nuevoRol } : u)));
+    } catch (e) {
+      alert(e.message || "No se pudo cambiar el rol");
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const handleToggleActive = async (userId, isActive) => {
+    try {
+      setLoadingId(userId);
+      const resp = await patchUser(userId, { is_active: !isActive });
+      if (!resp.ok) throw new Error(resp.data?.detail || "Error cambiando estado");
+      setUsers(prev => prev.map(u => (u.id === userId ? { ...u, is_active: !isActive } : u)));
+    } catch (e) {
+      alert(e.message || "No se pudo cambiar el estado");
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
   return (
     <div className="users-page-container">
@@ -132,7 +113,7 @@ export default function UsersPage({ user }) {
                     border: "1.5px solid #eee",
                     verticalAlign: "middle",
                   }}
-                ></span>
+                />
                 {u.is_active ? "Activo" : "Inactivo"}
               </td>
               <td>
@@ -156,7 +137,7 @@ export default function UsersPage({ user }) {
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
           <AddUserForm
-            onSave={() => setShowAdd(false)}
+            onSave={() => setShowAdd(false)}   // cierra modal; el useEffect recarga
             onCancel={() => setShowAdd(false)}
           />
         </Modal>

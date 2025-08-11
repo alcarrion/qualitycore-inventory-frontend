@@ -1,11 +1,11 @@
 // src/pages/CustomersPage.js
 import React, { useState, useEffect } from "react";
 import Modal from "../components/Modal";
-import { API_URL, getCookie } from "../services/api"; 
-import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa"; 
+import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import AddCustomerForm from "../components/AddCustomerForm";
 import EditCustomerForm from "../components/EditCustomerForm";
-import "../styles/pages/CustomersPage.css"; 
+import { getClientes, patchCliente } from "../services/api"; // ✅ wrappers
+import "../styles/pages/CustomersPage.css";
 
 export default function CustomersPage({ user }) {
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
@@ -15,38 +15,36 @@ export default function CustomersPage({ user }) {
   const [editingCliente, setEditingCliente] = useState(null);
   const [search, setSearch] = useState("");
 
-  // Solo admins pueden añadir/editar/eliminar
   const isAdmin = currentUser?.role === "Administrator";
 
   // Cargar clientes
   useEffect(() => {
-    fetch(`${API_URL}/customers/`, { credentials: "include" })
-      .then(res => res.json())
-      .then(data => setClientes(data.filter(c => !c.deleted_at)))
-      .catch(() => setClientes([]));
-  }, [showAdd, showEdit]);
+    (async () => {
+      const res = await getClientes();
+      const list = Array.isArray(res.data) ? res.data : [];
+      setClientes(list.filter(c => !c.deleted_at));
+    })();
+  }, [showAdd, showEdit]); // al cerrar modales, recarga
 
-  // Filtrar clientes por búsqueda (usando los nombres REALES del backend)
+  // Filtrado (usa "document" en lugar de tax_id)
   const filtered = clientes.filter(c =>
     (c.name && c.name.toLowerCase().includes(search.toLowerCase())) ||
-    (c.tax_id && c.tax_id.includes(search)) ||
+    (c.document && c.document.includes(search)) ||
     (c.phone && c.phone.includes(search)) ||
     (c.email && c.email.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const handleDelete = (cliente) => {
+  const handleDelete = async (cliente) => {
     if (!window.confirm("¿Seguro que deseas eliminar este cliente?")) return;
-    fetch(`${API_URL}/customers/${cliente.id}/`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      },
-      credentials: "include",
-      body: JSON.stringify({ deleted_at: new Date().toISOString() }),
-    })
-      .then(res => res.json())
-      .then(() => setClientes(prev => prev.filter(c => c.id !== cliente.id)));
+    try {
+      const resp = await patchCliente(cliente.id, {
+        deleted_at: new Date().toISOString(),
+      });
+      if (!resp.ok) throw new Error(resp.data?.detail || "No se pudo eliminar.");
+      setClientes(prev => prev.filter(c => c.id !== cliente.id));
+    } catch (e) {
+      alert(e.message || "Error al eliminar el cliente.");
+    }
   };
 
   return (
@@ -57,6 +55,7 @@ export default function CustomersPage({ user }) {
         </button>
         <h2>CLIENTES</h2>
       </div>
+
       <div className="customers-actions">
         <div className="search-bar">
           <FaSearch />
@@ -91,7 +90,10 @@ export default function CustomersPage({ user }) {
                 >
                   <FaEdit />
                 </button>
-                <button className="btn-icon btn-delete" onClick={() => handleDelete(cliente)}>
+                <button
+                  className="btn-icon btn-delete"
+                  onClick={() => handleDelete(cliente)}
+                >
                   <FaTrash />
                 </button>
               </div>

@@ -16,8 +16,7 @@ import {
 import {
   getClientes,
   getProductos,
-  getCookie,
-  API_URL,
+  postCotizacion,
   getCotizacionPDF,
 } from "../services/api";
 
@@ -42,18 +41,20 @@ export default function QuotationPage() {
   }, []);
 
   const fetchClientes = async () => {
-    const data = await getClientes();
-    setClientes(data);
+    const res = await getClientes(); // { ok, status, data }
+    const list = Array.isArray(res.data) ? res.data : [];
+    setClientes(list.filter(c => !c.deleted_at));
   };
 
   const fetchProductos = async () => {
-    const data = await getProductos();
-    setProductos(data);
+    const res = await getProductos(); // { ok, status, data }
+    const list = Array.isArray(res.data) ? res.data : [];
+    setProductos(list.filter(p => !p.deleted_at));
   };
 
   const handleAddProducto = () => {
-    setProductosCotizados([
-      ...productosCotizados,
+    setProductosCotizados(prev => [
+      ...prev,
       { product: "", quantity: 1, unit_price: 0, subtotal: 0 },
     ]);
   };
@@ -62,17 +63,19 @@ export default function QuotationPage() {
     const nuevos = [...productosCotizados];
 
     if (field === "quantity" || field === "unit_price") {
-      nuevos[index][field] = value === "" ? "" : Number(value.replace(/^0+(?=\d)/, ""));
+      const limpio = value === "" ? "" : Number(String(value).replace(/^0+(?=\d)/, ""));
+      nuevos[index][field] = limpio;
     } else {
       nuevos[index][field] = value;
     }
 
     if (field === "product") {
-      const productoObj = productos.find((p) => p.id === parseInt(value));
+      const productoObj = productos.find((p) => p.id === Number(value));
       if (productoObj) {
-        nuevos[index].unit_price = Number(productoObj.price);
+        const precio = Number(productoObj.price) || 0;
+        nuevos[index].unit_price = precio;
         nuevos[index].quantity = 1;
-        nuevos[index].subtotal = Number(productoObj.price);
+        nuevos[index].subtotal = precio;
       }
     } else {
       const cantidad = Number(nuevos[index].quantity) || 0;
@@ -84,8 +87,8 @@ export default function QuotationPage() {
     recalcularTotales(nuevos);
   };
 
-  const recalcularTotales = (productos) => {
-    const nuevoSubtotal = productos.reduce((acc, p) => acc + p.subtotal, 0);
+  const recalcularTotales = (items) => {
+    const nuevoSubtotal = items.reduce((acc, p) => acc + (Number(p.subtotal) || 0), 0);
     const nuevoIva = nuevoSubtotal * 0.15;
     const nuevoTotal = nuevoSubtotal + nuevoIva;
 
@@ -95,29 +98,39 @@ export default function QuotationPage() {
   };
 
   const handleGuardar = async () => {
-    const csrftoken = getCookie("csrftoken");
+    setMensaje("");
 
-    const res = await fetch(`${API_URL}/quotations/create/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": csrftoken,
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        customer: cliente,
-        quoted_products: productosCotizados.map((p) => ({
-          product: p.product,
-          quantity: p.quantity,
-          unit_price: p.unit_price,
-        })),
-        observations: observaciones,
-        vat: iva,
-      }),
-    });
+    // Validaciones mínimas
+    if (!cliente) {
+      setMensaje("❌ Selecciona un cliente.");
+      return;
+    }
+    if (productosCotizados.length === 0) {
+      setMensaje("❌ Agrega al menos un producto.");
+      return;
+    }
+    const itemsValidos = productosCotizados.every(
+      (p) => p.product && Number(p.quantity) > 0 && Number(p.unit_price) >= 0
+    );
+    if (!itemsValidos) {
+      setMensaje("❌ Revisa cantidades y precios de los productos.");
+      return;
+    }
 
-    const data = await res.json();
-    if (res.ok && data.quotation?.id) {
+    const payload = {
+      customer: Number(cliente),
+      quoted_products: productosCotizados.map((p) => ({
+        product: Number(p.product),
+        quantity: Number(p.quantity),
+        unit_price: Number(p.unit_price),
+      })),
+      observations: observaciones,
+      vat: Number(iva), // si tu backend espera string, usa iva tal cual
+    };
+
+    const res = await postCotizacion(payload); // { ok, status, data }
+
+    if (res.ok && res.data?.quotation?.id) {
       setMensaje("✅ Cotización guardada correctamente");
       setProductosCotizados([]);
       setCliente("");
@@ -126,13 +139,13 @@ export default function QuotationPage() {
       setTotal(0);
       setObservaciones("");
 
-      const pdfData = await getCotizacionPDF(data.quotation.id);
-      if (pdfData.url) {
-        const fullUrl = API_URL.replace("/api/productos", "") + pdfData.url;
-        setPdfUrl(fullUrl);
+      // PDF: el wrapper devuelve blob -> URL de objeto
+      const pdfData = await getCotizacionPDF(res.data.quotation.id);
+      if (pdfData?.url) {
+        setPdfUrl(pdfData.url); // 👈 ya es un blob:, no armes URL manual
       }
     } else {
-      console.error("Error al guardar:", data);
+      console.error("Error al guardar:", res.data);
       setMensaje("❌ Error al guardar la cotización");
     }
   };
@@ -219,7 +232,7 @@ export default function QuotationPage() {
                     onChange={(e) => handleProductoChange(index, "unit_price", e.target.value)}
                     className="cotiz-input"
                   />
-                  <input type="text" readOnly value={item.subtotal.toFixed(2)} className="cotiz-input" />
+                  <input type="text" readOnly value={Number(item.subtotal || 0).toFixed(2)} className="cotiz-input" />
                   <button
                     type="button"
                     onClick={() => {
@@ -302,13 +315,15 @@ export default function QuotationPage() {
 
         {/* Mensaje */}
         {mensaje && (
-          <p style={{
-            marginTop: "14px",
-            textAlign: "center",
-            color: mensaje.startsWith("✅") ? "#127436" : "#c0392b",
-            fontWeight: "bold",
-            fontSize: "1.11rem"
-          }}>
+          <p
+            style={{
+              marginTop: "14px",
+              textAlign: "center",
+              color: mensaje.startsWith("✅") ? "#127436" : "#c0392b",
+              fontWeight: "bold",
+              fontSize: "1.11rem",
+            }}
+          >
             {mensaje}
           </p>
         )}
@@ -317,7 +332,7 @@ export default function QuotationPage() {
         {pdfUrl && (
           <div style={{ textAlign: "center", marginTop: "16px" }}>
             <a
-              href={pdfUrl}
+              href={pdfUrl}                // 👈 blob: URL
               target="_blank"
               rel="noopener noreferrer"
               className="cotiz-pdf-link"

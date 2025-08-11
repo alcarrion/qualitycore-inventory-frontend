@@ -1,11 +1,13 @@
 // src/pages/SuppliersPage.js
 import React, { useState, useEffect } from "react";
 import Modal from "../components/Modal";
-import { API_URL, getCookie } from "../services/api";
 import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import AddSupplierForm from "../components/AddSupplierForm";
 import EditSupplierForm from "../components/EditSupplierForm";
 import "../styles/pages/SuppliersPage.css";
+
+// ✅ wrappers del servicio
+import { getSuppliers, patchSupplier } from "../services/api";
 
 export default function SuppliersPage({ user }) {
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
@@ -17,11 +19,14 @@ export default function SuppliersPage({ user }) {
 
   const isAdmin = currentUser?.role === "Administrator";
 
+  const loadSuppliers = async () => {
+    const res = await getSuppliers(); // { ok, status, data }
+    const list = Array.isArray(res.data) ? res.data : [];
+    setSuppliers(list.filter(p => !p.deleted_at));
+  };
+
   useEffect(() => {
-    fetch(`${API_URL}/suppliers/`, { credentials: "include" })
-      .then(res => res.json())
-      .then(data => setSuppliers(data.filter(p => !p.deleted_at)))
-      .catch(() => setSuppliers([]));
+    loadSuppliers();
   }, [showAdd, showEdit]);
 
   const filtered = suppliers.filter(p =>
@@ -31,19 +36,14 @@ export default function SuppliersPage({ user }) {
     (p.phone && p.phone.includes(search))
   );
 
-  const handleDelete = (supplier) => {
+  const handleDelete = async (supplier) => {
     if (!window.confirm("¿Seguro que deseas eliminar este proveedor?")) return;
-    fetch(`${API_URL}/suppliers/${supplier.id}/`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      },
-      credentials: "include",
-      body: JSON.stringify({ deleted_at: new Date().toISOString() }),
-    })
-      .then(res => res.json())
-      .then(() => setSuppliers(prev => prev.filter(p => p.id !== supplier.id)));
+    const resp = await patchSupplier(supplier.id, { deleted_at: new Date().toISOString() });
+    if (resp.ok) {
+      setSuppliers(prev => prev.filter(p => p.id !== supplier.id));
+    } else {
+      alert(resp.data?.detail || "No se pudo eliminar el proveedor.");
+    }
   };
 
   return (
@@ -52,6 +52,7 @@ export default function SuppliersPage({ user }) {
         <button className="back-btn" onClick={() => window.history.back()}>←</button>
         <h2>PROVEEDORES</h2>
       </div>
+
       <div className="suppliers-actions">
         <div className="search-bar">
           <FaSearch />
@@ -67,6 +68,7 @@ export default function SuppliersPage({ user }) {
           </button>
         )}
       </div>
+
       <div className="suppliers-list">
         {filtered.map(supplier => (
           <div key={supplier.id} className="supplier-card">
@@ -77,11 +79,16 @@ export default function SuppliersPage({ user }) {
             <div><strong>DIRECCIÓN:</strong> {supplier.address || "-"}</div>
             {isAdmin && (
               <div className="supplier-actions">
-                <button className="btn-icon"
-                  onClick={() => { setEditingSupplier(supplier); setShowEdit(true); }}>
+                <button
+                  className="btn-icon"
+                  onClick={() => { setEditingSupplier(supplier); setShowEdit(true); }}
+                >
                   <FaEdit />
                 </button>
-                <button className="btn-icon btn-delete" onClick={() => handleDelete(supplier)}>
+                <button
+                  className="btn-icon btn-delete"
+                  onClick={() => handleDelete(supplier)}
+                >
                   <FaTrash />
                 </button>
               </div>
@@ -90,6 +97,7 @@ export default function SuppliersPage({ user }) {
         ))}
         {filtered.length === 0 && <div className="no-data">No hay proveedores para mostrar.</div>}
       </div>
+
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
           <AddSupplierForm
@@ -98,6 +106,7 @@ export default function SuppliersPage({ user }) {
           />
         </Modal>
       )}
+
       {showEdit && editingSupplier && (
         <Modal onClose={() => { setShowEdit(false); setEditingSupplier(null); }}>
           <EditSupplierForm

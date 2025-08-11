@@ -2,47 +2,19 @@
 import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Lock, CheckCircle2 } from "lucide-react";
-import { API_URL } from "../services/api";
-import "../styles/pages/ResetPassword.css"; 
+import { postResetPassword } from "../services/api"; // ✅ usa wrapper
+import "../styles/pages/ResetPassword.css";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const uid = searchParams.get("uid");
   const token = searchParams.get("token");
+
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setMessage("");
-    if (password.length < 6) {
-      setMessage("La contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
-    if (password !== password2) {
-      setMessage("Las contraseñas no coinciden.");
-      return;
-    }
-    setLoading(true);
-
-    const response = await fetch(`${API_URL}/reset-password/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid, token, new_password: password }),
-    });
-    const data = await response.json();
-
-    if (response.ok) {
-      setMessage("¡Contraseña cambiada correctamente! Ahora puedes iniciar sesión.");
-      setTimeout(() => navigate("/"), 2000);
-    } else {
-      setMessage(data.message || "Error al cambiar la contraseña.");
-    }
-    setLoading(false);
-  };
 
   if (!uid || !token) {
     return (
@@ -53,6 +25,37 @@ export default function ResetPassword() {
       </div>
     );
   }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage("");
+
+    // Django MinimumLengthValidator por defecto exige 8
+    if (password.length < 8) {
+      setMessage("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    if (password !== password2) {
+      setMessage("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const resp = await postResetPassword({ uid, token, new_password: password }); // { ok, status, data }
+      if (resp.ok) {
+        setMessage("¡Contraseña cambiada correctamente! Ahora puedes iniciar sesión.");
+        setTimeout(() => navigate("/login"), 2000); // 👈 lleva al login
+      } else {
+        const d = resp.data || {};
+        setMessage(d.message || d.detail || "Error al cambiar la contraseña.");
+      }
+    } catch {
+      setMessage("Error de red. Inténtalo de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="login-container">
@@ -68,8 +71,8 @@ export default function ResetPassword() {
             type="password"
             placeholder="Nueva contraseña"
             value={password}
-            minLength={6}
-            onChange={e => setPassword(e.target.value)}
+            minLength={8}
+            onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
@@ -82,8 +85,8 @@ export default function ResetPassword() {
             type="password"
             placeholder="Repite la nueva contraseña"
             value={password2}
-            minLength={6}
-            onChange={e => setPassword2(e.target.value)}
+            minLength={8}
+            onChange={(e) => setPassword2(e.target.value)}
             required
           />
         </div>
@@ -91,9 +94,15 @@ export default function ResetPassword() {
         <button className="btn-green" type="submit" disabled={loading}>
           {loading ? "Cambiando..." : "Cambiar contraseña"}
         </button>
+
         {message && (
-          <div className="message" style={{ color: message.includes("correctamente") ? "#238c0c" : undefined }}>
-            {message.includes("correctamente") && <CheckCircle2 size={18} style={{marginRight: 5, verticalAlign: "middle"}} />}
+          <div
+            className="message"
+            style={{ color: message.includes("correctamente") ? "#238c0c" : undefined }}
+          >
+            {message.includes("correctamente") && (
+              <CheckCircle2 size={18} style={{ marginRight: 5, verticalAlign: "middle" }} />
+            )}
             {message}
           </div>
         )}

@@ -6,12 +6,7 @@ import EditProfileForm from "../components/EditProfileForm";
 import { ChangePasswordForm } from "../components/ChangePasswordForm";
 import { AddUserForm } from "../components/AddUserForm";
 import { Package, DollarSign, Users, Activity, Bell } from "lucide-react";
-import {
-  getAlertas,
-  dismissAlerta,
-  API_URL,
-  getCookie,
-} from "../services/api";
+import { getAlertas, dismissAlerta, getDashboardSummary } from "../services/api"; // ✅ wrappers
 import "../styles/pages/DashboardPage.css";
 
 export default function DashboardPage() {
@@ -23,7 +18,7 @@ export default function DashboardPage() {
   const [showPass, setShowPass] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [alertas, setAlertas] = useState([]);
-  const [mensaje, setMensaje] = useState(""); // NUEVO estado
+  const [mensaje, setMensaje] = useState("");
 
   const [dashboardData, setDashboardData] = useState({
     total_products: 0,
@@ -37,31 +32,25 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchAlertas();
-    fetchDashboardSummary();
+    fetchDashboard();
   }, []);
 
   const fetchAlertas = async () => {
-    const data = await getAlertas();
-    setAlertas(data);
+    const res = await getAlertas();                 // { ok, status, data }
+    setAlertas(Array.isArray(res.data) ? res.data : []);
   };
 
-  const fetchDashboardSummary = async () => {
-    const res = await fetch(`${API_URL}/dashboard/summary/`, {
-      method: "GET",
-      headers: {
-        "X-CSRFToken": getCookie("csrftoken"),
-      },
-      credentials: "include",
-    });
-    const data = await res.json();
-    setDashboardData(data);
+  const fetchDashboard = async () => {
+    const res = await getDashboardSummary();        // { ok, status, data }
+    if (res.ok && res.data) setDashboardData(res.data);
+    // opcional: si res.status === 401 → redirigir a login
   };
 
   const cerrarAlerta = async (id) => {
-    const res = await dismissAlerta(id);
+    const res = await dismissAlerta(id);            // { ok, status, data }
     if (res.ok) {
-      setAlertas((prev) => prev.filter((a) => a.id !== id));
-      setMensaje(res.message || "✅ Alerta cerrada correctamente");
+      setAlertas(prev => prev.filter(a => a.id !== id));
+      setMensaje(res.data?.message || "✅ Alerta cerrada correctamente");
     } else {
       setMensaje("❌ No se pudo cerrar la alerta");
     }
@@ -75,48 +64,13 @@ export default function DashboardPage() {
   };
 
   const stats = [
-    {
-      icon: <Package size={32} color="#3475eb" />,
-      color: "#e6eeff",
-      value: dashboardData.total_products,
-      label: "Productos Totales",
-    },
-    {
-      icon: <DollarSign size={32} color="#34cb74" />,
-      color: "#e6fbe7",
-      value: dashboardData.total_sales,
-      label: "Ventas Totales",
-    },
-    {
-      icon: <Users size={32} color="#9057ff" />,
-      color: "#efeaff",
-      value: dashboardData.total_customers,
-      label: "Clientes Registrados",
-    },
-    {
-      icon: <Activity size={32} color="#ff9900" />,
-      color: "#fff5e6",
-      value: dashboardData.total_movements,
-      label: "Movimientos Totales",
-    },
-    {
-      icon: <Activity size={32} color="#28a745" />,
-      color: "#e6f9ec",
-      value: dashboardData.total_entries,
-      label: "Entradas",
-    },
-    {
-      icon: <Activity size={32} color="#dc3545" />,
-      color: "#fdecea",
-      value: dashboardData.total_exits,
-      label: "Salidas",
-    },
-    {
-      icon: <Bell size={32} color="#ffc107" />,
-      color: "#fffbe6",
-      value: dashboardData.low_stock_alerts,
-      label: "Alertas de Stock",
-    },
+    { icon: <Package size={32} color="#3475eb" />, color: "#e6eeff", value: dashboardData.total_products, label: "Productos Totales" },
+    { icon: <DollarSign size={32} color="#34cb74" />, color: "#e6fbe7", value: dashboardData.total_sales, label: "Ventas Totales" },
+    { icon: <Users size={32} color="#9057ff" />, color: "#efeaff", value: dashboardData.total_customers, label: "Clientes Registrados" },
+    { icon: <Activity size={32} color="#ff9900" />, color: "#fff5e6", value: dashboardData.total_movements, label: "Movimientos Totales" },
+    { icon: <Activity size={32} color="#28a745" />, color: "#e6f9ec", value: dashboardData.total_entries, label: "Entradas" },
+    { icon: <Activity size={32} color="#dc3545" />, color: "#fdecea", value: dashboardData.total_exits, label: "Salidas" },
+    { icon: <Bell size={32} color="#ffc107" />, color: "#fffbe6", value: dashboardData.low_stock_alerts, label: "Alertas de Stock" },
   ];
 
   return (
@@ -168,22 +122,16 @@ export default function DashboardPage() {
             <div className="dashboard-header">
               <div>
                 <h1>
-                  Bienvenido/a,{" "}
-                  <span className="dashboard-user">{user?.name}</span>
+                  Bienvenido/a, <span className="dashboard-user">{user?.name}</span>
                 </h1>
-                <div className="dashboard-sub">
-                  Gestiona tu inventario de manera eficiente
-                </div>
+                <div className="dashboard-sub">Gestiona tu inventario de manera eficiente</div>
               </div>
             </div>
 
             <div className="dashboard-stats">
               {stats.map((stat, i) => (
                 <div className="dashboard-card" key={i}>
-                  <div
-                    className="dashboard-card-icon"
-                    style={{ background: stat.color }}
-                  >
+                  <div className="dashboard-card-icon" style={{ background: stat.color }}>
                     {stat.icon}
                   </div>
                   <div className="dashboard-card-info">

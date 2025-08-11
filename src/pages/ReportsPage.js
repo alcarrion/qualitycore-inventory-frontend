@@ -1,7 +1,7 @@
 // src/pages/ReportsPage.js
-import React, { useState } from "react";
-import { getCookie, API_URL } from "../services/api";
+import React, { useState, useEffect } from "react";
 import { FileText } from "lucide-react";
+import { generateReport } from "../services/api"; // ✅ usamos wrapper
 import "../styles/pages/ReportsPage.css";
 
 export default function ReportsPage() {
@@ -11,36 +11,39 @@ export default function ReportsPage() {
   const [urlReporte, setUrlReporte] = useState(null);
   const [mensaje, setMensaje] = useState("");
 
+  // Limpia el blob URL cuando cambie o al desmontar
+  useEffect(() => {
+    return () => {
+      if (urlReporte) URL.revokeObjectURL(urlReporte);
+    };
+  }, [urlReporte]);
+
   const generarReporte = async () => {
     setMensaje("");
-    setUrlReporte(null);
+    if (urlReporte) {
+      URL.revokeObjectURL(urlReporte);
+      setUrlReporte(null);
+    }
 
-    const csrftoken = getCookie("csrftoken");
+    // Validación simple de fechas (opcional)
+    if (fechaInicio && fechaFin && new Date(fechaInicio) > new Date(fechaFin)) {
+      setMensaje("El rango de fechas es inválido (inicio > fin).");
+      return;
+    }
 
     try {
-      const res = await fetch(`${API_URL}/reports/generate/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrftoken,
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          type: tipo,
-          start_date: fechaInicio,
-          end_date: fechaFin,
-        }),
+      const blob = await generateReport({
+        type: tipo,
+        start_date: fechaInicio || null,
+        end_date: fechaFin || null,
       });
-
-      const data = await res.json();
-      if (res.ok) {
-        setUrlReporte(`http://localhost:8000${data.url}`);
-        setMensaje(data.message);
-      } else {
-        setMensaje(data.message || "Error al generar el reporte");
-      }
-    } catch {
-      setMensaje("Error de conexión con el servidor.");
+      // Si llega aquí, fue OK (apiFetchBlob lanza error en !res.ok)
+      const blobUrl = URL.createObjectURL(blob);
+      setUrlReporte(blobUrl);
+      setMensaje("Reporte generado correctamente.");
+    } catch (e) {
+      // e.message normalmente viene como "Error 400/403/500"
+      setMensaje(`Error al generar el reporte${e?.message ? ` (${e.message})` : ""}`);
     }
   };
 
@@ -89,7 +92,7 @@ export default function ReportsPage() {
         {urlReporte && (
           <div style={{ textAlign: "center" }}>
             <a
-              href={urlReporte}
+              href={urlReporte}               // 👈 blob: URL (descarga/abre sin hardcodear host)
               target="_blank"
               rel="noopener noreferrer"
               className="report-pdf-link"
