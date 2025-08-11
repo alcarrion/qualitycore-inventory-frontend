@@ -244,3 +244,11 @@ export async function patchProduct(id, formData) {
   // usa el helper multipart que reintenta si el CSRF rota
   return await apiFetchForm(`/products/${id}/`, formData, { method: "PATCH" });
 }
+
+// Editar usuario (perfil) por id
+export async function patchUser(id, data) {
+  return await apiFetch(`/users/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}

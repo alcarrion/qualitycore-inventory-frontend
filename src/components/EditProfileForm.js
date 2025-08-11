@@ -1,6 +1,6 @@
 // src/components/EditProfileForm.js
 import React, { useState } from "react";
-import { API_URL, getCookie } from "../services/api";
+import { patchUser } from "../services/api";
 import "../styles/components/Form.css";
 
 export default function EditProfileForm({ user, onSave, onCancel }) {
@@ -20,23 +20,32 @@ export default function EditProfileForm({ user, onSave, onCancel }) {
       return;
     }
 
-    const csrftoken = getCookie("csrftoken");
-
     try {
-      const res = await fetch(`${API_URL}/users/${user.id}/`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrftoken,
-        },
-        credentials: "include",
-        body: JSON.stringify({ name, phone }),
-      });
-      if (!res.ok) throw new Error("No se pudo actualizar.");
-      const data = await res.json();
-      onSave(data);
+      const resp = await patchUser(user.id, { name, phone: phone || null });
+
+      if (!resp.ok) {
+        const d = resp.data;
+        const msg =
+          d?.detail ||
+          (d && typeof d === "object"
+            ? Object.entries(d)
+                .map(([campo, errs]) =>
+                  Array.isArray(errs) ? `${campo}: ${errs.join(", ")}` : `${campo}: ${String(errs)}`
+                )
+                .join(" | ")
+            : "No se pudo actualizar.");
+        throw new Error(msg);
+      }
+
+      // Actualiza almacenamiento local si lo usas en la app
+      try {
+        const updated = { ...user, ...(resp.data || {}) };
+        localStorage.setItem("user", JSON.stringify(updated));
+      } catch {}
+
+      onSave?.(resp.data);
     } catch (err) {
-      setError("Hubo un error al guardar los cambios.");
+      setError(err.message || "Hubo un error al guardar los cambios.");
     } finally {
       setLoading(false);
     }
@@ -62,7 +71,7 @@ export default function EditProfileForm({ user, onSave, onCancel }) {
         <button className="btn-primary" type="submit" disabled={loading}>
           {loading ? "Guardando..." : "Guardar"}
         </button>
-        <button className="btn-secondary" type="button" onClick={onCancel}>
+        <button className="btn-secondary" type="button" onClick={onCancel} disabled={loading}>
           Cancelar
         </button>
       </div>
