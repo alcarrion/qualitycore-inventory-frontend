@@ -229,3 +229,12 @@ export async function postUser(data) {
     body: JSON.stringify(data),
   });
 }
+
+
+// Editar cliente (PATCH)
+export async function patchCliente(id, data) {
+  return await apiFetch(`/customers/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
