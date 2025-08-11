@@ -1,6 +1,11 @@
 // src/components/AddProductForm.js
 import React, { useState, useEffect } from "react";
-import { API_URL, getCookie } from "../services/api";
+import {
+  getSuppliers,
+  getCategories,
+  postCategory,
+  postProduct,
+} from "../services/api";
 import "../styles/components/Form.css";
 
 export default function AddProductForm({ onSave, onCancel }) {
@@ -20,40 +25,30 @@ export default function AddProductForm({ onSave, onCancel }) {
 
   // Cargar proveedores y categorías
   useEffect(() => {
-    fetch(`${API_URL}/suppliers/`, { credentials: "include" })
-      .then(res => res.json())
-      .then(data => setSuppliers(data.filter(p => !p.deleted_at)))
-      .catch(() => setSuppliers([]));
+    (async () => {
+      const ps = await getSuppliers();
+      setSuppliers(Array.isArray(ps.data) ? ps.data.filter(p => !p.deleted_at) : []);
 
-    fetch(`${API_URL}/categories/`, { credentials: "include" })
-      .then(res => res.json())
-      .then(data => setCategories(data))
-      .catch(() => setCategories([]));
+      const cs = await getCategories();
+      setCategories(Array.isArray(cs.data) ? cs.data : []);
+    })();
   }, []);
 
-  const handleFileChange = e => {
-    setImage(e.target.files[0]);
-  };
+  const handleFileChange = e => setImage(e.target.files[0]);
 
   const handleNewCategory = async () => {
     if (!newCategory.trim()) return;
     setLoading(true);
+    setError("");
     try {
-      const res = await fetch(`${API_URL}/categories/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        credentials: "include",
-        body: JSON.stringify({ name: newCategory }),
-      });
-      const data = await res.json();
-      setCategories(prev => [...prev, data]);
-      setCategory(data.id);
+      const res = await postCategory(newCategory.trim());
+      if (!res.ok) throw new Error(res.data?.detail || "No se pudo crear la categoría.");
+      const cat = res.data;
+      setCategories(prev => [...prev, cat]);
+      setCategory(String(cat.id));
       setNewCategory("");
-    } catch {
-      setError("No se pudo crear la categoría.");
+    } catch (e) {
+      setError(e.message || "No se pudo crear la categoría.");
     } finally {
       setLoading(false);
     }
@@ -72,28 +67,20 @@ export default function AddProductForm({ onSave, onCancel }) {
 
     const formData = new FormData();
     formData.append("name", name);
-    formData.append("description", description);
-    formData.append("category", category);
-    formData.append("price", price);
-    formData.append("minimum_stock", minimumStock);
+    if (description) formData.append("description", description);
+    formData.append("category", category);               // id
+    formData.append("price", String(price));
+    formData.append("minimum_stock", String(minimumStock));
     formData.append("status", status);
-    formData.append("supplier", supplier);
+    formData.append("supplier", supplier);               // id
     if (image) formData.append("image", image);
 
     try {
-      const res = await fetch(`${API_URL}/products/`, {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        credentials: "include",
-        body: formData,
-      });
-      if (!res.ok) throw new Error("No se pudo crear el producto.");
-      const data = await res.json();
-      onSave(data);
-    } catch (err) {
-      setError(err.message || "Error al crear el producto.");
+      const res = await postProduct(formData);           // 🟢 usa wrapper multipart
+      if (!res.ok) throw new Error(res.data?.detail || "No se pudo crear el producto.");
+      onSave?.(res.data);
+    } catch (e) {
+      setError(e.message || "Error al crear el producto.");
     } finally {
       setLoading(false);
     }

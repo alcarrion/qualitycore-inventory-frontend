@@ -149,3 +149,64 @@ export async function postCliente(data) {
     body: JSON.stringify(data),
   });
 }
+
+
+
+
+
+
+
+
+
+// --- para GETs simples ---
+export async function getSuppliers() {
+  return await apiFetch(`/suppliers/`);
+}
+
+export async function getCategories() {
+  return await apiFetch(`/categories/`);
+}
+
+export async function postCategory(name) {
+  return await apiFetch(`/categories/`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+// --- helper para FormData (multipart) ---
+// NO seteamos Content-Type para que el navegador ponga el boundary.
+// Incluimos credenciales y X-CSRFToken automáticamente y reintentamos si el CSRF rota.
+export async function apiFetchForm(endpoint, formData, options = {}) {
+  const url = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const doFetch = () =>
+    fetch(`${API_URL.replace(/\/+$/,"")}${url}`, {
+      method: options.method || "POST",
+      credentials: "include",
+      headers: {
+        ...(CSRF_TOKEN ? { "X-CSRFToken": CSRF_TOKEN } : {}),
+        ...(options.headers || {}),
+      },
+      body: formData,
+      ...options,
+    });
+
+  let res = await doFetch();
+
+  if (res.status === 403) {
+    const text = await res.clone().text().catch(() => "");
+    if (/csrf/i.test(text)) {
+      await initCsrf();
+      res = await doFetch();
+    }
+  }
+
+  const raw = await res.text();
+  let data;
+  try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
+  return { ok: res.ok, status: res.status, data };
+}
+
+export async function postProduct(formData) {
+  return await apiFetchForm(`/products/`, formData);
+}
