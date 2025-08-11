@@ -260,3 +260,11 @@ export async function patchSupplier(id, data) {
     body: JSON.stringify(data),
   });
 }
+
+// Cambiar contraseña
+export async function changePassword(old_password, new_password) {
+  return await apiFetch(`/change-password/`, {
+    method: "POST",
+    body: JSON.stringify({ old_password, new_password }),
+  });
+}

@@ -1,6 +1,6 @@
 // src/components/ChangePasswordForm.js
 import React, { useState } from "react";
-import { API_URL, getCookie } from "../services/api";
+import { changePassword } from "../services/api";
 import "../styles/components/Form.css";
 
 export function ChangePasswordForm({ onSave, onCancel }) {
@@ -21,38 +21,29 @@ export function ChangePasswordForm({ onSave, onCancel }) {
     setLoading(true);
     setError("");
 
-    const csrftoken = getCookie("csrftoken");
-
     try {
-      const res = await fetch(`${API_URL}/change-password/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrftoken,
-        },
-        credentials: "include",
-        body: JSON.stringify({ old_password: oldPass, new_password: newPass }),
-      });
+      const resp = await changePassword(oldPass, newPass);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        // Si el backend devuelve errores tipo {"old_password": ["incorrect"]}
-        if (data?.old_password) {
-          setError(`Contraseña actual: ${data.old_password.join(" ")}`);
-        } else if (data?.new_password) {
-          setError(`Nueva contraseña: ${data.new_password.join(" ")}`);
-        } else {
-          setError("Error al cambiar la contraseña.");
-        }
-        return;
+      if (!resp.ok) {
+        const d = resp.data;
+        // DRF suele devolver errores por campo: { old_password: [...], new_password: [...] }
+        const msg =
+          d?.detail ||
+          (d && typeof d === "object"
+            ? Object.entries(d)
+                .map(([campo, errs]) =>
+                  Array.isArray(errs) ? `${campo}: ${errs.join(", ")}` : `${campo}: ${String(errs)}`
+                )
+                .join(" | ")
+            : "Error al cambiar la contraseña.");
+        throw new Error(msg);
       }
 
       alert("Contraseña cambiada con éxito. Debes volver a iniciar sesión.");
-      onSave(); // ← cerrar modal u otras acciones
-      window.location.href = "/login";
+      onSave?.();                 // cerrar modal u otras acciones
+      window.location.href = "/login"; // redirige a login
     } catch (err) {
-      setError("Hubo un error al cambiar la contraseña.");
+      setError(err.message || "Hubo un error al cambiar la contraseña.");
     } finally {
       setLoading(false);
     }
@@ -98,7 +89,7 @@ export function ChangePasswordForm({ onSave, onCancel }) {
         <button className="btn-primary" type="submit" disabled={loading}>
           {loading ? "Guardando..." : "Guardar"}
         </button>
-        <button className="btn-secondary" type="button" onClick={onCancel}>
+        <button className="btn-secondary" type="button" onClick={onCancel} disabled={loading}>
           Cancelar
         </button>
       </div>
