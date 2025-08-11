@@ -3,6 +3,7 @@ export const API_URL = process.env.REACT_APP_API_URL;
 
 // Guardamos aquí el token CSRF que devuelve el backend en /csrf/
 let CSRF_TOKEN = null;
+export const API_ROOT = API_URL.replace(/\/api\/productos\/?$/, "");
 
 export async function initCsrf() {
   try {
@@ -316,15 +317,22 @@ export async function patchProductJson(id, data) {
 
 
 // Generar reporte (PDF) y devolver un Blob
+// export async function generateReport(payload) {
+//   // payload: { type, start_date, end_date }
+//   return await apiFetchBlob(`/reports/generate/`, {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify(payload),
+//   });
+// }
+// ✅ Reportes (JSON: {message, url})
 export async function generateReport(payload) {
   // payload: { type, start_date, end_date }
-  return await apiFetchBlob(`/reports/generate/`, {
+  return await apiFetch(`/reports/generate/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 }
-
 
 export async function postResetPassword(payload) {
   return await apiFetch(`/reset-password/`, {
