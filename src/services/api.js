@@ -303,3 +303,10 @@ export async function postResetPassword(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+// Listar usuarios
+export async function getUsers() {
+  const r = await apiFetch(`/users/`);
+  // adapta al formato que tengas (con o sin .data)
+  return r?.data ?? r;
+}
