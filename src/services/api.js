@@ -134,3 +134,13 @@ export async function dismissAlerta(alertId) {
 export function getCookie() {
   return null; // ya no se usa; el CSRF viene de initCsrf()
 }
+
+
+
+// crea cliente
+export async function postCliente(data) {
+  return await apiFetch(`/customers/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
