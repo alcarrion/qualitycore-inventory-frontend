@@ -342,8 +342,7 @@ export async function postResetPassword(payload) {
 }
 
 // Listar usuarios
+// src/services/api.js (o donde tengas los wrappers)
 export async function getUsers() {
-  const r = await apiFetch(`/users/`);
-  // adapta al formato que tengas (con o sin .data)
-  return r?.data ?? r;
+  return await apiFetch(`/users/`);   // devuelve { ok, status, data }
 }
