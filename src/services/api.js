@@ -127,3 +127,10 @@ export async function getAlertas() {
 export async function dismissAlerta(alertId) {
   return await apiFetch(`/alerts/${alertId}/dismiss/`, { method: "PATCH" });
 }
+
+
+
+// Parche temporal: evita errores de import
+export function getCookie() {
+  return null; // ya no se usa; el CSRF viene de initCsrf()
+}
