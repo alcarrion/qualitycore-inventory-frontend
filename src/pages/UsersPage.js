@@ -1,5 +1,6 @@
 // src/pages/UsersPage.js
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Modal from "../components/Modal";
 import { AddUserForm } from "../components/AddUserForm";
 import "../styles/pages/UsersPage.css";
@@ -9,24 +10,27 @@ import { getUsers, patchUser } from "../services/api";
 
 export default function UsersPage({ user }) {
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
+  const navigate = useNavigate();
+
   const [users, setUsers] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
 
-  // Solo admins
-  if (currentUser?.role !== "Administrator") {
-    window.location.href = "/dashboard";
-    return null;
-  }
+  const isAdmin = currentUser?.role === "Administrator";
 
-  const loadUsers = async () => {
-    const res = await getUsers(); // { ok, status, data }
-    setUsers(Array.isArray(res.data) ? res.data : []);
-  };
-
+  // 🔁 Redirigir si NO es admin (el hook SIEMPRE se llama)
   useEffect(() => {
-    loadUsers();
-  }, [showAdd]);
+    if (!isAdmin) navigate("/dashboard", { replace: true });
+  }, [isAdmin, navigate]);
+
+  // 📥 Cargar usuarios (el hook SIEMPRE se llama; salimos si no es admin)
+  useEffect(() => {
+    if (!isAdmin) return;
+    (async () => {
+      const res = await getUsers(); // { ok, status, data }
+      setUsers(Array.isArray(res.data) ? res.data : []);
+    })();
+  }, [isAdmin, showAdd]);
 
   const handleChangeRol = async (userId, nuevoRol) => {
     try {
@@ -53,6 +57,9 @@ export default function UsersPage({ user }) {
       setLoadingId(null);
     }
   };
+
+  // 👇 Este return condicional ya es seguro porque los hooks están arriba
+  if (!isAdmin) return null;
 
   return (
     <div className="users-page-container">
@@ -136,10 +143,7 @@ export default function UsersPage({ user }) {
 
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
-          <AddUserForm
-            onSave={() => setShowAdd(false)}   // cierra modal; el useEffect recarga
-            onCancel={() => setShowAdd(false)}
-          />
+          <AddUserForm onSave={() => setShowAdd(false)} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}
     </div>
