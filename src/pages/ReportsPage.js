@@ -1,7 +1,7 @@
 // src/pages/ReportsPage.js
 import React, { useState } from "react";
 import { FileText } from "lucide-react";
-import { generateReport } from "../services/api";
+import { API_URL, generateReport } from "../services/api";
 import { API_ROOT } from "../services/api";
 import "../styles/pages/ReportsPage.css";
 
@@ -31,7 +31,7 @@ export default function ReportsPage() {
       if (res.ok && res.data?.url) {
         const fullUrl = res.data.url.startsWith("http")
           ? res.data.url
-          : `${API_ROOT}${res.data.url}`;
+          : `${API_URL}${res.data.url}`;
         setUrlReporte(fullUrl);
         setMensaje(res.data.message || "Reporte generado correctamente.");
       } else {
