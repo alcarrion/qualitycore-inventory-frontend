@@ -252,3 +252,11 @@ export async function patchUser(id, data) {
     body: JSON.stringify(data),
   });
 }
+
+// Editar proveedor (PATCH)
+export async function patchSupplier(id, data) {
+  return await apiFetch(`/suppliers/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
