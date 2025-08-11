@@ -10,19 +10,46 @@ export default function LoginForm({ setMessage, navigate, setUsuario }) {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // const handleLogin = async (e) => {
+  //   e.preventDefault();
+  //   setMessage("");
+  //   setLoading(true);
+  //   const result = await loginUser(email, password);
+  //   setMessage(result.message);
+  //   if (result.ok) {
+  //     localStorage.setItem("user", JSON.stringify(result.user));
+  //     setUsuario(result.user); 
+  //     navigate("/dashboard");
+  //   }
+  //   setLoading(false);
+  // };
+
   const handleLogin = async (e) => {
-    e.preventDefault();
+    e.preventDefault();            // evita el GET /login/
     setMessage("");
     setLoading(true);
-    const result = await loginUser(email, password);
-    setMessage(result.message);
-    if (result.ok) {
-      localStorage.setItem("user", JSON.stringify(result.user));
-      setUsuario(result.user); 
-      navigate("/dashboard");
+
+    try {
+      const result = await loginUser(email, password); // { ok, status, data }
+      const user = result?.data?.user;
+      const msg  = result?.data?.message;
+
+      setMessage(msg || (result.ok ? "Sesión iniciada" :
+                        result.status === 401 ? "Credenciales inválidas" :
+                        "No se pudo iniciar sesión"));
+
+      if (result.ok && user) {
+        localStorage.setItem("user", JSON.stringify(user)); // redundante pero inofensivo
+        setUsuario(user);
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      setMessage("Error de red. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
+
 
   return (
     <form onSubmit={handleLogin} className="input-group">
