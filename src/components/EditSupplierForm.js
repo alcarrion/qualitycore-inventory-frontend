@@ -1,6 +1,6 @@
 // src/components/EditSupplierForm.js
 import React, { useState } from "react";
-import { API_URL, getCookie } from "../services/api";
+import { patchSupplier } from "../services/api";
 import "../styles/components/Form.css";
 
 export default function EditSupplierForm({ proveedor, onSave, onCancel }) {
@@ -12,7 +12,7 @@ export default function EditSupplierForm({ proveedor, onSave, onCancel }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -22,43 +22,43 @@ export default function EditSupplierForm({ proveedor, onSave, onCancel }) {
       setLoading(false);
       return;
     }
-
-    if (!/^[0-9]{10,13}$/.test(taxId)) {
+    if (!/^\d{10,13}$/.test(taxId)) {
       setError("La cédula o RUC debe tener entre 10 y 13 dígitos numéricos.");
       setLoading(false);
       return;
     }
-
-    if (!/^[0-9]+$/.test(phone)) {
+    if (!/^\d+$/.test(phone)) {
       setError("El teléfono solo debe contener números.");
       setLoading(false);
       return;
     }
 
     try {
-      const res = await fetch(`${API_URL}/suppliers/`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          name,
-          email,
-          tax_id: taxId,
-          phone,
-          address,
-        }),
+      const resp = await patchSupplier(proveedor.id, {
+        name,
+        email,
+        tax_id: taxId,
+        phone,
+        address,
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "No se pudo crear el proveedor.");
+
+      if (!resp.ok) {
+        const d = resp.data;
+        const msg =
+          d?.detail ||
+          (d && typeof d === "object"
+            ? Object.entries(d)
+                .map(([campo, errs]) =>
+                  Array.isArray(errs) ? `${campo}: ${errs.join(", ")}` : `${campo}: ${String(errs)}`
+                )
+                .join(" | ")
+            : "No se pudo editar el proveedor.");
+        throw new Error(msg);
       }
-      const data = await res.json();
-      onSave(data);
+
+      onSave?.(resp.data);
     } catch (err) {
-      setError(err.message || "Error al crear proveedor.");
+      setError(err.message || "Error al editar proveedor.");
     } finally {
       setLoading(false);
     }
