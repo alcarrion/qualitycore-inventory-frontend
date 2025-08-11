@@ -108,11 +108,40 @@ export async function postCotizacion(data) {
     body: JSON.stringify(data),
   });
 }
+// export async function getCotizacionPDF(cotizacionId) {
+//   const blob = await apiFetchBlob(`/quotations/pdf/${cotizacionId}/`, { method: "GET" });
+//   const url = window.URL.createObjectURL(blob);
+//   return { ok: true, url };
+// }
+
+// ✅ Obtener PDF de una cotización por ID (soporta JSON o PDF directo)
 export async function getCotizacionPDF(cotizacionId) {
-  const blob = await apiFetchBlob(`/quotations/pdf/${cotizacionId}/`, { method: "GET" });
-  const url = window.URL.createObjectURL(blob);
-  return { ok: true, url };
+  const res = await fetch(`${API_URL}/quotations/pdf/${cotizacionId}/`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const ct = (res.headers.get("Content-Type") || "").toLowerCase();
+
+  // Caso 1: el backend devuelve directamente el PDF
+  if (ct.includes("application/pdf")) {
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    return { ok: true, url, type: "blob" };
+  }
+
+  // Caso 2: el backend devuelve JSON { url: "/media/...pdf" }
+  const data = await res.json().catch(() => ({}));
+  if (res.ok && data?.url) {
+    // construir URL absoluta al backend
+    const backendBase = API_URL.replace(/\/api\/productos\/?$/, "");
+    return { ok: true, url: backendBase + data.url, type: "absolute" };
+  }
+
+  return { ok: false, error: `Respuesta inesperada (${res.status})`, data };
 }
+
+
 
 // ✅ Reportes
 export async function getReportes() {
