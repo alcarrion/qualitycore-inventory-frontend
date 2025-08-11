@@ -38,10 +38,10 @@ export default function AddCustomerForm({ onSave, onCancel }) {
       const resp = await postCliente({
         name,
         email,
-        phone,
+        document,
         // ajusta el nombre del campo según tu serializer:
         // si tu API espera 'cedula_ruc', cambia 'document' por 'cedula_ruc'
-        document,
+        phone,
         address
       });
 

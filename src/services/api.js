@@ -4,38 +4,44 @@ export const API_URL = process.env.REACT_APP_API_URL;
 // Guardamos aquí el token CSRF que devuelve el backend en /csrf/
 let CSRF_TOKEN = null;
 
-// Llama una vez al iniciar la app (por ejemplo en src/index.js)
 export async function initCsrf() {
   try {
     const res = await fetch(`${API_URL}/csrf/`, { credentials: "include" });
     const data = await res.json().catch(() => ({}));
-    if (data && data.csrfToken) {
-      CSRF_TOKEN = data.csrfToken;
-    }
+    if (data?.csrfToken) CSRF_TOKEN = data.csrfToken;
   } catch (e) {
     console.error("initCsrf failed", e);
   }
 }
 
-// Helper para unir rutas sin duplicar barras
 const join = (b, p) => b.replace(/\/+$/, "") + "/" + p.replace(/^\/+/, "");
 
-// --- Wrapper genérico (añade credenciales y X-CSRFToken) ---
+// 👇 apiFetch ahora reintenta 1 vez si el 403 es por CSRF
 async function apiFetch(endpoint, options = {}) {
-  const res = await fetch(join(API_URL, endpoint), {
-    credentials: "include",
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(CSRF_TOKEN ? { "X-CSRFToken": CSRF_TOKEN } : {}),
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+  const doFetch = () =>
+    fetch(join(API_URL, endpoint), {
+      credentials: "include",
+      headers: {
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...(CSRF_TOKEN ? { "X-CSRFToken": CSRF_TOKEN } : {}), // usa header canonical
+        ...(options.headers || {}),
+      },
+      ...options,
+    });
 
-  const text = await res.text();
+  let res = await doFetch();
+
+  if (res.status === 403) {
+    const text = await res.clone().text().catch(() => "");
+    if (/csrf/i.test(text)) {
+      await initCsrf();      // refresca token
+      res = await doFetch(); // reintenta una vez
+    }
+  }
+
+  const raw = await res.text();
   let data;
-  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-
+  try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
   return { ok: res.ok, status: res.status, data };
 }
 
@@ -56,15 +62,14 @@ async function apiFetchBlob(endpoint, options = {}) {
 // ================== ENDPOINTS ==================
 
 // ✅ Login
+// ✅ tras login exitoso, refresca el CSRF (Django lo rota al autenticarse)
 export async function loginUser(email, password) {
-  const result = await apiFetch(`/login/`, {
+  const r = await apiFetch(`/login/`, {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-  if (result.ok && result.data?.user) {
-    localStorage.setItem("user", JSON.stringify(result.data.user));
-  }
-  return result;
+  if (r.ok) await initCsrf();
+  return r;
 }
 
 // ✅ Recuperación de contraseña
