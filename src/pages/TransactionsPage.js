@@ -36,7 +36,7 @@ function TransactionsPage() {
   });
 
   const user = JSON.parse(localStorage.getItem("user"));
-  const canCreateMovimientos = user?.role === "Administrator";
+  const canCreateMovimientos = ["Administrator", "User"].includes(user?.role);
 
   useEffect(() => {
     fetchMovimientos();

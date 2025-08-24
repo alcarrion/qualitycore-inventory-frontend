@@ -9,37 +9,47 @@ import "../styles/pages/CustomersPage.css";
 
 export default function CustomersPage({ user }) {
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
+  const role = (currentUser?.role || "").toLowerCase();
+
+  const CAN_ADD = ["administrator", "user"].includes(role);
+  const CAN_EDIT = ["administrator", "user"].includes(role);
+  const CAN_DELETE = ["administrator"].includes(role);
+
   const [clientes, setClientes] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
   const [search, setSearch] = useState("");
 
-  const isAdmin = currentUser?.role === "Administrator";
-
   useEffect(() => {
     (async () => {
       const res = await getCustomers();
       const list = Array.isArray(res.data) ? res.data : [];
-      setClientes(list.filter(c => !c.deleted_at));
+      setClientes(list.filter((c) => !c.deleted_at));
     })();
-  }, [showAdd, showEdit]); 
+  }, [showAdd, showEdit]);
 
-  const filtered = clientes.filter(c =>
-    (c.name && c.name.toLowerCase().includes(search.toLowerCase())) ||
-    (c.document && c.document.includes(search)) ||
-    (c.phone && c.phone.includes(search)) ||
-    (c.email && c.email.toLowerCase().includes(search.toLowerCase()))
+  const filtered = clientes.filter(
+    (c) =>
+      (c.name && c.name.toLowerCase().includes(search.toLowerCase())) ||
+      (c.document && c.document.includes(search)) ||
+      (c.phone && c.phone.includes(search)) ||
+      (c.email && c.email.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleDelete = async (cliente) => {
+    if (!CAN_DELETE) {
+      alert("No tienes permisos para eliminar clientes.");
+      return;
+    }
+
     if (!window.confirm("¿Seguro que deseas eliminar este cliente?")) return;
     try {
       const resp = await patchCustomer(cliente.id, {
         deleted_at: new Date().toISOString(),
       });
       if (!resp.ok) throw new Error(resp.data?.detail || "No se pudo eliminar.");
-      setClientes(prev => prev.filter(c => c.id !== cliente.id));
+      setClientes((prev) => prev.filter((c) => c.id !== cliente.id));
     } catch (e) {
       alert(e.message || "Error al eliminar el cliente.");
     }
@@ -60,10 +70,11 @@ export default function CustomersPage({ user }) {
           <input
             placeholder="Buscar clientes..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {isAdmin && (
+
+        {CAN_ADD && (
           <button className="btn-add-customer" onClick={() => setShowAdd(true)}>
             <FaPlus /> AÑADIR CLIENTES
           </button>
@@ -71,33 +82,48 @@ export default function CustomersPage({ user }) {
       </div>
 
       <div className="customers-list">
-        {filtered.map(cliente => (
+        {filtered.map((cliente) => (
           <div key={cliente.id} className="customer-card">
-            <div><strong>NOMBRE:</strong> {cliente.name || "-"}</div>
-            <div><strong>CORREO:</strong> {cliente.email || "-"}</div>
-            <div><strong>TELÉFONO:</strong> {cliente.phone || "-"}</div>
-            <div><strong>CÉDULA:</strong> {cliente.document || "-"}</div>
-            {isAdmin && (
+            <div>
+              <strong>NOMBRE:</strong> {cliente.name || "-"}
+            </div>
+            <div>
+              <strong>CORREO:</strong> {cliente.email || "-"}
+            </div>
+            <div>
+              <strong>TELÉFONO:</strong> {cliente.phone || "-"}
+            </div>
+            <div>
+              <strong>CÉDULA:</strong> {cliente.document || "-"}
+            </div>
+
+            {(CAN_EDIT || CAN_DELETE) && (
               <div className="customer-actions">
-                <button
-                  className="btn-icon"
-                  onClick={() => {
-                    setEditingCliente(cliente);
-                    setShowEdit(true);
-                  }}
-                >
-                  <FaEdit />
-                </button>
-                <button
-                  className="btn-icon btn-delete"
-                  onClick={() => handleDelete(cliente)}
-                >
-                  <FaTrash />
-                </button>
+                {CAN_EDIT && (
+                  <button
+                    className="btn-icon"
+                    onClick={() => {
+                      setEditingCliente(cliente);
+                      setShowEdit(true);
+                    }}
+                  >
+                    <FaEdit />
+                  </button>
+                )}
+
+                {CAN_DELETE && (
+                  <button
+                    className="btn-icon btn-delete"
+                    onClick={() => handleDelete(cliente)}
+                  >
+                    <FaTrash />
+                  </button>
+                )}
               </div>
             )}
           </div>
         ))}
+
         {filtered.length === 0 && (
           <div className="no-data">No hay clientes para mostrar.</div>
         )}
@@ -113,7 +139,12 @@ export default function CustomersPage({ user }) {
       )}
 
       {showEdit && editingCliente && (
-        <Modal onClose={() => { setShowEdit(false); setEditingCliente(null); }}>
+        <Modal
+          onClose={() => {
+            setShowEdit(false);
+            setEditingCliente(null);
+          }}
+        >
           <EditCustomerForm
             cliente={editingCliente}
             onSave={() => {
