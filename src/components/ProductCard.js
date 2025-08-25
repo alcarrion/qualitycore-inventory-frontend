@@ -1,14 +1,20 @@
-// src/components/ProductCard.js
 import React from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function ProductCard({ producto, onEdit, onDelete, isAdmin }) {
+  const placeholder = "/placeholder.png"; // pon esta imagen en public/
+  const src =
+    (producto.image_url && /^https?:\/\//.test(producto.image_url) && producto.image_url) ||
+    (producto.image && /^https?:\/\//.test(producto.image) && producto.image) ||
+    placeholder;
+
   return (
     <div className="product-card">
       <img
-        src={producto.image || "https://via.placeholder.com/84?text=Sin+Imagen"}
+        src={src}
         alt={producto.name}
         className="product-card-img"
+        onError={(e) => { e.currentTarget.src = placeholder; }}
       />
       <div className="product-card-content">
         <div className="product-card-title">{producto.name}</div>
@@ -19,12 +25,8 @@ export default function ProductCard({ producto, onEdit, onDelete, isAdmin }) {
         <div className="product-card-info"><strong>Estado:</strong> {producto.status}</div>
         {isAdmin && (
           <div className="product-card-actions">
-            <button className="btn-icon" onClick={() => onEdit(producto)}>
-              <FaEdit />
-            </button>
-            <button className="btn-icon btn-delete" onClick={() => onDelete(producto)}>
-              <FaTrash />
-            </button>
+            <button className="btn-icon" onClick={() => onEdit(producto)}><FaEdit /></button>
+            <button className="btn-icon btn-delete" onClick={() => onDelete(producto)}><FaTrash /></button>
           </div>
         )}
       </div>
