@@ -1,13 +1,16 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* =============================================================================
+   QUALITYCORE INVENTORY - MAIN STYLESHEET
+   Modular CSS architecture with design tokens
+   ============================================================================= */
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
+/* Import design tokens (variables) */
+@import './styles/tokens/index.css';
+
+/* Import base styles and reset */
+@import './styles/base/reset.css';
+
+/* Import global utilities */
+@import './styles/utilities/index.css';
+
+/* Import legacy globals (will be deprecated) */
+@import './styles/globals.css';

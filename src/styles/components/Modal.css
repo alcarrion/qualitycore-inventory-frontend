@@ -1,0 +1,172 @@
+/* =============================================================================
+   MODAL COMPONENT - Professional Modal Dialog
+   ============================================================================= */
+
+/* =============================================================================
+   MODAL OVERLAY
+   ============================================================================= */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-overlay);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  animation: fadeIn var(--transition-base) ease-in;
+  padding: var(--space-md);
+}
+
+/* =============================================================================
+   MODAL CONTENT
+   ============================================================================= */
+
+.modal-content {
+  background: var(--card-bg);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  padding: var(--space-2xl);
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  border: 1px solid var(--border-primary);
+  transition: all var(--transition-slow);
+  animation: slideUp var(--transition-slow) ease-out;
+}
+
+/* =============================================================================
+   MODAL CLOSE BUTTON
+   ============================================================================= */
+
+.modal-close {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-lg);
+  background: none;
+  border: none;
+  font-size: var(--font-size-3xl);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+  background: var(--color-hover);
+}
+
+.modal-close:active {
+  transform: scale(0.95);
+}
+
+/* =============================================================================
+   ANIMATIONS
+   ============================================================================= */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================= */
+
+/* Mobile */
+@media (max-width: 639px) {
+  .modal-overlay {
+    padding: var(--space-sm);
+  }
+
+  .modal-content {
+    padding: var(--space-lg);
+    max-width: 95vw;
+    max-height: 85vh;
+    border-radius: var(--radius-lg);
+  }
+
+  .modal-close {
+    top: var(--space-sm);
+    right: var(--space-sm);
+    font-size: var(--font-size-2xl);
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+.modal-close:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-content {
+    animation: none;
+  }
+
+  .modal-close:hover,
+  .modal-close:active {
+    transform: none;
+  }
+}
+
+/* Scrollbar styling for modal content */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-primary);
+}
+
+/* =============================================================================
+   MODAL WIDE VARIANT
+   ============================================================================= */
+
+.modal-content.wide-modal {
+  max-width: 900px;
+}

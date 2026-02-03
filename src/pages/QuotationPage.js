@@ -18,138 +18,180 @@ import {
   getProducts,
   postQuotation,
   getQuotationPDF,
+  checkPDFStatus,
 } from "../services/api";
 
+import { useApp } from "../contexts/AppContext";
 import "../styles/pages/QuotationPage.css";
 
 export default function QuotationPage() {
-  const [cliente, setCliente] = useState("");
-  const [clientes, setClientes] = useState([]);
-  const [productos, setProductos] = useState([]);
-  const [observaciones, setObservaciones] = useState("");
-  const [productosCotizados, setProductosCotizados] = useState([]);
-  const [mensaje, setMensaje] = useState("");
+  const { showSuccess, showError } = useApp();
+  const [customer, setCustomer] = useState("");
+  const [customers, setCustomers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [observations, setObservations] = useState("");
+  const [quotedProducts, setQuotedProducts] = useState([]);
   const [pdfUrl, setPdfUrl] = useState(null);
 
   const [subtotal, setSubtotal] = useState(0);
-  const [iva, setIva] = useState(0);
+  const [vat, setVat] = useState(0);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    fetchClientes();
-    fetchProductos();
+    fetchCustomers();
+    fetchProducts();
   }, []);
 
-  const fetchClientes = async () => {
-    const res = await getCustomers(); 
-    const list = Array.isArray(res.data) ? res.data : [];
-    setClientes(list.filter(c => !c.deleted_at));
+  const fetchCustomers = async () => {
+    try {
+      const res = await getCustomers();
+      // El backend devuelve paginación: { count, next, previous, results: [...] }
+      const list = res.data?.results || res.data || [];
+      const customersList = Array.isArray(list) ? list : [];
+      setCustomers(customersList.filter(c => !c.deleted_at));
+    } catch (error) {
+      console.error("Error al cargar clientes:", error);
+      showError("Error al cargar clientes. Por favor, intenta nuevamente.");
+    }
   };
 
-  const fetchProductos = async () => {
-    const res = await getProducts(); 
-    const list = Array.isArray(res.data) ? res.data : [];
-    setProductos(list.filter(p => !p.deleted_at));
+  const fetchProducts = async () => {
+    try {
+      const res = await getProducts();
+      // El backend devuelve paginación: { count, next, previous, results: [...] }
+      const list = res.data?.results || res.data || [];
+      const productsList = Array.isArray(list) ? list : [];
+      setProducts(productsList.filter(p => !p.deleted_at));
+    } catch (error) {
+      console.error("Error al cargar productos:", error);
+      showError("Error al cargar productos. Por favor, intenta nuevamente.");
+    }
   };
 
-  const handleAddProducto = () => {
-    setProductosCotizados(prev => [
+  const handleAddProduct = () => {
+    setQuotedProducts(prev => [
       ...prev,
       { product: "", quantity: 1, unit_price: 0, subtotal: 0 },
     ]);
   };
 
-  const handleProductoChange = (index, field, value) => {
-    const nuevos = [...productosCotizados];
+  const handleProductChange = (index, field, value) => {
+    const updated = [...quotedProducts];
 
     if (field === "quantity" || field === "unit_price") {
-      const limpio = value === "" ? "" : Number(String(value).replace(/^0+(?=\d)/, ""));
-      nuevos[index][field] = limpio;
+      const clean = value === "" ? "" : Number(String(value).replace(/^0+(?=\d)/, ""));
+      updated[index][field] = clean;
     } else {
-      nuevos[index][field] = value;
+      updated[index][field] = value;
     }
 
     if (field === "product") {
-      const productoObj = productos.find((p) => p.id === Number(value));
-      if (productoObj) {
-        const precio = Number(productoObj.price) || 0;
-        nuevos[index].unit_price = precio;
-        nuevos[index].quantity = 1;
-        nuevos[index].subtotal = precio;
+      const productObj = products.find((p) => p.id === Number(value));
+      if (productObj) {
+        const price = Number(productObj.price) || 0;
+        updated[index].unit_price = price;
+        updated[index].quantity = 1;
+        updated[index].subtotal = price;
       }
     } else {
-      const cantidad = Number(nuevos[index].quantity) || 0;
-      const precio = Number(nuevos[index].unit_price) || 0;
-      nuevos[index].subtotal = cantidad * precio;
+      const quantity = Number(updated[index].quantity) || 0;
+      const price = Number(updated[index].unit_price) || 0;
+      updated[index].subtotal = quantity * price;
     }
 
-    setProductosCotizados(nuevos);
-    recalcularTotales(nuevos);
+    setQuotedProducts(updated);
+    recalculateTotals(updated);
   };
 
-  const recalcularTotales = (items) => {
-    const nuevoSubtotal = items.reduce((acc, p) => acc + (Number(p.subtotal) || 0), 0);
-    const nuevoIva = nuevoSubtotal * 0.15;
-    const nuevoTotal = nuevoSubtotal + nuevoIva;
+  const recalculateTotals = (items) => {
+    const newSubtotal = items.reduce((acc, p) => acc + (Number(p.subtotal) || 0), 0);
+    const newVat = newSubtotal * 0.15;
+    const newTotal = newSubtotal + newVat;
 
-    setSubtotal(nuevoSubtotal.toFixed(2));
-    setIva(nuevoIva.toFixed(2));
-    setTotal(nuevoTotal.toFixed(2));
+    setSubtotal(newSubtotal.toFixed(2));
+    setVat(newVat.toFixed(2));
+    setTotal(newTotal.toFixed(2));
   };
 
-  const handleGuardar = async () => {
-    setMensaje("");
+  // Prevenir que el scroll del mouse cambie los valores numéricos
+  const handleWheel = (e) => {
+    e.target.blur(); // Quitar el foco del input para prevenir el cambio de valor
+  };
 
-    if (!cliente) {
-      setMensaje("❌ Selecciona un cliente.");
+  const handleSave = async () => {
+    setPdfUrl(null); // Limpiar PDF anterior
+
+    if (!customer) {
+      showError("Selecciona un cliente.");
       return;
     }
-    if (productosCotizados.length === 0) {
-      setMensaje("❌ Agrega al menos un producto.");
+    if (quotedProducts.length === 0) {
+      showError("Agrega al menos un producto.");
       return;
     }
-    const itemsValidos = productosCotizados.every(
+    const validItems = quotedProducts.every(
       (p) => p.product && Number(p.quantity) > 0 && Number(p.unit_price) >= 0
     );
-    if (!itemsValidos) {
-      setMensaje("❌ Revisa cantidades y precios de los productos.");
+    if (!validItems) {
+      showError("Revisa cantidades y precios de los productos.");
       return;
     }
 
     const payload = {
-      customer: Number(cliente),
-      quoted_products: productosCotizados.map((p) => ({
+      customer: Number(customer),
+      quoted_products: quotedProducts.map((p) => ({
         product: Number(p.product),
         quantity: Number(p.quantity),
         unit_price: Number(p.unit_price),
       })),
-      observations: observaciones,
-      vat: Number(iva), 
+      observations: observations,
+      vat: Number(vat),
     };
 
-    const res = await postQuotation(payload); 
+    const res = await postQuotation(payload);
 
     if (res.ok && res.data?.quotation?.id) {
-      setMensaje("✅ Cotización guardada correctamente");
-      setProductosCotizados([]);
-      setCliente("");
-      setSubtotal(0);
-      setIva(0);
-      setTotal(0);
-      setObservaciones("");
+      showSuccess("Cotización guardada correctamente.");
 
-      const pdfData = await getQuotationPDF(res.data.quotation.id);
-      if (pdfData?.url) {
-        setPdfUrl(pdfData.url); 
+      // Iniciar generación asíncrona del PDF
+      const pdfResponse = await getQuotationPDF(res.data.quotation.id);
+
+      if (pdfResponse.ok && pdfResponse.data?.task_id) {
+        const taskId = pdfResponse.data.task_id;
+        showSuccess("Cotización guardada. Generando PDF...");
+
+        // Consultar el estado cada 2 segundos
+        const interval = setInterval(async () => {
+          const statusResponse = await checkPDFStatus(taskId);
+
+          if (statusResponse.ok && statusResponse.data) {
+            const { state, download_url, error } = statusResponse.data;
+
+            if (state === "SUCCESS") {
+              clearInterval(interval);
+              showSuccess("PDF generado correctamente.");
+              setPdfUrl(`${process.env.REACT_APP_API_URL.replace(/\/api\/products\/?$/, "")}${download_url}`);
+            } else if (state === "FAILURE") {
+              clearInterval(interval);
+              showError(`Error al generar PDF: ${error || "Error desconocido"}`);
+            }
+            // Si está PENDING o STARTED, continuar esperando
+          }
+        }, 2000); // Consultar cada 2 segundos
       }
     } else {
       console.error("Error al guardar:", res.data);
-      setMensaje("❌ Error al guardar la cotización");
+      showError("Error al guardar la cotización.");
     }
   };
 
-  const handleVerPDF = () => {
-    setMensaje("");
+  const handleNewQuotation = () => {
+    setQuotedProducts([]);
+    setCustomer("");
+    setSubtotal(0);
+    setVat(0);
+    setTotal(0);
+    setObservations("");
     setPdfUrl(null);
   };
 
@@ -165,9 +207,9 @@ export default function QuotationPage() {
             Información del Cliente
           </div>
           <label className="cotiz-label">Cliente:</label>
-          <select value={cliente} onChange={(e) => setCliente(e.target.value)} className="cotiz-select">
+          <select value={customer} onChange={(e) => setCustomer(e.target.value)} className="cotiz-select">
             <option value="">-- Selecciona un cliente --</option>
-            {clientes.map((cli) => (
+            {customers.map((cli) => (
               <option key={cli.id} value={cli.id}>{cli.name}</option>
             ))}
           </select>
@@ -181,12 +223,12 @@ export default function QuotationPage() {
             </span>
             Productos Cotizados
           </div>
-          <button onClick={handleAddProducto} className="cotiz-btn" type="button">
+          <button onClick={handleAddProduct} className="cotiz-btn" type="button">
             <Plus size={16} style={{ marginRight: "6px" }} />
             Añadir Producto
           </button>
 
-          {productosCotizados.length > 0 && (
+          {quotedProducts.length > 0 && (
             <div className="cotiz-prod-header">
               <span>Producto</span>
               <span>Cantidad</span>
@@ -197,21 +239,21 @@ export default function QuotationPage() {
           )}
 
           <div className="cotiz-prod-list">
-            {productosCotizados.length === 0 ? (
+            {quotedProducts.length === 0 ? (
               <div className="cotiz-empty">
                 <Package size={16} style={{ marginRight: "6px" }} />
                 No hay productos agregados
               </div>
             ) : (
-              productosCotizados.map((item, index) => (
+              quotedProducts.map((item, index) => (
                 <div key={index} className="cotiz-prod-row">
                   <select
                     value={item.product}
-                    onChange={(e) => handleProductoChange(index, "product", e.target.value)}
+                    onChange={(e) => handleProductChange(index, "product", e.target.value)}
                     className="cotiz-select"
                   >
                     <option value="">Producto</option>
-                    {productos.map((p) => (
+                    {products.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
@@ -219,7 +261,8 @@ export default function QuotationPage() {
                     type="number"
                     min="1"
                     value={item.quantity}
-                    onChange={(e) => handleProductoChange(index, "quantity", e.target.value)}
+                    onChange={(e) => handleProductChange(index, "quantity", e.target.value)}
+                    onWheel={handleWheel}
                     className="cotiz-input"
                   />
                   <input
@@ -227,17 +270,18 @@ export default function QuotationPage() {
                     min="0"
                     step="0.01"
                     value={item.unit_price}
-                    onChange={(e) => handleProductoChange(index, "unit_price", e.target.value)}
+                    onChange={(e) => handleProductChange(index, "unit_price", e.target.value)}
+                    onWheel={handleWheel}
                     className="cotiz-input"
                   />
                   <input type="text" readOnly value={Number(item.subtotal || 0).toFixed(2)} className="cotiz-input" />
                   <button
                     type="button"
                     onClick={() => {
-                      const copia = [...productosCotizados];
-                      copia.splice(index, 1);
-                      setProductosCotizados(copia);
-                      recalcularTotales(copia);
+                      const copy = [...quotedProducts];
+                      copy.splice(index, 1);
+                      setQuotedProducts(copy);
+                      recalculateTotals(copy);
                     }}
                     className="cotiz-remove-btn"
                   >
@@ -273,7 +317,7 @@ export default function QuotationPage() {
               </span>
               IVA (15%):
             </span>
-            <span>${iva}</span>
+            <span>${vat}</span>
           </div>
           <div className="cotiz-summary-row">
             <span>
@@ -296,49 +340,41 @@ export default function QuotationPage() {
           </div>
           <label className="cotiz-label">Comentarios u observaciones para el cliente:</label>
           <textarea
-            value={observaciones}
-            onChange={(e) => setObservaciones(e.target.value)}
+            value={observations}
+            onChange={(e) => setObservations(e.target.value)}
             rows="4"
             className="cotiz-input"
-            placeholder="Por ejemplo: Esta cotización es válida por 30 días..."
+            placeholder="Ejemplo: Incluye garantía de 1 año. Tiempo de entrega: 5 días hábiles."
             style={{ resize: "vertical", minHeight: "100px" }}
           />
         </div>
 
         {/* Guardar */}
-        <button onClick={handleGuardar} className="cotiz-btn" style={{ width: "100%" }}>
+        <button onClick={handleSave} className="cotiz-btn" style={{ width: "100%" }}>
           <Save size={16} style={{ marginRight: "6px" }} />
           Guardar Cotización
         </button>
-
-        {/* Mensaje */}
-        {mensaje && (
-          <p
-            style={{
-              marginTop: "14px",
-              textAlign: "center",
-              color: mensaje.startsWith("✅") ? "#127436" : "#c0392b",
-              fontWeight: "bold",
-              fontSize: "1.11rem",
-            }}
-          >
-            {mensaje}
-          </p>
-        )}
 
         {/* PDF */}
         {pdfUrl && (
           <div style={{ textAlign: "center", marginTop: "16px" }}>
             <a
-              href={pdfUrl}               
+              href={pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="cotiz-pdf-link"
-              onClick={handleVerPDF}
             >
               <File size={16} style={{ marginRight: "6px" }} />
               Ver PDF de la Cotización
             </a>
+            <button
+              onClick={handleNewQuotation}
+              className="cotiz-btn"
+              style={{ marginTop: "12px", width: "100%", background: "#10b981" }}
+            >
+              <Plus size={16} style={{ marginRight: "6px" }} />
+              Nueva Cotización
+            </button>
           </div>
         )}
       </div>

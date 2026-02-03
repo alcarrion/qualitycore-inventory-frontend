@@ -5,17 +5,27 @@ import { Mail } from "lucide-react";
 import "../styles/components/Form.css";
 
 
-export default function ForgotPasswordForm({ setMessage }) {
+export default function ForgotPasswordForm({ showSuccess, showError }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleForgot = async (e) => {
     e.preventDefault();
-    setMessage("");
     setLoading(true);
-    const result = await forgotPassword(email);
-    setMessage(result.message);
-    setLoading(false);
+
+    try {
+      const result = await forgotPassword(email);
+
+      if (result.ok || result.message?.includes("éxito") || result.message?.includes("enviado")) {
+        showSuccess(result.message || "Se ha enviado un correo para recuperar tu contraseña.");
+      } else {
+        showError(result.message || "No se pudo enviar el correo de recuperación.");
+      }
+    } catch (error) {
+      showError("Error al procesar la solicitud.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -1,0 +1,134 @@
+/* =============================================================================
+   LAYOUT COMPONENT - Professional Responsive Layout
+   ============================================================================= */
+
+.layout-root {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+.layout-main {
+  flex: 1;
+  background: var(--bg-secondary);
+  padding: var(--space-xl);
+  margin-left: var(--sidebar-width);
+  transition: background var(--transition-slow), margin var(--transition-base);
+  min-height: 100vh;
+}
+
+/* =============================================================================
+   SIDEBAR OVERLAY (Mobile)
+   ============================================================================= */
+
+.sidebar-overlay {
+  display: none;
+}
+
+/* =============================================================================
+   HAMBURGER TOGGLE BUTTON
+   ============================================================================= */
+
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: calc(var(--z-fixed) + 10);
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-fast);
+  color: var(--text-primary);
+}
+
+.sidebar-toggle:hover {
+  background: var(--color-hover);
+  box-shadow: var(--shadow-lg);
+  color: var(--color-brand-primary);
+}
+
+.sidebar-toggle:active {
+  transform: scale(0.95);
+}
+
+/* =============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================= */
+
+/* Tablet and below - Stack sidebar */
+@media (max-width: 1023px) {
+  .layout-main {
+    margin-left: 0;
+    padding: var(--space-lg);
+    padding-top: calc(var(--space-lg) + 56px); /* Space for hamburger button */
+  }
+
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 1000;
+    animation: fadeIn var(--transition-base);
+  }
+}
+
+/* Mobile - Reduce padding */
+@media (max-width: 639px) {
+  .layout-main {
+    padding: var(--space-md);
+    padding-top: calc(var(--space-md) + 56px); /* Space for hamburger button */
+  }
+}
+
+/* Large screens - Max width container */
+@media (min-width: 1536px) {
+  .layout-main {
+    max-width: calc(100vw - var(--sidebar-width));
+  }
+}
+
+/* =============================================================================
+   ANIMATIONS
+   ============================================================================= */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+.sidebar-toggle:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-toggle,
+  .sidebar-overlay {
+    animation: none;
+    transition: none;
+  }
+}

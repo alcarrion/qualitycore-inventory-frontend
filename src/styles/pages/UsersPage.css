@@ -1,114 +1,233 @@
-/* src/styles/pages/UsersPage.css */
+/* =============================================================================
+   USERS PAGE - Professional User Management
+   ============================================================================= */
+
 .users-page-container {
-  max-width: 980px;
-  margin: 38px auto 0 auto;
-  padding: 36px 22px;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 8px 36px rgba(91,105,135,0.10);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-lg) var(--space-2xl);
   min-height: 70vh;
 }
+
+/* =============================================================================
+   HEADER SECTION
+   ============================================================================= */
 
 .users-page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 30px;
-  gap: 18px;
+  margin-bottom: var(--space-md);
+  gap: var(--space-lg);
+  flex-wrap: wrap;
 }
 
 .users-page-header h2 {
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: #222b3d;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
   margin: 0;
-  letter-spacing: -1px;
 }
+
+/* =============================================================================
+   USERS TABLE
+   ============================================================================= */
 
 .users-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  background: #f7fafd;
-  border-radius: 14px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 1px 5px rgba(41,201,138,0.07);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-slow);
 }
 
-.users-table th, .users-table td {
-  padding: 15px 12px;
-  font-size: 1rem;
-  text-align: left;
+.users-table th,
+.users-table td {
+  padding: var(--space-md);
+  font-size: var(--font-size-base);
+  text-align: center;
 }
 
 .users-table th {
-  background: #e6eeff;
-  color: #222b3d;
-  font-weight: 700;
-  border-bottom: 2px solid #d2e2f4;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--border-primary);
+  transition: all var(--transition-slow);
 }
 
 .users-table tr {
-  transition: background 0.13s;
+  transition: background var(--transition-fast);
 }
 
-.users-table tr:hover {
-  background: #f1fff7;
+.users-table tbody tr:hover {
+  background: var(--color-hover);
 }
 
 .users-table td {
-  background: #fff;
-  border-bottom: 1.3px solid #e8eef3;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border-primary);
+  transition: all var(--transition-slow);
 }
 
+.users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Rounded corners for table */
+.users-table th:first-child {
+  border-top-left-radius: var(--radius-lg);
+}
+
+.users-table th:last-child {
+  border-top-right-radius: var(--radius-lg);
+}
+
+.users-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--radius-lg);
+}
+
+.users-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+/* Form Controls in Table */
 .users-table td select,
 .users-table td button {
-  font-size: 0.96rem;
+  font-size: var(--font-size-base);
 }
 
 .users-table td select {
-  padding: 7px 14px;
-  border-radius: 7px;
-  border: 1.2px solid #d2e2f4;
-  background: #f7fafd;
-  transition: border-color .19s;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  transition: all var(--transition-base);
 }
 
 .users-table td select:focus {
-  border-color: #41d1a7;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(65, 209, 167, 0.1);
   outline: none;
 }
 
 .users-table .btn-secondary {
-  padding: 7px 18px;
-  border-radius: 8px;
-  border: 1.2px solid #e2e8f0;
-  background: #f7fafd;
-  color: #41d1a7;
-  font-weight: 600;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: background .13s, color .13s;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
 }
 
-.users-table .btn-secondary:active,
-.users-table .btn-secondary:focus,
 .users-table .btn-secondary:hover {
-  background: #fff;
-  color: #1bbbad;
+  background: var(--color-hover);
+  color: var(--color-brand-primary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
-/* Responsive para mobile */
-@media (max-width: 700px) {
+.users-table .btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* =============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================= */
+
+/* Tablet */
+@media (max-width: 1023px) {
   .users-page-container {
-    padding: 12px 2vw;
-    margin-top: 12px;
-    min-width: 98vw;
+    padding: var(--space-xl);
+    margin-top: var(--space-xl);
   }
+
   .users-page-header h2 {
-    font-size: 1.1rem;
+    font-size: var(--font-size-3xl);
   }
-  .users-table th, .users-table td {
-    font-size: 0.97rem;
-    padding: 8px 4px;
+
+  .users-table th,
+  .users-table td {
+    padding: var(--space-sm);
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* Mobile */
+@media (max-width: 639px) {
+  .users-page-container {
+    padding: var(--space-md);
+    margin-top: var(--space-md);
+    min-width: 100%;
+    border-radius: var(--radius-md);
+  }
+
+  .users-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .users-page-header h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  .users-table {
+    font-size: var(--font-size-sm);
+  }
+
+  .users-table th,
+  .users-table td {
+    font-size: var(--font-size-xs);
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .users-table th {
+    font-size: 10px;
+  }
+
+  .users-table td select {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
+
+  .users-table .btn-secondary {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+.users-table .btn-secondary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.users-table tbody tr:focus-within {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .users-table tr,
+  .users-table .btn-secondary {
+    transition: none;
+  }
+
+  .users-table .btn-secondary:hover {
+    transform: none;
   }
 }

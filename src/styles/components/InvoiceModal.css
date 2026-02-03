@@ -1,0 +1,203 @@
+/* styles/components/InvoiceModal.css */
+/* Estilos compartidos para modales de factura (ventas y compras) */
+
+.invoice-container {
+  margin: 0 auto;
+  font-family: var(--font-family-base);
+}
+
+/* Encabezado */
+.invoice-header {
+  text-align: center;
+  border-bottom: 3px solid var(--color-brand-primary);
+  padding-bottom: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.invoice-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.invoice-number {
+  font-size: var(--font-size-xl);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Grid de información */
+.invoice-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+  padding: var(--space-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+}
+
+.invoice-info-item {
+  min-width: 0;
+}
+
+.invoice-info-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.invoice-info-value {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.invoice-info-time {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+}
+
+/* Secciones */
+.invoice-section {
+  margin-bottom: var(--space-xl);
+}
+
+.invoice-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-md);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Tabla */
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.invoice-table thead {
+  background: var(--bg-tertiary);
+}
+
+.invoice-table th {
+  padding: var(--space-md);
+  text-align: left;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border-primary);
+}
+
+.invoice-table td {
+  padding: var(--space-md);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.invoice-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.invoice-table .text-center {
+  text-align: center;
+}
+
+.invoice-table .text-right {
+  text-align: right;
+}
+
+.invoice-table tbody td:nth-child(2) {
+  font-weight: var(--font-weight-medium);
+}
+
+.invoice-table tbody td:nth-child(3),
+.invoice-table tbody td:nth-child(4) {
+  font-weight: var(--font-weight-semibold);
+}
+
+.empty-message {
+  padding: var(--space-lg) !important;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Total */
+.invoice-total {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-xl);
+  padding: var(--space-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+}
+
+.invoice-total-row {
+  display: flex;
+  gap: var(--space-xl);
+  align-items: center;
+}
+
+.invoice-total-label {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.invoice-total-value {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-success);
+}
+
+/* Pie de página */
+.invoice-footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-primary);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.invoice-footer-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .invoice-info-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .invoice-table {
+    font-size: var(--font-size-sm);
+  }
+
+  .invoice-table th,
+  .invoice-table td {
+    padding: var(--space-sm);
+  }
+
+  .invoice-total-value {
+    font-size: var(--font-size-2xl);
+  }
+}

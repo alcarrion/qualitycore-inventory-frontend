@@ -1,0 +1,44 @@
+/* =============================================================================
+   GLOBAL UTILITY CLASSES & COMPONENTS
+   Professional reusable styles using design tokens
+   ============================================================================= */
+
+/* =============================================================================
+   1. LAYOUT UTILITIES
+   ============================================================================= */
+
+.page-container {
+  background: var(--bg-secondary);
+  min-height: 100vh;
+  padding: var(--space-xl);
+  margin-left: var(--sidebar-width);
+  transition: background var(--transition-slow);
+}
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+.section {
+  margin-bottom: var(--space-2xl);
+}
+
+/* Content Cards */
+.content-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  box-shadow: var(--card-shadow);
+  transition: background var(--transition-slow), box-shadow var(--transition-slow);
+}
+
+.content-card--compact {
+  padding: var(--space-lg);
+}
+
+.content-card--spacious {
+  padding: var(--space-2xl);
+}

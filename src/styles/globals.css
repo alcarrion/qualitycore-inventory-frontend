@@ -1,0 +1,8 @@
+/* =============================================================================
+   GLOBALS.CSS - LEGACY FILE
+   This file is kept for backward compatibility
+   New code should use modular utilities from styles/utilities/
+   ============================================================================= */
+
+/* All utilities are now imported via utilities/index.css in the main index.css */
+/* This file intentionally left minimal to maintain compatibility */

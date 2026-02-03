@@ -1,66 +1,78 @@
 // src/pages/CustomersPage.js
 import React, { useState, useEffect } from "react";
 import Modal from "../components/Modal";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import AddCustomerForm from "../components/AddCustomerForm";
 import EditCustomerForm from "../components/EditCustomerForm";
-import { getCustomers, patchCustomer } from "../services/api";
+import { patchCustomer } from "../services/api";
+import { useCustomersData } from "../hooks/useCustomersData";
+import { useApp } from "../contexts/AppContext";
 import "../styles/pages/CustomersPage.css";
 
 export default function CustomersPage({ user }) {
+  const { showSuccess, showError, showWarning, setLoading } = useApp();
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
   const role = (currentUser?.role || "").toLowerCase();
 
-  const CAN_ADD = ["administrator", "user"].includes(role);
-  const CAN_EDIT = ["administrator", "user"].includes(role);
-  const CAN_DELETE = ["administrator"].includes(role);
+  const CAN_ADD = ["administrator", "superadmin", "super administrador", "user"].includes(role);
+  const CAN_EDIT = ["administrator", "superadmin", "super administrador", "user"].includes(role);
+  const CAN_DELETE = ["superadmin", "super administrador"].includes(role); // Solo SuperAdmin puede eliminar
 
-  const [clientes, setClientes] = useState([]);
+  const { customers, fetchCustomers, error: dataError } = useCustomersData();
+
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
-  const [editingCliente, setEditingCliente] = useState(null);
+  const [editingCustomer, setEditingCustomer] = useState(null);
   const [search, setSearch] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState(null);
 
   useEffect(() => {
-    (async () => {
-      const res = await getCustomers();
-      const list = Array.isArray(res.data) ? res.data : [];
-      setClientes(list.filter((c) => !c.deleted_at));
-    })();
-  }, [showAdd, showEdit]);
+    if (dataError) showError(dataError);
+  }, [dataError, showError]);
 
-  const filtered = clientes.filter(
+  const filtered = customers.filter(
     (c) =>
       (c.name && c.name.toLowerCase().includes(search.toLowerCase())) ||
       (c.document && c.document.includes(search)) ||
       (c.phone && c.phone.includes(search)) ||
-      (c.email && c.email.toLowerCase().includes(search.toLowerCase()))
+      (c.email && c.email.toLowerCase().includes(search.toLowerCase())) ||
+      (c.address && c.address.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const handleDelete = async (cliente) => {
+  const handleDelete = async (customer) => {
     if (!CAN_DELETE) {
-      alert("No tienes permisos para eliminar clientes.");
+      showWarning("No tienes permisos para eliminar clientes.");
       return;
     }
 
-    if (!window.confirm("¿Seguro que deseas eliminar este cliente?")) return;
+    // Mostrar modal de confirmación
+    setCustomerToDelete(customer);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!customerToDelete) return;
+
+    setLoading(true);
     try {
-      const resp = await patchCustomer(cliente.id, {
+      const resp = await patchCustomer(customerToDelete.id, {
         deleted_at: new Date().toISOString(),
       });
       if (!resp.ok) throw new Error(resp.data?.detail || "No se pudo eliminar.");
-      setClientes((prev) => prev.filter((c) => c.id !== cliente.id));
+      fetchCustomers();
+      showSuccess("Cliente eliminado correctamente.");
     } catch (e) {
-      alert(e.message || "Error al eliminar el cliente.");
+      showError(e.message || "Error al eliminar el cliente.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="customers-page-container">
       <div className="customers-header">
-        <button className="back-btn" onClick={() => window.history.back()}>
-          ←
-        </button>
         <h2>CLIENTES</h2>
       </div>
 
@@ -82,19 +94,41 @@ export default function CustomersPage({ user }) {
       </div>
 
       <div className="customers-list">
-        {filtered.map((cliente) => (
-          <div key={cliente.id} className="customer-card">
-            <div>
-              <strong>NOMBRE:</strong> {cliente.name || "-"}
-            </div>
-            <div>
-              <strong>CORREO:</strong> {cliente.email || "-"}
-            </div>
-            <div>
-              <strong>TELÉFONO:</strong> {cliente.phone || "-"}
-            </div>
-            <div>
-              <strong>CÉDULA:</strong> {cliente.document || "-"}
+        {filtered.map((customer) => {
+          // Función para obtener el label del tipo de documento
+          const getDocumentLabel = (type) => {
+            switch (type) {
+              case 'cedula':
+                return 'Cédula:';
+              case 'ruc':
+                return 'RUC:';
+              case 'passport':
+                return 'Pasaporte:';
+              default:
+                return 'Documento:';
+            }
+          };
+
+          return (
+            <div key={customer.id} className="customer-card">
+              <div className="customer-info">
+                <div className="customer-main">
+                  <div className="customer-name">{customer.name || "-"}</div>
+                  <div className="customer-detail">
+                    <span className="customer-label">{getDocumentLabel(customer.document_type)}</span> {customer.document || "-"}
+                  </div>
+                </div>
+              <div className="customer-contact">
+                <div className="customer-detail">
+                  <span className="customer-label">Email:</span> {customer.email || "-"}
+                </div>
+                <div className="customer-detail">
+                  <span className="customer-label">Tel:</span> {customer.phone || "-"}
+                </div>
+              </div>
+              <div className="customer-address">
+                <span className="customer-label">Dirección:</span> {customer.address || "-"}
+              </div>
             </div>
 
             {(CAN_EDIT || CAN_DELETE) && (
@@ -103,7 +137,7 @@ export default function CustomersPage({ user }) {
                   <button
                     className="btn-icon"
                     onClick={() => {
-                      setEditingCliente(cliente);
+                      setEditingCustomer(customer);
                       setShowEdit(true);
                     }}
                   >
@@ -114,15 +148,16 @@ export default function CustomersPage({ user }) {
                 {CAN_DELETE && (
                   <button
                     className="btn-icon btn-delete"
-                    onClick={() => handleDelete(cliente)}
+                    onClick={() => handleDelete(customer)}
                   >
                     <FaTrash />
                   </button>
                 )}
               </div>
             )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
 
         {filtered.length === 0 && (
           <div className="no-data">No hay clientes para mostrar.</div>
@@ -132,32 +167,50 @@ export default function CustomersPage({ user }) {
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
           <AddCustomerForm
-            onSave={() => setShowAdd(false)}
+            onSave={() => {
+              setShowAdd(false);
+              fetchCustomers();
+            }}
             onCancel={() => setShowAdd(false)}
           />
         </Modal>
       )}
 
-      {showEdit && editingCliente && (
+      {showEdit && editingCustomer && (
         <Modal
           onClose={() => {
             setShowEdit(false);
-            setEditingCliente(null);
+            setEditingCustomer(null);
           }}
         >
           <EditCustomerForm
-            cliente={editingCliente}
+            customer={editingCustomer}
             onSave={() => {
               setShowEdit(false);
-              setEditingCliente(null);
+              setEditingCustomer(null);
+              fetchCustomers();
             }}
             onCancel={() => {
               setShowEdit(false);
-              setEditingCliente(null);
+              setEditingCustomer(null);
             }}
           />
         </Modal>
       )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setCustomerToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Eliminar Cliente"
+        message={`¿Estás seguro de que deseas eliminar al cliente "${customerToDelete?.name}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        type="danger"
+      />
     </div>
   );
 }

@@ -3,10 +3,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Modal from "../components/Modal";
 import { AddUserForm } from "../components/AddUserForm";
+import { useApp } from "../contexts/AppContext";
 import "../styles/pages/UsersPage.css";
 import { getUsers, patchUser } from "../services/api";
+import { translateRole } from "../utils/translateRole";
 
 export default function UsersPage({ user }) {
+  const { showSuccess, showError } = useApp();
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
 
@@ -14,7 +17,8 @@ export default function UsersPage({ user }) {
   const [showAdd, setShowAdd] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
 
-  const isAdmin = currentUser?.role === "Administrator";
+  const isAdmin = currentUser?.role === "Administrator" || currentUser?.role === "SuperAdmin";
+  const isSuperAdmin = currentUser?.role === "SuperAdmin";
 
   useEffect(() => {
     if (!isAdmin) navigate("/dashboard", { replace: true });
@@ -23,19 +27,41 @@ export default function UsersPage({ user }) {
   useEffect(() => {
     if (!isAdmin) return;
     (async () => {
-      const res = await getUsers(); 
-      setUsers(Array.isArray(res.data) ? res.data : []);
-    })();
-  }, [isAdmin, showAdd]);
+      try {
+        const res = await getUsers();
+        // El backend devuelve paginación: { count, next, previous, results: [...] }
+        // Extraemos el array de usuarios desde "results"
+        const usersList = res.data?.results || res.data || [];
+        setUsers(Array.isArray(usersList) ? usersList : []);
 
-  const handleChangeRol = async (userId, nuevoRol) => {
+        // Actualizar localStorage si el usuario actual está en la lista
+        const currentUserInList = usersList.find(u => u.id === currentUser?.id);
+        if (currentUserInList && currentUserInList.role !== currentUser?.role) {
+          const updatedUser = { ...currentUser, role: currentUserInList.role };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          // Disparar evento personalizado para que App.js actualice el estado
+          window.dispatchEvent(new Event("userUpdated"));
+        }
+      } catch (error) {
+        console.error("Error al cargar usuarios:", error);
+        showError("Error al cargar la lista de usuarios. Por favor, intenta nuevamente.");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, showAdd, showError]);
+
+  const handleChangeRole = async (userId, newRole) => {
     try {
       setLoadingId(userId);
-      const resp = await patchUser(userId, { role: nuevoRol });
-      if (!resp.ok) throw new Error(resp.data?.detail || "Error cambiando rol");
-      setUsers(prev => prev.map(u => (u.id === userId ? { ...u, role: nuevoRol } : u)));
+      const resp = await patchUser(userId, { role: newRole });
+      if (!resp.ok) {
+        const errorMsg = resp.data?.role?.[0] || resp.data?.detail || "Error cambiando rol";
+        throw new Error(errorMsg);
+      }
+      setUsers(prev => prev.map(u => (u.id === userId ? { ...u, role: newRole } : u)));
+      showSuccess("Rol actualizado correctamente.");
     } catch (e) {
-      alert(e.message || "No se pudo cambiar el rol");
+      showError(e.message || "No se pudo cambiar el rol");
     } finally {
       setLoadingId(null);
     }
@@ -45,10 +71,14 @@ export default function UsersPage({ user }) {
     try {
       setLoadingId(userId);
       const resp = await patchUser(userId, { is_active: !isActive });
-      if (!resp.ok) throw new Error(resp.data?.detail || "Error cambiando estado");
+      if (!resp.ok) {
+        const errorMsg = resp.data?.detail || resp.data?.non_field_errors?.[0] || "Error cambiando estado";
+        throw new Error(errorMsg);
+      }
       setUsers(prev => prev.map(u => (u.id === userId ? { ...u, is_active: !isActive } : u)));
+      showSuccess(`Usuario ${!isActive ? "activado" : "inactivado"} correctamente.`);
     } catch (e) {
-      alert(e.message || "No se pudo cambiar el estado");
+      showError(e.message || "No se pudo cambiar el estado");
     } finally {
       setLoadingId(null);
     }
@@ -59,10 +89,12 @@ export default function UsersPage({ user }) {
   return (
     <div className="users-page-container">
       <div className="users-page-header">
-        <h2>Usuarios</h2>
-        <button className="btn-primary" onClick={() => setShowAdd(true)}>
-          Añadir Usuario
-        </button>
+        <h2>USUARIOS</h2>
+        {isSuperAdmin && (
+          <button className="btn-primary" onClick={() => setShowAdd(true)}>
+            Añadir Usuario
+          </button>
+        )}
       </div>
 
       <table className="users-table">
@@ -90,17 +122,18 @@ export default function UsersPage({ user }) {
               <td>{u.email}</td>
               <td>{u.phone}</td>
               <td>
-                {currentUser.id !== u.id ? (
+                {currentUser.id !== u.id && (isSuperAdmin || u.role === "User") ? (
                   <select
                     value={u.role}
-                    onChange={(e) => handleChangeRol(u.id, e.target.value)}
+                    onChange={(e) => handleChangeRole(u.id, e.target.value)}
                     disabled={loadingId === u.id}
                   >
                     <option value="User">Usuario</option>
                     <option value="Administrator">Administrador</option>
+                    {isSuperAdmin && <option value="SuperAdmin">Super Administrador</option>}
                   </select>
                 ) : (
-                  u.role
+                  translateRole(u.role)
                 )}
               </td>
               <td>
@@ -119,7 +152,7 @@ export default function UsersPage({ user }) {
                 {u.is_active ? "Activo" : "Inactivo"}
               </td>
               <td>
-                {currentUser.id !== u.id ? (
+                {currentUser.id !== u.id && (isSuperAdmin || u.role === "User") ? (
                   <button
                     className="btn-secondary"
                     onClick={() => handleToggleActive(u.id, u.is_active)}
@@ -128,7 +161,9 @@ export default function UsersPage({ user }) {
                     {u.is_active ? "Inactivar" : "Activar"}
                   </button>
                 ) : (
-                  <span>—</span>
+                  <span style={{ color: "var(--text-secondary)", fontStyle: "italic", fontSize: "var(--font-size-sm)" }}>
+                    No puedes modificar <br></br> tu propia cuenta
+                  </span>
                 )}
               </td>
             </tr>

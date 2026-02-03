@@ -1,66 +1,120 @@
 // src/components/EditCustomerForm.js
 import React, { useState } from "react";
 import { patchCustomer } from "../services/api";
+import { useApp } from "../contexts/AppContext";
+import {
+  validateEcuadorianCedula,
+  validateEcuadorianRUC,
+  validatePassport
+} from "../utils/ecuadorianValidators";
 import "../styles/components/Form.css";
 
-export default function EditCustomerForm({ cliente, onSave, onCancel }) {
-  const [name, setName] = useState(cliente.name);
-  const [email, setEmail] = useState(cliente.email);
-  const [phone, setPhone] = useState(cliente.phone || "");
-  const [document, setDocument] = useState(cliente.document);
-  const [address, setAddress] = useState(cliente.address || "");
-  const [error, setError] = useState("");
+export default function EditCustomerForm({ customer, onSave, onCancel }) {
+  const { showSuccess, showError } = useApp();
+  const [name, setName] = useState(customer.name);
+  const [email, setEmail] = useState(customer.email);
+  const [phone, setPhone] = useState(customer.phone || "");
+  const [documentType, setDocumentType] = useState(customer.document_type || "cedula");
+  const [document, setDocument] = useState(customer.document);
+  const [address, setAddress] = useState(customer.address || "");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
-    if (!name || !email || !document || !phone) {
-      setError("Todos los campos son obligatorios excepto dirección.");
+    if (!name || !email || !document || !phone || !documentType) {
+      showError("Todos los campos son obligatorios excepto dirección.");
       setLoading(false);
       return;
     }
-    if (!/^\d{10,13}$/.test(document)) {
-      setError("La cédula debe tener entre 10 y 13 dígitos numéricos.");
+
+    // Validar el documento según el tipo seleccionado
+    try {
+      if (documentType === "cedula") {
+        validateEcuadorianCedula(document);
+      } else if (documentType === "ruc") {
+        validateEcuadorianRUC(document);
+      } else if (documentType === "passport") {
+        validatePassport(document);
+      }
+    } catch (error) {
+      showError(error.message);
       setLoading(false);
       return;
     }
-    if (!/^\d+$/.test(phone)) {
-      setError("El teléfono solo debe contener números.");
+
+    // Validar teléfono
+    if (!/^\d{10}$/.test(phone)) {
+      showError("El teléfono debe tener exactamente 10 dígitos.");
       setLoading(false);
       return;
     }
 
     try {
-      const resp = await patchCustomer(cliente.id, {
+      const resp = await patchCustomer(customer.id, {
         name,
         email,
         phone,
+        document_type: documentType,
         document,
         address,
       });
 
       if (!resp.ok) {
-        const d = resp.data;
-        const msg =
-          d?.detail ||
-          (d && typeof d === "object"
-            ? Object.entries(d)
-                .map(([campo, errs]) =>
-                  Array.isArray(errs) ? `${campo}: ${errs.join(", ")}` : `${campo}: ${String(errs)}`
-                )
-                .join(" | ")
-            : "No se pudo editar el cliente.");
-        throw new Error(msg);
+        // Manejar errores de validación del backend
+        if (resp.data && typeof resp.data === 'object') {
+          // Formatear errores de validación sin el prefijo del campo
+          const errorMessages = Object.entries(resp.data)
+            .map(([field, messages]) => {
+              if (Array.isArray(messages)) {
+                return messages.join(', ');
+              }
+              return messages;
+            })
+            .join('. ');
+
+          showError(errorMessages || "No se pudo editar el cliente.");
+        } else {
+          showError(resp.data?.detail || "No se pudo editar el cliente.");
+        }
+        setLoading(false);
+        return;
       }
 
+      showSuccess("Cliente editado correctamente.");
       onSave?.(resp.data);
     } catch (err) {
-      setError(err.message || "Error al editar cliente.");
+      const errorMsg = err.message || "Error al editar cliente.";
+      showError(errorMsg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getDocumentPlaceholder = () => {
+    switch (documentType) {
+      case "cedula":
+        return "10 dígitos";
+      case "ruc":
+        return "13 dígitos";
+      case "passport":
+        return "6-9 caracteres alfanuméricos";
+      default:
+        return "";
+    }
+  };
+
+  const getDocumentLabel = () => {
+    switch (documentType) {
+      case "cedula":
+        return "Cédula";
+      case "ruc":
+        return "RUC";
+      case "passport":
+        return "Pasaporte";
+      default:
+        return "Documento";
     }
   };
 
@@ -75,25 +129,55 @@ export default function EditCustomerForm({ cliente, onSave, onCancel }) {
 
       <div className="form-group">
         <label>Correo</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value.toLowerCase())}
+          placeholder="ejemplo@correo.com"
+          required
+        />
       </div>
 
       <div className="form-group">
-        <label>Cédula / RUC</label>
-        <input value={document} onChange={(e) => setDocument(e.target.value)} required />
+        <label>Tipo de Documento</label>
+        <select
+          value={documentType}
+          onChange={(e) => {
+            setDocumentType(e.target.value);
+            setDocument(""); // Limpiar el documento cuando cambia el tipo
+          }}
+          required
+        >
+          <option value="cedula">Cédula</option>
+          <option value="ruc">RUC</option>
+          <option value="passport">Pasaporte</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label>{getDocumentLabel()}</label>
+        <input
+          value={document}
+          onChange={(e) => setDocument(e.target.value)}
+          placeholder={getDocumentPlaceholder()}
+          required
+        />
       </div>
 
       <div className="form-group">
         <label>Teléfono</label>
-        <input value={phone} onChange={(e) => setPhone(e.target.value)} required />
+        <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="0987654321"
+          required
+        />
       </div>
 
       <div className="form-group">
         <label>Dirección</label>
         <input value={address} onChange={(e) => setAddress(e.target.value)} />
       </div>
-
-      {error && <div className="form-error">{error}</div>}
 
       <div className="form-actions">
         <button className="btn-primary" type="submit" disabled={loading}>

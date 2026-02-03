@@ -1,141 +1,249 @@
+/* =============================================================================
+   REPORTS PAGE - Professional Report Generation
+   ============================================================================= */
+
 .report-bg {
-  min-height: 100vh;
-  padding: 50px 20px;
+  min-height: calc(100vh - 80px);
+  padding: var(--space-2xl) var(--space-lg);
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  font-family: 'Segoe UI', 'Roboto', sans-serif;
+  align-items: center;
+  background: var(--bg-secondary);
+  transition: background var(--transition-slow);
 }
 
 .report-card {
-  background-color: #fff;
-  border-radius: 2rem;
-  padding: 40px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  padding: var(--space-2xl);
   width: 100%;
-  max-width: 550px;
+  max-width: 600px;
 }
 
+/* =============================================================================
+   HEADER SECTION
+   ============================================================================= */
+
 .report-title {
-  font-size: 1.6rem;
-  font-weight: bold;
-  color: #1a1a1a;
-  margin-bottom: 6px;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
+  transition: color var(--transition-slow);
 }
 
 .report-subtitle {
-  color: #6b7280;
-  font-size: 1rem;
-  margin-bottom: 24px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--space-xl);
+  transition: color var(--transition-slow);
 }
 
+/* =============================================================================
+   FORM ELEMENTS
+   ============================================================================= */
+
 .report-label {
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 6px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
   display: block;
-  font-size: 0.97rem;
+  font-size: var(--font-size-base);
+  transition: color var(--transition-slow);
 }
 
 .report-select,
-.report-date {
+.report-date,
+.report-input {
   width: 100%;
-  padding: 1rem;
-  font-size: 1rem;
-  background: #f0fdf4;
-  border: 2px solid #bbf7d0;
-  border-radius: 1rem;
-  margin-bottom: 20px;
+  padding: var(--space-md);
+  font-size: var(--font-size-base);
+  background: var(--input-bg);
+  border: 1.5px solid var(--input-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
   outline: none;
-  transition: border 0.2s ease;
+  color: var(--text-primary);
+  transition: all var(--transition-base);
+}
+
+.report-select {
+  padding-right: 40px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat !important;
+  background-position: right 10px center;
+  background-size: 18px;
 }
 
 .report-select:focus,
-.report-date:focus {
-  border-color: #10b981;
-  background: #dcfce7;
+.report-select:active {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(65, 209, 167, 0.1);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-position: right 10px center;
+  background-size: 18px;
 }
+
+.report-date:focus,
+.report-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(65, 209, 167, 0.1);
+}
+
+/* Custom calendar icon for date input */
+.report-input::-webkit-calendar-picker-indicator,
+.report-date::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity var(--transition-base);
+}
+
+.report-input::-webkit-calendar-picker-indicator:hover,
+.report-date::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* =============================================================================
+   BUTTONS
+   ============================================================================= */
 
 .report-btn {
   width: 100%;
-  padding: 1rem;
-  background: linear-gradient(90deg, #34d399, #10b981);
-  color: white;
-  font-weight: bold;
-  font-size: 1.1rem;
+  padding: var(--space-md) var(--space-lg);
+  background: linear-gradient(135deg, var(--color-success) 0%, #059669 100%);
+  color: var(--text-inverse);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
   border: none;
-  border-radius: 1rem;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: all var(--transition-base);
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+  gap: var(--space-sm);
+  box-shadow: var(--shadow-md);
 }
 
 .report-btn:hover {
-  transform: scale(1.03);
-  background: linear-gradient(90deg, #059669, #10b981);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
+.report-btn:active {
+  transform: translateY(0);
+}
+
+/* =============================================================================
+   SUCCESS MESSAGE
+   ============================================================================= */
+
 .report-msg {
-  background-color: #e6fff5;
-  color: #117865;
-  border: 2px solid #3ee1af;
-  padding: 1rem;
-  border-radius: 0.9rem;
-  margin-top: 24px;
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+  border: 2px solid var(--color-success);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-xl);
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 600;
-  font-size: 1rem;
+  gap: var(--space-sm);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
 }
 
 .report-pdf-link {
   display: inline-block;
-  margin-top: 18px;
-  background: #d1fae5;
-  color: #065f46;
-  font-weight: bold;
+  margin-top: var(--space-lg);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-weight: var(--font-weight-bold);
   text-decoration: none;
-  padding: 0.8rem 2rem;
-  border-radius: 2rem;
-  transition: background 0.2s ease;
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+  padding: var(--space-sm) var(--space-xl);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
 }
 
 .report-pdf-link:hover {
-  background: #a7f3d0;
-  color: #064e3b;
+  background: var(--color-success);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
-.report-input {
-  width: 100%;
-  padding: 1rem;
-  font-size: 1rem;
-  background: #f0fdf4;
-  border: 2px solid #bbf7d0;
-  border-radius: 1rem;
-  margin-bottom: 20px;
-  outline: none;
-  transition: border 0.2s ease;
-  color: #333;
+.report-pdf-link:active {
+  transform: translateY(0);
 }
 
-.report-input:focus {
-  border-color: #10b981;
-  background: #dcfce7;
+/* =============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================= */
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .report-bg {
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .report-card {
+    padding: var(--space-xl);
+  }
+
+  .report-title {
+    font-size: var(--font-size-xl);
+  }
 }
 
-.report-input::-webkit-calendar-picker-indicator {
-  background: url("data:image/svg+xml;utf8,<svg fill='black' xmlns='http://www.w3.org/2000/svg' height='20' viewBox='0 0 24 24' width='20'><path d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM5 7V6h14v1H5z'/></svg>") no-repeat center;
-  background-size: 20px;
-  opacity: 1;
-  filter: none;
-  cursor: pointer;
+/* Mobile */
+@media (max-width: 639px) {
+  .report-bg {
+    padding: var(--space-xl) var(--space-sm);
+  }
+
+  .report-card {
+    padding: var(--space-lg);
+    max-width: 100%;
+  }
+
+  .report-title {
+    font-size: var(--font-size-lg);
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .report-subtitle {
+    font-size: var(--font-size-sm);
+  }
+
+  .report-btn {
+    font-size: var(--font-size-base);
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+.report-btn:focus-visible,
+.report-pdf-link:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .report-btn,
+  .report-pdf-link {
+    transition: none;
+  }
+
+  .report-btn:hover,
+  .report-pdf-link:hover {
+    transform: none;
+  }
 }

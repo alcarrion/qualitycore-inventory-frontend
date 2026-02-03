@@ -18,6 +18,7 @@ export default function ProfilePage({ user }) {
     setShowEdit(false);
     localStorage.setItem("user", JSON.stringify(newUser));
     window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event("userUpdated"));
   };
 
   const handleSavePass = () => {

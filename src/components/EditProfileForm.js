@@ -1,40 +1,53 @@
 // src/components/EditProfileForm.js
 import React, { useState } from "react";
 import { patchUser } from "../services/api";
+import { useApp } from "../contexts/AppContext";
 import "../styles/components/Form.css";
 
 export default function EditProfileForm({ user, onSave, onCancel }) {
+  const { showSuccess, showError } = useApp();
   const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState(user.phone || "");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+
+    // Validar email
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showError("Por favor ingresa un correo electrónico válido.");
+      setLoading(false);
+      return;
+    }
 
     if (phone && !/^\d{10}$/.test(phone)) {
-      setError("El número de teléfono debe tener exactamente 10 dígitos numéricos.");
+      showError("El número de teléfono debe tener exactamente 10 dígitos numéricos.");
       setLoading(false);
       return;
     }
 
     try {
-      const resp = await patchUser(user.id, { name, phone: phone || null });
+      const resp = await patchUser(user.id, { name, email, phone: phone || null });
 
       if (!resp.ok) {
-        const d = resp.data;
-        const msg =
-          d?.detail ||
-          (d && typeof d === "object"
-            ? Object.entries(d)
-                .map(([campo, errs]) =>
-                  Array.isArray(errs) ? `${campo}: ${errs.join(", ")}` : `${campo}: ${String(errs)}`
-                )
-                .join(" | ")
-            : "No se pudo actualizar.");
-        throw new Error(msg);
+        // Manejar errores de validación del backend
+        if (resp.data && typeof resp.data === 'object') {
+          const errorMessages = Object.entries(resp.data)
+            .map(([field, messages]) => {
+              if (Array.isArray(messages)) {
+                return messages.join(', ');
+              }
+              return messages;
+            })
+            .join('. ');
+          showError(errorMessages || "No se pudo actualizar el perfil.");
+        } else {
+          showError(resp.data?.detail || "No se pudo actualizar el perfil.");
+        }
+        setLoading(false);
+        return;
       }
 
       try {
@@ -42,9 +55,10 @@ export default function EditProfileForm({ user, onSave, onCancel }) {
         localStorage.setItem("user", JSON.stringify(updated));
       } catch {}
 
+      showSuccess("Perfil actualizado correctamente.");
       onSave?.(resp.data);
     } catch (err) {
-      setError(err.message || "Hubo un error al guardar los cambios.");
+      showError(err.message || "Hubo un error al guardar los cambios.");
     } finally {
       setLoading(false);
     }
@@ -60,11 +74,23 @@ export default function EditProfileForm({ user, onSave, onCancel }) {
       </div>
 
       <div className="form-group">
-        <label>Teléfono</label>
-        <input value={phone} onChange={e => setPhone(e.target.value)} />
+        <label>Correo Electrónico</label>
+        <input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+        />
       </div>
 
-      {error && <div className="form-error">{error}</div>}
+      <div className="form-group">
+        <label>Teléfono</label>
+        <input
+          value={phone}
+          onChange={e => setPhone(e.target.value)}
+          placeholder="0987654321"
+        />
+      </div>
 
       <div className="form-actions">
         <button className="btn-primary" type="submit" disabled={loading}>

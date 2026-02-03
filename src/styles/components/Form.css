@@ -1,92 +1,303 @@
-/* src/styles/components/Form.css */
+/* =============================================================================
+   FORM COMPONENTS - Professional Form Styling
+   ============================================================================= */
+
+/* =============================================================================
+   FORM TITLE
+   ============================================================================= */
+
 .form-title {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #1bbbad;
-  margin-bottom: 14px;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+  margin-bottom: var(--space-md);
   text-align: center;
-  letter-spacing: 0.3px;
+  letter-spacing: -0.01em;
+  line-height: var(--line-height-tight);
+  transition: color var(--transition-slow);
 }
+
+/* =============================================================================
+   FORM GROUPS
+   ============================================================================= */
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--space-xs);
 }
+
+/* =============================================================================
+   FORM LABELS
+   ============================================================================= */
 
 .custom-form label {
-  color: #343a40;
-  font-weight: 500;
-  font-size: 15px;
-  margin-bottom: 2px;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--space-xs);
+  transition: color var(--transition-slow);
 }
 
-.custom-form input, 
+/* =============================================================================
+   FORM INPUTS & SELECTS
+   ============================================================================= */
+
+.custom-form input,
 .custom-form select {
-  padding: 11px 15px;
-  border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
-  background: #f7fafd;
-  font-size: 15px;
-  transition: border 0.2s;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  transition: all var(--transition-base);
+  outline: none;
 }
 
 .custom-form input:focus,
 .custom-form select:focus {
-  border-color: #41d1a7;
-  outline: none;
-  background: #fff;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(65, 209, 167, 0.1);
+  background: var(--input-bg);
 }
 
-.form-error {
-  background: #ffeaea;
-  color: #c7362c;
-  font-size: 14px;
-  border-radius: 8px;
-  padding: 7px 12px;
-  margin-bottom: 7px;
-  border: 1px solid #ffd6d6;
-  text-align: center;
+.custom-form input:hover:not(:focus),
+.custom-form select:hover:not(:focus) {
+  border-color: var(--color-brand-primary);
 }
+
+.custom-form input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* =============================================================================
+   FORM ERROR MESSAGES
+   ============================================================================= */
+
+.form-error {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-sm);
+  border: 1px solid var(--color-error);
+  text-align: center;
+  font-weight: var(--font-weight-medium);
+}
+
+/* =============================================================================
+   FORM ACTIONS
+   ============================================================================= */
 
 .form-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 8px;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
+
+/* =============================================================================
+   FORM BUTTONS
+   ============================================================================= */
 
 .btn-primary,
 .btn-secondary {
-  padding: 11px 0;
+  padding: var(--space-sm) var(--space-lg);
   flex: 1 1 0;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 700;
+  min-width: 120px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
   border: none;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(41,201,138,0.07);
-  transition: background .18s, color .18s;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
 }
 
 .btn-primary {
-  background: linear-gradient(90deg, #68e470 0%, #41d1a7 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-brand-accent) 0%, var(--color-brand-primary) 100%);
+  color: var(--text-inverse);
 }
-.btn-primary:active,
-.btn-primary:focus,
-.btn-primary:hover {
-  background: linear-gradient(90deg, #48d658 0%, #1bbbad 100%);
-  color: #fff;
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  background: var(--color-disabled);
+  color: var(--text-inverse);
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .btn-secondary {
-  background: #f7fafd;
-  color: #41d1a7;
-  border: 1.2px solid #e2e8f0;
+  background: var(--input-bg);
+  color: var(--color-brand-primary);
+  border: 1.5px solid var(--input-border);
 }
-.btn-secondary:hover {
-  background: #fff;
-  color: #1bbbad;
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-hover);
+  color: var(--color-brand-primary-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:disabled {
+  background: var(--color-disabled);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* =============================================================================
+   PASSWORD INPUT WITH TOGGLE ICON
+   ============================================================================= */
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.password-toggle-icon {
+  position: absolute;
+  right: var(--space-md);
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  user-select: none;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-lg);
+}
+
+.password-toggle-icon:hover {
+  color: var(--color-brand-primary);
+  background: var(--color-hover);
+}
+
+.password-toggle-icon:active {
+  transform: scale(0.95);
+}
+
+/* =============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================= */
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .form-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .custom-form input,
+  .custom-form select {
+    font-size: var(--font-size-sm);
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* Mobile */
+@media (max-width: 639px) {
+  .form-group {
+    margin-bottom: var(--space-md);
+  }
+
+  .form-title {
+    font-size: var(--font-size-base);
+    margin-bottom: var(--space-sm);
+  }
+
+  .custom-form label {
+    font-size: var(--font-size-sm);
+  }
+
+  .custom-form input,
+  .custom-form select {
+    padding: var(--space-sm);
+    font-size: var(--font-size-sm);
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    flex: 1 1 100%;
+    padding: var(--space-sm);
+    font-size: var(--font-size-sm);
+  }
+
+  .password-input-wrapper input {
+    padding-right: 44px;
+  }
+
+  .password-toggle-icon {
+    right: var(--space-sm);
+    font-size: var(--font-size-base);
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.custom-form input:focus-visible,
+.custom-form select:focus-visible {
+  outline: none;
+}
+
+.password-toggle-icon:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .custom-form input,
+  .custom-form select,
+  .btn-primary,
+  .btn-secondary,
+  .password-toggle-icon {
+    transition: none;
+  }
+
+  .btn-primary:hover,
+  .password-toggle-icon:active {
+    transform: none;
+  }
 }

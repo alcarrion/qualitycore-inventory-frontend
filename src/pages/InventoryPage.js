@@ -1,86 +1,111 @@
 // src/pages/InventoryPage.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import ProductCard from "../components/ProductCard";
 import Modal from "../components/Modal";
+import ConfirmDialog from "../components/ConfirmDialog";
 import AddProductForm from "../components/AddProductForm";
 import EditProductForm from "../components/EditProductForm";
 import { FaPlus, FaSearch } from "react-icons/fa";
+import { useApp } from "../contexts/AppContext";
 import "../styles/pages/InventoryPage.css";
 
-import {
-  getProducts,
-  getSuppliers,
-  getCategories,
-  patchProductJson,   
-} from "../services/api";
+import { patchProductJson } from "../services/api";
+import { useInventoryData } from "../hooks/useInventoryData";
 
 export default function InventoryPage({ user }) {
+  const { showSuccess, showError, showWarning, setLoading } = useApp();
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
-  const isAdmin = currentUser?.role === "Administrator";
+  const role = (currentUser?.role || "").toLowerCase();
+  const isAdmin = role === "administrator" || role === "superadmin" || role === "super administrador";
+  const isSuperAdmin = role === "superadmin" || role === "super administrador";
 
-  const [products, setProducts] = useState([]);
+  const { products, suppliers, categories, fetchProducts, fetchCategories, error: dataError } = useInventoryData();
+
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [suppliers, setSuppliers] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
-
-  const loadProducts = async () => {
-    const res = await getProducts(); 
-    const list = Array.isArray(res.data) ? res.data : [];
-    setProducts(list.filter(p => !p.deleted_at));
-  };
-
-  useEffect(() => {
-    loadProducts();
-  }, [showAdd, showEdit]);
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterSupplier, setFilterSupplier] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
 
   useEffect(() => {
-    const handleReload = () => loadProducts();
+    if (dataError) showError(dataError);
+  }, [dataError, showError]);
+
+  useEffect(() => {
+    const handleReload = () => fetchProducts();
     window.addEventListener("recargarInventario", handleReload);
     return () => window.removeEventListener("recargarInventario", handleReload);
-  }, []);
+  }, [fetchProducts]);
 
-  useEffect(() => {
-    (async () => {
-      const ps = await getSuppliers();
-      setSuppliers(Array.isArray(ps.data) ? ps.data.filter(p => !p.deleted_at) : []);
-    })();
-  }, []);
+  // ✅ Optimización: useMemo para evitar recalcular en cada render
+  const productsWithNames = useMemo(() => {
+    return products.map((p) => {
+      const cat = categories.find((c) => c.id === p.category);
+      const prov = suppliers.find((s) => s.id === p.supplier);
+      return {
+        ...p,
+        category_name: cat ? cat.name : "-",
+        supplier_name: prov ? prov.name : "-",
+      };
+    });
+  }, [products, categories, suppliers]);
 
-  useEffect(() => {
-    (async () => {
-      const cs = await getCategories();
-      setCategories(Array.isArray(cs.data) ? cs.data : []);
-    })();
-  }, []);
+  // ✅ Optimización: useMemo para filtrado - solo recalcula cuando cambian las dependencias
+  const filtered = useMemo(() => {
+    return productsWithNames.filter((p) => {
+      // Filtro de búsqueda por texto
+      const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+        (p.category_name && p.category_name.toLowerCase().includes(search.toLowerCase())) ||
+        (p.supplier_name && p.supplier_name.toLowerCase().includes(search.toLowerCase()));
 
-  const productsWithNames = products.map((p) => {
-    const cat = categories.find((c) => c.id === p.category);
-    const prov = suppliers.find((s) => s.id === p.supplier);
-    return {
-      ...p,
-      category_name: cat ? cat.name : "-",
-      supplier_name: prov ? prov.name : "-",
-    };
-  });
+      // Filtro por categoría
+      const matchesCategory = !filterCategory || p.category === parseInt(filterCategory);
 
-  const filtered = productsWithNames.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    (p.category_name && p.category_name.toLowerCase().includes(search.toLowerCase())) ||
-    (p.supplier_name && p.supplier_name.toLowerCase().includes(search.toLowerCase()))
-  );
+      // Filtro por proveedor
+      const matchesSupplier = !filterSupplier || p.supplier === parseInt(filterSupplier);
 
-  const handleDelete = async (product) => {
-    if (!window.confirm("¿Seguro que deseas eliminar este producto?")) return;
-    const resp = await patchProductJson(product.id, { deleted_at: new Date().toISOString() });
-    if (resp.ok) {
-      setProducts(prev => prev.filter(p => p.id !== product.id));
-    } else {
-      alert(resp.data?.detail || "No se pudo eliminar el producto.");
+      // Filtro por estado
+      const matchesStatus = !filterStatus ||
+        (filterStatus === "active" && p.is_active) ||
+        (filterStatus === "inactive" && !p.is_active);
+
+      return matchesSearch && matchesCategory && matchesSupplier && matchesStatus;
+    });
+  }, [productsWithNames, search, filterCategory, filterSupplier, filterStatus]);
+
+  // ✅ Optimización: useCallback para evitar recrear la función en cada render
+  const handleDelete = useCallback(async (product) => {
+    if (!isSuperAdmin) {
+      showWarning("Solo los Super Administradores pueden eliminar productos.");
+      return;
     }
-  };
+    setProductToDelete(product);
+    setShowDeleteConfirm(true);
+  }, [isSuperAdmin, showWarning]);
+
+  // ✅ Optimización: useCallback para confirmDelete
+  const confirmDelete = useCallback(async () => {
+    if (!productToDelete) return;
+
+    setLoading(true);
+    try {
+      const resp = await patchProductJson(productToDelete.id, { deleted_at: new Date().toISOString() });
+      if (resp.ok) {
+        fetchProducts();
+        showSuccess("Producto eliminado correctamente.");
+      } else {
+        showError(resp.data?.detail || "No se pudo eliminar el producto.");
+      }
+    } catch (error) {
+      showError("Error al eliminar el producto.");
+    } finally {
+      setLoading(false);
+    }
+  }, [productToDelete, fetchProducts, setLoading, showSuccess, showError]);
 
   return (
     <div className="inventory-page-container">
@@ -104,12 +129,69 @@ export default function InventoryPage({ user }) {
         )}
       </div>
 
+      <div className="inventory-filters">
+        <div className="filter-group">
+          <label>Categoría:</label>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+          >
+            <option value="">Todas las categorías</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label>Proveedor:</label>
+          <select
+            value={filterSupplier}
+            onChange={(e) => setFilterSupplier(e.target.value)}
+          >
+            <option value="">Todos los proveedores</option>
+            {suppliers.map((sup) => (
+              <option key={sup.id} value={sup.id}>
+                {sup.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label>Estado:</label>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="">Todos los estados</option>
+            <option value="active">Activo</option>
+            <option value="inactive">Inactivo</option>
+          </select>
+        </div>
+
+        <button
+          className="btn-clear-filters"
+          onClick={() => {
+            setFilterCategory("");
+            setFilterSupplier("");
+            setFilterStatus("");
+            setSearch("");
+          }}
+        >
+          Limpiar filtros
+        </button>
+      </div>
+
       <div className="product-list">
         {filtered.map((product) => (
           <ProductCard
             key={product.id}
-            producto={product}
+            product={product}
             isAdmin={isAdmin}
+            canDelete={isSuperAdmin}
             onEdit={(p) => {
               setEditingProduct(p);
               setShowEdit(true);
@@ -125,7 +207,11 @@ export default function InventoryPage({ user }) {
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
           <AddProductForm
-            onSave={() => setShowAdd(false)}
+            onSave={() => {
+              setShowAdd(false);
+              fetchProducts();
+              fetchCategories();
+            }}
             onCancel={() => setShowAdd(false)}
           />
         </Modal>
@@ -137,10 +223,11 @@ export default function InventoryPage({ user }) {
           setEditingProduct(null);
         }}>
           <EditProductForm
-            producto={editingProduct}
+            product={editingProduct}
             onSave={() => {
               setShowEdit(false);
               setEditingProduct(null);
+              fetchProducts();
             }}
             onCancel={() => {
               setShowEdit(false);
@@ -149,6 +236,20 @@ export default function InventoryPage({ user }) {
           />
         </Modal>
       )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setProductToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Eliminar Producto"
+        message={`¿Estás seguro de que deseas eliminar el producto "${productToDelete?.name}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        type="danger"
+      />
     </div>
   );
 }

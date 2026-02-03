@@ -25,6 +25,24 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>Quality Core Service</title>
+    <script>
+      // Aplicar dark mode ANTES de que React se monte para evitar el flash blanco (FOUC)
+      // Este script se ejecuta INMEDIATAMENTE, antes de que se renderice cualquier cosa
+      (function() {
+        try {
+          const darkMode = localStorage.getItem('darkMode') === 'true';
+          if (darkMode) {
+            // Aplicar clase tanto a html como a body para máxima cobertura
+            document.documentElement.classList.add('dark-mode');
+            if (document.body) {
+              document.body.classList.add('dark-mode');
+            }
+          }
+        } catch (e) {
+          // Si falla localStorage (modo incógnito estricto), ignorar silenciosamente
+        }
+      })();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

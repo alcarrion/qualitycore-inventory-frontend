@@ -1,0 +1,123 @@
+/* =============================================================================
+   COLOR TOKENS
+   Semantic color system with light/dark theme support
+   ============================================================================= */
+
+/* =============================================================================
+   LIGHT THEME COLORS
+   ============================================================================= */
+
+:root {
+  /* --- Brand Colors --- */
+  --color-brand-primary: #41d1a7;
+  --color-brand-primary-hover: #1bbbad;
+  --color-brand-secondary: #7f85f5;
+  --color-brand-accent: #68e470;
+
+  /* --- Background Colors --- */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7fafd;
+  --bg-tertiary: #e6eeff;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* --- Text Colors --- */
+  --text-primary: #262a36;
+  --text-secondary: #6c7a90;
+  --text-tertiary: #9ca3af;
+  --text-inverse: #ffffff;
+  --text-link: #41d1a7;
+  --text-link-hover: #1bbbad;
+
+  /* --- Border Colors --- */
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --border-focus: #41d1a7;
+  --border-error: #ef4444;
+
+  /* --- Interactive States --- */
+  --color-hover: #f7fafd;
+  --color-active: #e6eeff;
+  --color-disabled: #f3f4f6;
+  --color-disabled-text: #9ca3af;
+
+  /* --- Semantic Colors --- */
+  --color-success: #10b981;
+  --color-success-bg: #d1fae5;
+  --color-success-text: #065f46;
+
+  --color-warning: #f59e0b;
+  --color-warning-bg: #fef3c7;
+  --color-warning-text: #92400e;
+
+  --color-error: #ef4444;
+  --color-error-bg: #fee2e2;
+  --color-error-text: #991b1b;
+
+  --color-info: #3b82f6;
+  --color-info-bg: #dbeafe;
+  --color-info-text: #1e40af;
+
+  /* --- Component Specific --- */
+  --card-bg: #ffffff;
+  --card-shadow: var(--shadow-md);
+  --input-bg: #ffffff;
+  --input-border: var(--border-primary);
+  --sidebar-width: 240px;
+  --header-height: 64px;
+}
+
+/* =============================================================================
+   DARK THEME COLORS
+   ============================================================================= */
+
+body.dark-mode,
+html.dark-mode {
+  /* --- Background Colors --- */
+  --bg-primary: #1a1d2e;
+  --bg-secondary: #252836;
+  --bg-tertiary: #2d3142;
+  --bg-elevated: #2d3142;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+
+  /* --- Text Colors --- */
+  --text-primary: #e4e6eb;
+  --text-secondary: #a0a3bd;
+  --text-tertiary: #6b7280;
+  --text-inverse: #ffffff;
+
+  /* --- Border Colors --- */
+  --border-primary: #3d4152;
+  --border-secondary: #4b5563;
+
+  /* --- Interactive States --- */
+  --color-hover: #2d3142;
+  --color-active: #363a4d;
+  --color-disabled: #1f2937;
+  --color-disabled-text: #6b7280;
+
+  /* --- Semantic Colors (adjusted for dark mode) --- */
+  --color-success-bg: #064e3b;
+  --color-success-text: #6ee7b7;
+
+  --color-warning-bg: #78350f;
+  --color-warning-text: #fcd34d;
+
+  --color-error-bg: #7f1d1d;
+  --color-error-text: #fca5a5;
+
+  --color-info-bg: #1e3a8a;
+  --color-info-text: #93c5fd;
+
+  /* --- Component Specific --- */
+  --card-bg: #252836;
+  --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  --input-bg: #2d3142;
+  --input-border: var(--border-primary);
+
+  /* --- Shadows (darker for dark mode) --- */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+}

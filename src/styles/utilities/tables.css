@@ -1,0 +1,70 @@
+/* =============================================================================
+   3. TABLE STYLES
+   ============================================================================= */
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--card-bg);
+  transition: background var(--transition-slow);
+}
+
+table thead {
+  background: var(--bg-tertiary);
+  transition: background var(--transition-slow);
+}
+
+table th {
+  padding: var(--space-md) var(--space-lg);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-primary);
+  white-space: nowrap;
+  transition: color var(--transition-slow), border-color var(--transition-slow);
+}
+
+table th:first-child {
+  border-top-left-radius: var(--radius-lg);
+}
+
+table th:last-child {
+  border-top-right-radius: var(--radius-lg);
+}
+
+table td {
+  padding: var(--space-md) var(--space-lg);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  border-bottom: 1px solid var(--border-primary);
+  transition: color var(--transition-slow), border-color var(--transition-slow);
+}
+
+table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+table tbody tr:hover {
+  background: var(--color-hover);
+}
+
+table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--radius-lg);
+}
+
+table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+table tbody tr:last-child td {
+  border-bottom: none;
+}

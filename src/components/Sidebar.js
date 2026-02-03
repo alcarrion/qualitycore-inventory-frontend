@@ -1,52 +1,56 @@
 // src/components/Sidebar.js
-import React from "react";
+import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, Box, BarChart2, Users,
   User, DollarSign, Truck, LogOut
 } from "lucide-react";
+import ConfirmDialog from "./ConfirmDialog";
+import { translateRole } from "../utils/translateRole";
 import "../styles/components/Sidebar.css";
 
-export default function Sidebar({ user, onLogout, onShowPerfil }) {
-  const traducirRol = (rol) => {
-    switch (rol?.toLowerCase()) {
-      case "administrator":
-        return "Administrador";
-      case "user":
-        return "Usuario";
-      default:
-        return rol;
+export default function Sidebar({ user, onLogout, onShowPerfil, isOpen, onClose }) {
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleNavClick = () => {
+    // Cerrar sidebar en móvil cuando se hace clic en un enlace
+    if (onClose) {
+      onClose();
     }
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'sidebar--open' : ''}`}>
       <div className="sidebar-logo">
         <img src={require("../assets/logo.png")} alt="Logo" />
         <span>
-          CoreQuality<br />
+          QualityCore<br />
           <span className="sidebar-sub">Services</span>
         </span>
       </div>
 
       <nav className="sidebar-nav">
-        <NavLink to="/dashboard" className={({ isActive }) => isActive ? "active" : ""}>
+        <NavLink to="/dashboard" className={({ isActive }) => isActive ? "active" : ""} onClick={handleNavClick}>
           <LayoutDashboard size={20} /> Dashboard
         </NavLink>
-        <NavLink to="/products"><Box size={20} /> Inventario</NavLink>
-        <NavLink to="/transactions"><Truck size={20} /> Movimientos</NavLink>
-        <NavLink to="/reports"><BarChart2 size={20} /> Reportes</NavLink>
-        <NavLink to="/suppliers"><Users size={20} /> Proveedores</NavLink>
-        <NavLink to="/customers"><User size={20} /> Clientes</NavLink>
-        <NavLink to="/quotation"><DollarSign size={20} /> Cotización</NavLink>
+        <NavLink to="/transactions" onClick={handleNavClick}><Truck size={20} /> Movimientos</NavLink>
+        <NavLink to="/products" onClick={handleNavClick}><Box size={20} /> Inventario</NavLink>
+        <NavLink to="/suppliers" onClick={handleNavClick}><Users size={20} /> Proveedores</NavLink>
+        <NavLink to="/customers" onClick={handleNavClick}><User size={20} /> Clientes</NavLink>
+        <NavLink to="/quotation" onClick={handleNavClick}><DollarSign size={20} /> Cotización</NavLink>
+        <NavLink to="/reports" onClick={handleNavClick}><BarChart2 size={20} /> Reportes</NavLink>
 
-        {/* Solo el administrador puede ver esto */}
-        {user?.role === "Administrator" && (
-          <NavLink to="/users"><Users size={20} /> Usuarios</NavLink>
+        {/* Solo el administrador o super admin pueden ver esto */}
+        {(user?.role === "Administrator" || user?.role === "SuperAdmin") && (
+          <NavLink to="/users" onClick={handleNavClick}><Users size={20} /> Usuarios</NavLink>
         )}
       </nav>
 
-      <div style={{ flex: 4 }} />
+      <div style={{ flex: '1 1 auto' }} />
 
       <div className="sidebar-user">
         <div
@@ -59,13 +63,24 @@ export default function Sidebar({ user, onLogout, onShowPerfil }) {
           </div>
           <div className="sidebar-user-name">{user?.name || "Usuario"}</div>
           <div className="sidebar-user-role">
-            {traducirRol(user?.role) || "Sin rol"}
+            {translateRole(user?.role) || "Sin rol"}
           </div>
         </div>
-        <button className="sidebar-logout" onClick={onLogout}>
-          <LogOut size={18} style={{ marginRight: 8 }} /> Cerrar Sesión
+        <button className="sidebar-logout" onClick={handleLogout} title="Cerrar Sesión">
+          <LogOut size={20} />
         </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={onLogout}
+        title="Cerrar Sesión"
+        message="¿Estás seguro que quieres cerrar sesión?"
+        confirmText="Cerrar Sesión"
+        cancelText="Cancelar"
+        type="warning"
+      />
     </aside>
   );
 }

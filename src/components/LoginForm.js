@@ -4,7 +4,7 @@ import { loginUser } from "../services/api";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import "../styles/pages/LoginPage.css";
 
-export default function LoginForm({ setMessage, navigate, setUsuario }) {
+export default function LoginForm({ navigate, setUser, showSuccess, showError }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -12,30 +12,25 @@ export default function LoginForm({ setMessage, navigate, setUsuario }) {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setMessage("");
     setLoading(true);
 
     try {
-      const result = await loginUser(email, password); 
+      const result = await loginUser(email, password);
       const user = result?.data?.user;
-      const msg  = result?.data?.message;
-
-      setMessage(
-        msg ||
-        (result.ok
-          ? "Sesión iniciada"
-          : result.status === 401
-            ? "Credenciales inválidas"
-            : "No se pudo iniciar sesión")
-      );
 
       if (result.ok && user) {
         localStorage.setItem("user", JSON.stringify(user));
-        setUsuario(user);
+        setUser(user);
+        showSuccess("Sesión iniciada correctamente.");
         navigate("/dashboard");
+      } else {
+        const errorMsg = result.status === 401
+          ? "Credenciales inválidas."
+          : result.data?.message || "No se pudo iniciar sesión.";
+        showError(errorMsg);
       }
     } catch {
-      setMessage("Error de red. Intenta de nuevo.");
+      showError("Error de red. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }

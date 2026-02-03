@@ -1,0 +1,71 @@
+/* =============================================================================
+   TOAST CONTAINER - Professional Toast Positioning
+   ============================================================================= */
+
+/* =============================================================================
+   CONTAINER BASE
+   ============================================================================= */
+
+.toast-container {
+  position: fixed;
+  top: var(--space-xl);
+  right: var(--space-xl);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+  max-width: 90vw;
+}
+
+.toast-container > * {
+  pointer-events: auto;
+}
+
+/* =============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================= */
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .toast-container {
+    top: var(--space-lg);
+    right: var(--space-lg);
+  }
+}
+
+/* Mobile */
+@media (max-width: 639px) {
+  .toast-container {
+    top: var(--space-md);
+    left: var(--space-md);
+    right: var(--space-md);
+    align-items: stretch;
+    max-width: none;
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+/* Ensure toasts are announced to screen readers */
+.toast-container[role="region"] {
+  position: fixed;
+}
+
+/* Support for safe area insets (mobile devices with notches) */
+@supports (padding: max(0px)) {
+  .toast-container {
+    top: max(var(--space-xl), env(safe-area-inset-top));
+    right: max(var(--space-xl), env(safe-area-inset-right));
+  }
+
+  @media (max-width: 639px) {
+    .toast-container {
+      top: max(var(--space-md), env(safe-area-inset-top));
+      left: max(var(--space-md), env(safe-area-inset-left));
+      right: max(var(--space-md), env(safe-area-inset-right));
+    }
+  }
+}

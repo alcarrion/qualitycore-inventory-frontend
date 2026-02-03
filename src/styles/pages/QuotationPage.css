@@ -1,179 +1,327 @@
+/* =============================================================================
+   QUOTATION PAGE - Professional Quotation Management
+   ============================================================================= */
+
 .cotiz-bg {
-  min-height: 100vh;
-  background: #f9f9fb;
-  padding: 40px 16px;
+  min-height: calc(100vh - 80px);
+  background: var(--bg-secondary);
+  padding: var(--space-xl) var(--space-md);
   display: flex;
   justify-content: center;
-  font-family: 'Segoe UI', 'Roboto', sans-serif;
+  align-items: flex-start;
+  transition: background var(--transition-slow);
 }
 
 .cotiz-main {
-  background: #ffffff;
-  border-radius: 1.5rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-  max-width: 800px;
+  max-width: 900px;
   width: 100%;
-  padding: 36px;
+  padding: var(--space-md) 0;
 }
+
+/* =============================================================================
+   HEADER SECTION
+   ============================================================================= */
 
 .cotiz-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 12px;
-}
-
-.cotiz-label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 6px;
-  color: #444;
-}
-
-.cotiz-select,
-.cotiz-input,
-textarea.cotiz-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  margin-bottom: 16px;
-  transition: border-color 0.2s ease;
-}
-
-.cotiz-select:focus,
-.cotiz-input:focus,
-textarea.cotiz-input:focus {
-  border-color: #10b981;
-  outline: none;
-}
-
-.cotiz-btn {
-  background-color: #10b981;
-  color: white;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 600;
-  margin-top: 12px;
-  transition: background-color 0.2s ease;
-}
-
-.cotiz-btn:hover {
-  background-color: #0e9e6e;
-}
-
-.cotiz-section {
-  margin-bottom: 30px;
-}
-
-.cotiz-prod-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  font-weight: 600;
-  color: #555;
-  border-bottom: 1px solid #ddd;
-}
-
-.cotiz-prod-list {
-  margin-top: 10px;
-}
-
-.cotiz-prod-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.cotiz-prod-row select,
-.cotiz-prod-row input {
-  padding: 6px 8px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  flex: 1;
-}
-
-.cotiz-remove-btn {
-  background-color: transparent;
-  border: none;
-  color: #e53935;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.cotiz-remove-btn:hover {
-  transform: scale(1.1);
-}
-
-.cotiz-empty {
-  font-style: italic;
-  color: #999;
-  text-align: center;
-  margin-top: 12px;
-}
-
-.cotiz-summary {
-  border-top: 1px solid #ddd;
-  padding-top: 16px;
-  margin-top: 24px;
-}
-
-.cotiz-summary h3 {
-  font-size: 1.2rem;
-  color: #222;
-  margin-bottom: 10px;
-}
-
-.cotiz-summary-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.98rem;
-  margin: 4px 0;
-}
-
-.cotiz-summary-row span:last-child {
-  font-weight: bold;
-}
-
-.cotiz-pdf-link {
-  display: inline-block;
-  margin-top: 14px;
-  text-align: center;
-  padding: 10px 16px;
-  background-color: #2563eb;
-  color: white;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.cotiz-pdf-link:hover {
-  background-color: #1e40af;
-}
-
-
-.cotiz-title {
-  color: #16a34a;
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin-bottom: 12px;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-success);
+  margin-bottom: var(--space-md);
   display: flex;
   align-items: center;
+  transition: color var(--transition-slow);
 }
 
 .cotiz-icon-box {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  padding: 8px;
-  margin-right: 8px;
-  background-color: #f3f4f6; /* gris clarito */
-  color: #1f2937; /* negro suave */
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  margin-right: var(--space-sm);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: all var(--transition-slow);
+}
+
+/* =============================================================================
+   FORM ELEMENTS
+   ============================================================================= */
+
+.cotiz-label {
+  display: block;
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-xs);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  transition: color var(--transition-slow);
+}
+
+.cotiz-select,
+.cotiz-input,
+textarea.cotiz-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1.5px solid var(--input-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--space-md);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  transition: all var(--transition-base);
+}
+
+textarea.cotiz-input {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.cotiz-select:focus,
+.cotiz-input:focus,
+textarea.cotiz-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(65, 209, 167, 0.1);
+  outline: none;
+}
+
+.cotiz-btn {
+  background: linear-gradient(135deg, var(--color-success) 0%, #059669 100%);
+  color: var(--text-inverse);
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--space-sm);
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.cotiz-btn:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.cotiz-btn:active {
+  transform: translateY(0);
+}
+
+/* =============================================================================
+   SECTIONS
+   ============================================================================= */
+
+.cotiz-section {
+  margin-bottom: var(--space-2xl);
+}
+
+/* =============================================================================
+   PRODUCTS LIST
+   ============================================================================= */
+
+.cotiz-prod-header {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-sm) 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border-primary);
+  transition: all var(--transition-slow);
+}
+
+.cotiz-prod-list {
+  margin-top: var(--space-md);
+}
+
+.cotiz-prod-row {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.cotiz-prod-row select,
+.cotiz-prod-row input {
+  padding: var(--space-sm) var(--space-md);
+  border: 1.5px solid var(--input-border);
+  border-radius: var(--radius-md);
+  flex: 1;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  transition: all var(--transition-base);
+}
+
+.cotiz-prod-row select:focus,
+.cotiz-prod-row input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(65, 209, 167, 0.1);
+  outline: none;
+}
+
+.cotiz-remove-btn {
+  background-color: transparent;
+  border: none;
+  color: var(--color-error);
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  transition: transform var(--transition-base);
+  padding: var(--space-xs);
+  border-radius: var(--radius-md);
+}
+
+.cotiz-remove-btn:hover {
+  transform: scale(1.1);
+  background-color: var(--color-error-bg);
+}
+
+.cotiz-remove-btn:active {
+  transform: scale(0.95);
+}
+
+.cotiz-empty {
+  font-style: italic;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: var(--space-md);
+  padding: var(--space-xl);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--border-primary);
+  transition: all var(--transition-slow);
+}
+
+/* =============================================================================
+   SUMMARY
+   ============================================================================= */
+
+.cotiz-summary {
+  border-top: 2px solid var(--border-primary);
+  padding-top: var(--space-lg);
+  margin-top: var(--space-xl);
+  transition: border-color var(--transition-slow);
+}
+
+.cotiz-summary h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+  transition: color var(--transition-slow);
+}
+
+.cotiz-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-base);
+  margin: var(--space-xs) 0;
+  color: var(--text-primary);
+  padding: var(--space-xs) 0;
+  transition: color var(--transition-slow);
+}
+
+.cotiz-summary-row span:last-child {
+  font-weight: var(--font-weight-bold);
+}
+
+.cotiz-pdf-link {
+  display: inline-block;
+  margin-top: var(--space-lg);
+  text-align: center;
+  padding: var(--space-sm) var(--space-lg);
+  background-color: var(--color-info);
+  color: var(--text-inverse);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.cotiz-pdf-link:hover {
+  background-color: #1e40af;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.cotiz-pdf-link:active {
+  transform: translateY(0);
+}
+
+/* =============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================= */
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .cotiz-bg {
+    padding: var(--space-xl) var(--space-md);
+  }
+
+  .cotiz-main {
+    padding: var(--space-xl);
+  }
+
+  .cotiz-title {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* Mobile */
+@media (max-width: 639px) {
+  .cotiz-bg {
+    padding: var(--space-lg) var(--space-sm);
+  }
+
+  .cotiz-main {
+    padding: var(--space-lg);
+  }
+
+  .cotiz-title {
+    font-size: var(--font-size-lg);
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cotiz-icon-box {
+    margin-bottom: var(--space-xs);
+  }
+
+  .cotiz-prod-row {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .cotiz-prod-row select,
+  .cotiz-prod-row input {
+    width: 100%;
+  }
+
+  .cotiz-summary-row {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+.cotiz-btn:focus-visible,
+.cotiz-remove-btn:focus-visible,
+.cotiz-pdf-link:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .cotiz-btn,
+  .cotiz-remove-btn,
+  .cotiz-pdf-link {
+    transition: none;
+  }
+
+  .cotiz-btn:hover,
+  .cotiz-remove-btn:hover,
+  .cotiz-pdf-link:hover {
+    transform: none;
+  }
 }

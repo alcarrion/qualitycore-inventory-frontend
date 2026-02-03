@@ -1,44 +1,43 @@
 // src/pages/ReportsPage.js
 import React, { useState } from "react";
-import { FileText } from "lucide-react";
-import { API_URL, generateReport } from "../services/api";
+import { generateReport } from "../services/api";
 import { API_ROOT } from "../services/api";
+import { useApp } from "../contexts/AppContext";
 import "../styles/pages/ReportsPage.css";
 
 export default function ReportsPage() {
-  const [tipo, setTipo] = useState("movements");
-  const [fechaInicio, setFechaInicio] = useState("");
-  const [fechaFin, setFechaFin] = useState("");
-  const [urlReporte, setUrlReporte] = useState(null);
-  const [mensaje, setMensaje] = useState("");
+  const { showSuccess, showError } = useApp();
+  const [type, setType] = useState("movements");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [reportUrl, setReportUrl] = useState(null);
 
-  const generarReporte = async () => {
-    setMensaje("");
-    setUrlReporte(null);
+  const generateReportPdf = async () => {
+    setReportUrl(null);
 
-    if (fechaInicio && fechaFin && new Date(fechaInicio) > new Date(fechaFin)) {
-      setMensaje("El rango de fechas es inválido (inicio > fin).");
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      showError("El rango de fechas es inválido (inicio > fin).");
       return;
     }
 
     try {
       const res = await generateReport({
-        type: tipo,
-        start_date: fechaInicio || null,
-        end_date:  fechaFin || null,
+        type: type,
+        start_date: startDate || null,
+        end_date: endDate || null,
       });
 
       if (res.ok && res.data?.url) {
         const fullUrl = res.data.url.startsWith("http")
           ? res.data.url
           : `${API_ROOT}${res.data.url}`;
-        setUrlReporte(fullUrl);
-        setMensaje(res.data.message || "Reporte generado correctamente.");
+        setReportUrl(fullUrl);
+        showSuccess(res.data.message || "Reporte generado correctamente.");
       } else {
-        setMensaje(res.data?.detail || res.data?.message || `Error al generar el reporte (HTTP ${res.status})`);
+        showError(res.data?.detail || res.data?.message || `Error al generar el reporte (HTTP ${res.status})`);
       }
     } catch (e) {
-      setMensaje(`Error al generar el reporte${e?.message ? ` (${e.message})` : ""}`);
+      showError(`Error al generar el reporte${e?.message ? ` (${e.message})` : ""}`);
     }
   };
 
@@ -50,8 +49,8 @@ export default function ReportsPage() {
 
         <label className="report-label">Tipo de reporte:</label>
         <select
-          value={tipo}
-          onChange={(e) => setTipo(e.target.value)}
+          value={type}
+          onChange={(e) => setType(e.target.value)}
           className="report-select"
         >
           <option value="movements">Movimientos recientes</option>
@@ -62,26 +61,24 @@ export default function ReportsPage() {
         <input
           type="date"
           className="report-input"
-          value={fechaInicio}
-          onChange={(e) => setFechaInicio(e.target.value)}
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
         />
 
         <label className="report-label">Fecha de fin:</label>
         <input
           type="date"
           className="report-input"
-          value={fechaFin}
-          onChange={(e) => setFechaFin(e.target.value)}
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
         />
 
-        <button onClick={generarReporte} className="report-btn">⬇️ Generar Reporte PDF</button>
+        <button onClick={generateReportPdf} className="report-btn">Generar Reporte PDF</button>
 
-        {mensaje && <div className="report-msg"><FileText size={18} /> {mensaje}</div>}
-
-        {urlReporte && (
-          <div style={{ textAlign: "center" }}>
-            <a href={urlReporte} target="_blank" rel="noopener noreferrer" className="report-pdf-link">
-              📥 Descargar Reporte Generado
+        {reportUrl && (
+          <div style={{ textAlign: "center", marginTop: "16px" }}>
+            <a href={reportUrl} target="_blank" rel="noopener noreferrer" className="report-pdf-link">
+              Descargar Reporte Generado
             </a>
           </div>
         )}

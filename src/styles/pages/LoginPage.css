@@ -1,92 +1,80 @@
-/* LoginPage.css */
+/* =============================================================================
+   LOGIN PAGE - Professional Authentication
+   ============================================================================= */
+
 .login-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #f5f7fa;
-  padding: 20px;
-  font-family: 'Segoe UI', sans-serif;
+  background-color: var(--bg-secondary);
+  padding: var(--space-lg);
+  transition: background-color var(--transition-slow);
+  gap: var(--space-xl);
 }
+
+.login-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+/* =============================================================================
+   LOGIN CARD
+   ============================================================================= */
 
 .card {
-  background: white;
-  border-radius: 1.5rem;
-  padding: 3rem;
+  background: var(--card-bg);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
   width: 100%;
-  max-width: 400px;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+  max-width: 440px;
+  box-shadow: var(--shadow-xl);
   text-align: center;
+  border: 1px solid var(--border-primary);
+  transition: all var(--transition-slow);
 }
 
+/* =============================================================================
+   LOGO & TITLE
+   ============================================================================= */
+
 .logo {
-  width: 110px;
-  margin: 0 auto 20px;
+  width: 120px;
+  display: block;
 }
 
 .titulo-app {
-  font-size: 1.4rem;
-  font-weight: bold;
-  color: #1f2937;
-  margin-bottom: 1.2rem;
-  line-height: 1.4;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  line-height: var(--line-height-tight);
+  transition: color var(--transition-slow);
 }
 
-.link {
-  color: #059669;
-  font-size: 0.9rem;
-  cursor: pointer;
-  margin-top: 1rem;
-  display: inline-block;
-}
-
-.link:hover {
-  text-decoration: underline;
-}
-
-.message {
-  margin-top: 1rem;
-  font-size: 0.9rem;
-  color: #e11d48;
-}
+/* =============================================================================
+   FORM ELEMENTS
+   ============================================================================= */
 
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
   text-align: left;
+  width: 100%;
+  max-width: 350px;
 }
 
 .input-group label {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #374151;
-}
-
-
-
-
-
-
-.btn-green {
-  background-color: #059669;
-  color: white;
-  font-weight: 600;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: background 0.2s ease-in-out;
-}
-
-.btn-green:hover {
-  background-color: #047857;
-}
-
-.btn-green:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+  transition: color var(--transition-slow);
 }
 
 .input-icon {
@@ -97,27 +85,194 @@
 
 .input-icon input {
   width: 100%;
-  padding: 10px 38px 10px 38px;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 0.95rem;
-  color: #111827;
+  padding: var(--space-sm) var(--space-md) var(--space-sm) 44px;
+  border: 1.5px solid var(--input-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  background: var(--input-bg);
   outline: none;
+  transition: all var(--transition-base);
+}
+
+.input-icon input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(65, 209, 167, 0.1);
+}
+
+.input-icon input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
 }
 
 .input-icon-left {
   position: absolute;
-  left: 12px;
+  left: var(--space-md);
   top: 50%;
   transform: translateY(-50%);
-  color: #6b7280;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transition: color var(--transition-slow);
 }
 
 .input-icon-right {
   position: absolute;
-  right: 12px;
+  right: var(--space-md);
   top: 50%;
   transform: translateY(-50%);
-  color: #6b7280;
+  color: var(--text-secondary);
   cursor: pointer;
+  transition: all var(--transition-base);
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+}
+
+.input-icon-right:hover {
+  color: var(--text-primary);
+  background: var(--color-hover);
+}
+
+/* =============================================================================
+   BUTTONS
+   ============================================================================= */
+
+.btn-green {
+  background: linear-gradient(135deg, var(--color-success) 0%, #047857 100%) !important;
+  color: var(--text-inverse) !important;
+  font-weight: var(--font-weight-semibold);
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-size: var(--font-size-base);
+  width: 100%;
+  margin-top: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  opacity: 1 !important;
+}
+
+.btn-green:hover:not(:disabled) {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #059669 0%, #065f46 100%) !important;
+  opacity: 1 !important;
+}
+
+.btn-green:active:not(:disabled) {
+  transform: translateY(0);
+  background: linear-gradient(135deg, var(--color-success) 0%, #047857 100%) !important;
+  box-shadow: var(--shadow-sm);
+  opacity: 1 !important;
+}
+
+.btn-green:disabled {
+  background: var(--color-disabled);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* =============================================================================
+   LINKS & MESSAGES
+   ============================================================================= */
+
+.link {
+  color: var(--color-success);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  margin-top: var(--space-md);
+  display: inline-block;
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-base);
+}
+
+.link:hover {
+  color: #047857;
+  text-decoration: underline;
+}
+
+.message {
+  margin-top: var(--space-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+  background: var(--color-error-bg);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-error);
+  text-align: left;
+}
+
+/* =============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================= */
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .login-container {
+    padding: var(--space-md);
+  }
+
+  .card {
+    padding: var(--space-xl);
+  }
+}
+
+/* Mobile */
+@media (max-width: 639px) {
+  .login-container {
+    padding: var(--space-sm);
+  }
+
+  .card {
+    padding: var(--space-lg);
+    max-width: 100%;
+  }
+
+  .logo {
+    width: 100px;
+  }
+
+  .titulo-app {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-lg);
+  }
+
+  .input-group {
+    gap: var(--space-md);
+  }
+
+  .input-icon input {
+    padding: var(--space-sm) var(--space-sm) var(--space-sm) 40px;
+    font-size: var(--font-size-sm);
+  }
+
+  .btn-green {
+    padding: var(--space-sm);
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+.btn-green:focus-visible,
+.link:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.input-icon input:focus-visible {
+  outline: none;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .btn-green,
+  .input-icon input {
+    transition: none;
+  }
+
+  .btn-green:hover {
+    transform: none;
+  }
 }
