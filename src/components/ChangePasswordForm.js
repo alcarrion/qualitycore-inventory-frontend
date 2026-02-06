@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import { changePassword } from "../services/api";
 import { useApp } from "../contexts/AppContext";
+import { ERRORS, SUCCESS } from "../constants/messages";
+import { validatePassword } from "../utils/validatePassword";
 import { Eye, EyeOff } from "lucide-react";
 import "../styles/components/Form.css";
 
@@ -18,39 +20,10 @@ export function ChangePasswordForm({ onSave, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validar longitud mínima
-    if (newPass.length < 8) {
-      showError("La contraseña debe tener al menos 8 caracteres.");
-      return;
-    }
-
-    // Validar mayúscula
-    if (!/[A-Z]/.test(newPass)) {
-      showError("La contraseña debe contener al menos una letra mayúscula.");
-      return;
-    }
-
-    // Validar minúscula
-    if (!/[a-z]/.test(newPass)) {
-      showError("La contraseña debe contener al menos una letra minúscula.");
-      return;
-    }
-
-    // Validar número
-    if (!/\d/.test(newPass)) {
-      showError("La contraseña debe contener al menos un número.");
-      return;
-    }
-
-    // Validar carácter especial
-    if (!/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/;~`]/.test(newPass)) {
-      showError("La contraseña debe contener al menos un carácter especial (!@#$%^&*(),.?\":{}|<>_-+=[]\\\/;~`).");
-      return;
-    }
-
-    // Validar que las contraseñas coincidan
-    if (newPass !== confirmPass) {
-      showError("Las contraseñas no coinciden.");
+    // Validar contraseña
+    const passwordValidation = validatePassword(newPass, confirmPass);
+    if (!passwordValidation.valid) {
+      showError(passwordValidation.error);
       return;
     }
 
@@ -70,15 +43,15 @@ export function ChangePasswordForm({ onSave, onCancel }) {
               return messages;
             })
             .join('. ');
-          showError(errorMessages || "Error al cambiar la contraseña.");
+          showError(errorMessages || ERRORS.PASSWORD_CHANGE_FAILED);
         } else {
-          showError(resp.data?.detail || "Error al cambiar la contraseña.");
+          showError(resp.data?.detail || ERRORS.PASSWORD_CHANGE_FAILED);
         }
         setLoading(false);
         return;
       }
 
-      showSuccess("Contraseña cambiada con éxito. Debes volver a iniciar sesión.");
+      showSuccess(SUCCESS.PASSWORD_CHANGED);
       onSave?.();
 
       // Limpiar localStorage y redirigir al login
@@ -89,7 +62,7 @@ export function ChangePasswordForm({ onSave, onCancel }) {
         window.location.href = "/";
       }, 2000); // Dar tiempo para ver el toast antes de redirigir
     } catch (err) {
-      showError(err.message || "Hubo un error al cambiar la contraseña.");
+      showError(err.message || ERRORS.PASSWORD_CHANGE_FAILED);
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { loginUser } from "../services/api";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { ERRORS, SUCCESS } from "../constants/messages";
 import "../styles/pages/LoginPage.css";
 
 export default function LoginForm({ navigate, setUser, showSuccess, showError }) {
@@ -21,16 +22,16 @@ export default function LoginForm({ navigate, setUser, showSuccess, showError })
       if (result.ok && user) {
         localStorage.setItem("user", JSON.stringify(user));
         setUser(user);
-        showSuccess("Sesión iniciada correctamente.");
+        showSuccess(SUCCESS.LOGIN_SUCCESS);
         navigate("/dashboard");
       } else {
         const errorMsg = result.status === 401
-          ? "Credenciales inválidas."
-          : result.data?.message || "No se pudo iniciar sesión.";
+          ? ERRORS.INVALID_CREDENTIALS
+          : result.data?.message || ERRORS.LOGIN_FAILED;
         showError(errorMsg);
       }
     } catch {
-      showError("Error de red. Intenta de nuevo.");
+      showError(ERRORS.NETWORK_ERROR);
     } finally {
       setLoading(false);
     }

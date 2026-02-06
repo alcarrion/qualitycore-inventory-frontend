@@ -6,15 +6,28 @@ import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import AddSupplierForm from "../components/AddSupplierForm";
 import EditSupplierForm from "../components/EditSupplierForm";
 import { useApp } from "../contexts/AppContext";
+import { useDataStore } from "../store/dataStore";
+import { PERMISSIONS } from "../constants/roles";
+import { ERRORS, SUCCESS, ENTITIES, CONFIRM } from "../constants/messages";
 import "../styles/pages/SuppliersPage.css";
 
-// ✅ wrappers del servicio
-import { getSuppliers, patchSupplier } from "../services/api";
+import { patchSupplier } from "../services/api";
 
 export default function SuppliersPage({ user }) {
   const { showSuccess, showError, showWarning, setLoading } = useApp();
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
-  const [suppliers, setSuppliers] = useState([]);
+  const role = currentUser?.role || "";
+
+  // Permisos basados en rol
+  const canAdd = PERMISSIONS.CAN_ADD_SUPPLIER(role);
+  const canEdit = PERMISSIONS.CAN_EDIT_SUPPLIER(role);
+  const canDelete = PERMISSIONS.CAN_DELETE_SUPPLIER(role);
+
+  // Zustand store
+  const suppliers = useDataStore(state => state.suppliers);
+  const fetchSuppliers = useDataStore(state => state.fetchSuppliers);
+  const dataError = useDataStore(state => state.error);
+
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
@@ -22,27 +35,9 @@ export default function SuppliersPage({ user }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState(null);
 
-  const role = (currentUser?.role || "").toLowerCase();
-  const isAdmin = role === "administrator" || role === "superadmin" || role === "super administrador";
-  const isSuperAdmin = role === "superadmin" || role === "super administrador";
-
-  const loadSuppliers = async () => {
-    try {
-      const res = await getSuppliers();
-      // El backend devuelve paginación: { count, next, previous, results: [...] }
-      // Extraemos el array de proveedores desde "results"
-      const list = res.data?.results || res.data || [];
-      const suppliers = Array.isArray(list) ? list : [];
-      setSuppliers(suppliers.filter(p => !p.deleted_at));
-    } catch (error) {
-      console.error("Error al cargar proveedores:", error);
-      showError("Error al cargar la lista de proveedores. Por favor, intenta nuevamente.");
-    }
-  };
-
   useEffect(() => {
-    loadSuppliers();
-  }, [showAdd, showEdit]);
+    if (dataError) showError(dataError);
+  }, [dataError, showError]);
 
   const filtered = suppliers.filter(p =>
     (p.name && p.name.toLowerCase().includes(search.toLowerCase())) ||
@@ -52,8 +47,8 @@ export default function SuppliersPage({ user }) {
   );
 
   const handleDelete = async (supplier) => {
-    if (!isSuperAdmin) {
-      showWarning("Solo los Super Administradores pueden eliminar proveedores.");
+    if (!canDelete) {
+      showWarning(ERRORS.ONLY_SUPER_ADMIN);
       return;
     }
     setSupplierToDelete(supplier);
@@ -67,13 +62,13 @@ export default function SuppliersPage({ user }) {
     try {
       const resp = await patchSupplier(supplierToDelete.id, { deleted_at: new Date().toISOString() });
       if (resp.ok) {
-        setSuppliers(prev => prev.filter(p => p.id !== supplierToDelete.id));
-        showSuccess("Proveedor eliminado correctamente.");
+        fetchSuppliers();
+        showSuccess(SUCCESS.DELETED(ENTITIES.SUPPLIER));
       } else {
-        showError(resp.data?.detail || "No se pudo eliminar el proveedor.");
+        showError(resp.data?.detail || ERRORS.DELETE_FAILED(ENTITIES.SUPPLIER));
       }
     } catch (error) {
-      showError("Error al eliminar el proveedor.");
+      showError(ERRORS.DELETE_FAILED(ENTITIES.SUPPLIER));
     } finally {
       setLoading(false);
     }
@@ -94,7 +89,7 @@ export default function SuppliersPage({ user }) {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        {isAdmin && (
+        {canAdd && (
           <button className="btn-add-supplier" onClick={() => setShowAdd(true)}>
             <FaPlus /> AÑADIR PROVEEDOR
           </button>
@@ -103,7 +98,6 @@ export default function SuppliersPage({ user }) {
 
       <div className="suppliers-list">
         {filtered.map(supplier => {
-          // Función para obtener el label del tipo de documento
           const getDocumentLabel = (type) => {
             switch (type) {
               case 'cedula':
@@ -139,7 +133,7 @@ export default function SuppliersPage({ user }) {
               </div>
             </div>
 
-            {isAdmin && (
+            {canEdit && (
               <div className="supplier-actions">
                 <button
                   className="btn-icon"
@@ -147,7 +141,7 @@ export default function SuppliersPage({ user }) {
                 >
                   <FaEdit />
                 </button>
-                {isSuperAdmin && (
+                {canDelete && (
                   <button
                     className="btn-icon btn-delete"
                     onClick={() => handleDelete(supplier)}
@@ -166,7 +160,10 @@ export default function SuppliersPage({ user }) {
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
           <AddSupplierForm
-            onSave={() => setShowAdd(false)}
+            onSave={() => {
+              setShowAdd(false);
+              fetchSuppliers();
+            }}
             onCancel={() => setShowAdd(false)}
           />
         </Modal>
@@ -179,6 +176,7 @@ export default function SuppliersPage({ user }) {
             onSave={() => {
               setShowEdit(false);
               setEditingSupplier(null);
+              fetchSuppliers();
             }}
             onCancel={() => {
               setShowEdit(false);
@@ -196,7 +194,7 @@ export default function SuppliersPage({ user }) {
         }}
         onConfirm={confirmDelete}
         title="Eliminar Proveedor"
-        message={`¿Estás seguro de que deseas eliminar al proveedor "${supplierToDelete?.name}"? Esta acción no se puede deshacer.`}
+        message={CONFIRM.DELETE(ENTITIES.SUPPLIER, supplierToDelete?.name)}
         confirmText="Eliminar"
         cancelText="Cancelar"
         type="danger"

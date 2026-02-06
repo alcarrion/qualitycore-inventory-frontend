@@ -7,6 +7,7 @@ import {
   validateEcuadorianRUC,
   validatePassport
 } from "../utils/ecuadorianValidators";
+import { ERRORS, SUCCESS, ENTITIES } from "../constants/messages";
 import "../styles/components/Form.css";
 
 export default function EditCustomerForm({ customer, onSave, onCancel }) {
@@ -24,7 +25,7 @@ export default function EditCustomerForm({ customer, onSave, onCancel }) {
     setLoading(true);
 
     if (!name || !email || !document || !phone || !documentType) {
-      showError("Todos los campos son obligatorios excepto dirección.");
+      showError(ERRORS.REQUIRED_FIELDS_EXCEPT_ADDRESS);
       setLoading(false);
       return;
     }
@@ -46,7 +47,7 @@ export default function EditCustomerForm({ customer, onSave, onCancel }) {
 
     // Validar teléfono
     if (!/^\d{10}$/.test(phone)) {
-      showError("El teléfono debe tener exactamente 10 dígitos.");
+      showError(ERRORS.PHONE_LENGTH);
       setLoading(false);
       return;
     }
@@ -74,19 +75,18 @@ export default function EditCustomerForm({ customer, onSave, onCancel }) {
             })
             .join('. ');
 
-          showError(errorMessages || "No se pudo editar el cliente.");
+          showError(errorMessages || ERRORS.UPDATE_FAILED(ENTITIES.CUSTOMER));
         } else {
-          showError(resp.data?.detail || "No se pudo editar el cliente.");
+          showError(resp.data?.detail || ERRORS.UPDATE_FAILED(ENTITIES.CUSTOMER));
         }
         setLoading(false);
         return;
       }
 
-      showSuccess("Cliente editado correctamente.");
+      showSuccess(SUCCESS.UPDATED('Cliente'));
       onSave?.(resp.data);
     } catch (err) {
-      const errorMsg = err.message || "Error al editar cliente.";
-      showError(errorMsg);
+      showError(err.message || ERRORS.UPDATE_FAILED(ENTITIES.CUSTOMER));
     } finally {
       setLoading(false);
     }

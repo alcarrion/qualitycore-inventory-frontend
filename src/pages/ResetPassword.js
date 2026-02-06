@@ -4,6 +4,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import { postResetPassword } from "../services/api";
 import { useApp } from "../contexts/AppContext";
+import { ERRORS, SUCCESS } from "../constants/messages";
+import { validatePassword } from "../utils/validatePassword";
 import "../styles/pages/ResetPassword.css";
 
 export default function ResetPassword() {
@@ -32,39 +34,10 @@ export default function ResetPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validar longitud mínima
-    if (password.length < 8) {
-      showError("La contraseña debe tener al menos 8 caracteres.");
-      return;
-    }
-
-    // Validar mayúscula
-    if (!/[A-Z]/.test(password)) {
-      showError("La contraseña debe contener al menos una letra mayúscula.");
-      return;
-    }
-
-    // Validar minúscula
-    if (!/[a-z]/.test(password)) {
-      showError("La contraseña debe contener al menos una letra minúscula.");
-      return;
-    }
-
-    // Validar número
-    if (!/\d/.test(password)) {
-      showError("La contraseña debe contener al menos un número.");
-      return;
-    }
-
-    // Validar carácter especial
-    if (!/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/;~`]/.test(password)) {
-      showError("La contraseña debe contener al menos un carácter especial (!@#$%^&*(),.?\":{}|<>_-+=[]\\\/;~`).");
-      return;
-    }
-
-    // Validar que las contraseñas coincidan
-    if (password !== password2) {
-      showError("Las contraseñas no coinciden.");
+    // Validar contraseña
+    const passwordValidation = validatePassword(password, password2);
+    if (!passwordValidation.valid) {
+      showError(passwordValidation.error);
       return;
     }
 
@@ -72,15 +45,15 @@ export default function ResetPassword() {
     try {
       const resp = await postResetPassword({ uid, token, new_password: password });
       if (resp.ok) {
-        showSuccess("¡Contraseña cambiada correctamente! Ahora puedes iniciar sesión.");
+        showSuccess(SUCCESS.PASSWORD_RESET_SUCCESS);
         setTimeout(() => navigate("/login"), 2000);
       } else {
         const d = resp.data || {};
-        const errorMsg = d.message || d.detail || "Error al cambiar la contraseña.";
+        const errorMsg = d.message || d.detail || ERRORS.PASSWORD_CHANGE_FAILED;
         showError(errorMsg);
       }
     } catch {
-      showError("Error de red. Inténtalo de nuevo.");
+      showError(ERRORS.NETWORK_ERROR);
     } finally {
       setLoading(false);
     }

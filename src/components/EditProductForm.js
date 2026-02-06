@@ -8,6 +8,7 @@ import {
 } from "../services/api";
 import { useApp } from "../contexts/AppContext";
 import { validateImage } from "../utils/validateImage";
+import { ERRORS, SUCCESS, ENTITIES } from "../constants/messages";
 import "../styles/components/Form.css";
 
 export default function EditProductForm({ product, onSave, onCancel }) {
@@ -70,16 +71,16 @@ export default function EditProductForm({ product, onSave, onCancel }) {
     try {
       const res = await postCategory(newCategory.trim());
       if (!res.ok) {
-        showError(res.data?.detail || "No se pudo crear la categoría.");
+        showError(res.data?.detail || ERRORS.CREATE_FAILED(ENTITIES.CATEGORY));
         return;
       }
       const cat = res.data;
       setCategories(prev => [...prev, cat]);
       setCategory(String(cat.id));
       setNewCategory("");
-      showSuccess("Categoría creada correctamente.");
+      showSuccess(SUCCESS.CREATED('Categoría'));
     } catch (e) {
-      showError(e.message || "No se pudo crear la categoría.");
+      showError(e.message || ERRORS.CREATE_FAILED(ENTITIES.CATEGORY));
     } finally {
       setLoading(false);
     }
@@ -90,7 +91,7 @@ export default function EditProductForm({ product, onSave, onCancel }) {
     setLoading(true);
 
     if (!name || !price || !minimumStock || !category || !supplier) {
-      showError("Todos los campos marcados son obligatorios.");
+      showError(ERRORS.REQUIRED_MARKED_FIELDS);
       setLoading(false);
       return;
     }
@@ -118,17 +119,17 @@ export default function EditProductForm({ product, onSave, onCancel }) {
               return messages;
             })
             .join('. ');
-          showError(errorMessages || "No se pudo editar el producto.");
+          showError(errorMessages || ERRORS.UPDATE_FAILED(ENTITIES.PRODUCT));
         } else {
-          showError(res.data?.detail || "No se pudo editar el producto.");
+          showError(res.data?.detail || ERRORS.UPDATE_FAILED(ENTITIES.PRODUCT));
         }
         setLoading(false);
         return;
       }
-      showSuccess("Producto editado correctamente.");
+      showSuccess(SUCCESS.UPDATED('Producto'));
       onSave?.(res.data);
     } catch (e) {
-      showError(e.message || "Error al editar producto.");
+      showError(e.message || ERRORS.UPDATE_FAILED(ENTITIES.PRODUCT));
     } finally {
       setLoading(false);
     }

@@ -6,20 +6,26 @@ import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import AddCustomerForm from "../components/AddCustomerForm";
 import EditCustomerForm from "../components/EditCustomerForm";
 import { patchCustomer } from "../services/api";
-import { useCustomersData } from "../hooks/useCustomersData";
+import { useDataStore } from "../store/dataStore";
 import { useApp } from "../contexts/AppContext";
+import { PERMISSIONS } from "../constants/roles";
+import { ERRORS, SUCCESS, ENTITIES, CONFIRM } from "../constants/messages";
 import "../styles/pages/CustomersPage.css";
 
 export default function CustomersPage({ user }) {
   const { showSuccess, showError, showWarning, setLoading } = useApp();
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
-  const role = (currentUser?.role || "").toLowerCase();
+  const role = currentUser?.role || "";
 
-  const CAN_ADD = ["administrator", "superadmin", "super administrador", "user"].includes(role);
-  const CAN_EDIT = ["administrator", "superadmin", "super administrador", "user"].includes(role);
-  const CAN_DELETE = ["superadmin", "super administrador"].includes(role); // Solo SuperAdmin puede eliminar
+  // Permisos basados en rol (usando constantes centralizadas)
+  const CAN_ADD = PERMISSIONS.CAN_ADD_CUSTOMER(role);
+  const CAN_EDIT = PERMISSIONS.CAN_EDIT_CUSTOMER(role);
+  const CAN_DELETE = PERMISSIONS.CAN_DELETE_CUSTOMER(role);
 
-  const { customers, fetchCustomers, error: dataError } = useCustomersData();
+  // Zustand store - estado centralizado
+  const customers = useDataStore(state => state.customers);
+  const fetchCustomers = useDataStore(state => state.fetchCustomers);
+  const dataError = useDataStore(state => state.error);
 
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -43,7 +49,7 @@ export default function CustomersPage({ user }) {
 
   const handleDelete = async (customer) => {
     if (!CAN_DELETE) {
-      showWarning("No tienes permisos para eliminar clientes.");
+      showWarning(ERRORS.ONLY_SUPER_ADMIN);
       return;
     }
 
@@ -60,11 +66,11 @@ export default function CustomersPage({ user }) {
       const resp = await patchCustomer(customerToDelete.id, {
         deleted_at: new Date().toISOString(),
       });
-      if (!resp.ok) throw new Error(resp.data?.detail || "No se pudo eliminar.");
+      if (!resp.ok) throw new Error(resp.data?.detail || ERRORS.DELETE_FAILED(ENTITIES.CUSTOMER));
       fetchCustomers();
-      showSuccess("Cliente eliminado correctamente.");
+      showSuccess(SUCCESS.DELETED(ENTITIES.CUSTOMER));
     } catch (e) {
-      showError(e.message || "Error al eliminar el cliente.");
+      showError(e.message || ERRORS.DELETE_FAILED(ENTITIES.CUSTOMER));
     } finally {
       setLoading(false);
     }
@@ -206,7 +212,7 @@ export default function CustomersPage({ user }) {
         }}
         onConfirm={confirmDelete}
         title="Eliminar Cliente"
-        message={`¿Estás seguro de que deseas eliminar al cliente "${customerToDelete?.name}"? Esta acción no se puede deshacer.`}
+        message={CONFIRM.DELETE(ENTITIES.CUSTOMER, customerToDelete?.name)}
         confirmText="Eliminar"
         cancelText="Cancelar"
         type="danger"

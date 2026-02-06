@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { postSale, postPurchase } from "../services/api";
-import { useTransactionsData } from "../hooks/useTransactionsData";
+import { useDataStore } from "../store/dataStore";
 import { useCart } from "../hooks/useCart";
 import MovementFilters from "./TransactionsPage/MovementFilters";
 import PurchasesList from "./TransactionsPage/PurchasesList";
@@ -12,21 +12,21 @@ import TransactionFormModal from "./TransactionsPage/TransactionFormModal";
 import InvoiceModal from "./TransactionsPage/InvoiceModal";
 
 import { useApp } from "../contexts/AppContext";
+import { PERMISSIONS } from "../constants/roles";
+import { ERRORS, SUCCESS, CONFIRM } from "../constants/messages";
 import "../styles/pages/TransactionsPage.css";
 
 function TransactionsPage() {
   const { showSuccess, showError } = useApp();
 
-  // ✅ FASE 1.1-1.2: Usar hook para datos de transacciones con error handling
-  const {
-    sales,
-    purchases,
-    products,
-    customers,
-    suppliers,
-    error: dataError,
-    fetchAll
-  } = useTransactionsData();
+  // Zustand store - estado centralizado
+  const sales = useDataStore(state => state.sales);
+  const purchases = useDataStore(state => state.purchases);
+  const products = useDataStore(state => state.products);
+  const customers = useDataStore(state => state.customers);
+  const suppliers = useDataStore(state => state.suppliers);
+  const dataError = useDataStore(state => state.error);
+  const fetchAll = useDataStore(state => state.fetchAll);
 
   // ✅ FASE 4.1: Usar hook para lógica del carrito
   const {
@@ -107,7 +107,7 @@ function TransactionsPage() {
   const [showProductDropdown, setShowProductDropdown] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
-  const canCreateMovements = ["Administrator", "SuperAdmin", "User"].includes(user?.role);
+  const canCreateMovements = PERMISSIONS.CAN_CREATE_MOVEMENT(user?.role);
 
   // ✅ FASE 1.1: Fetch functions eliminadas - ahora las maneja useTransactionsData hook
 
@@ -140,15 +140,15 @@ function TransactionsPage() {
   // ✅ FASE 4.1: Wrappers que adaptan la API del useCart hook al uso actual
   const handleAddToCart = () => {
     if (type === "input" && !selectedSupplier) {
-      showError("Por favor selecciona un proveedor primero.");
+      showError(ERRORS.SELECT_SUPPLIER_FIRST);
       return;
     }
     if (type === "output" && !selectedCustomer) {
-      showError("Por favor selecciona un cliente primero.");
+      showError(ERRORS.SELECT_CUSTOMER_FIRST);
       return;
     }
     if (!formData.product || !formData.quantity) {
-      showError("Selecciona un producto y la cantidad.");
+      showError(ERRORS.SELECT_PRODUCT_AND_QUANTITY);
       return;
     }
 
@@ -156,7 +156,7 @@ function TransactionsPage() {
       (p) => p.id === Number(formData.product)
     );
     if (!selectedProduct) {
-      showError("Producto no encontrado.");
+      showError(ERRORS.PRODUCT_NOT_FOUND);
       return;
     }
 
@@ -285,11 +285,11 @@ function TransactionsPage() {
     const entity = isPurchase ? selectedSupplier : selectedCustomer;
 
     if (!entity) {
-      showError(`Por favor selecciona un ${isPurchase ? "proveedor" : "cliente"}.`);
+      showError(isPurchase ? ERRORS.SELECT_SUPPLIER_FIRST : ERRORS.SELECT_CUSTOMER_FIRST);
       return;
     }
     if (cart.length === 0) {
-      showError("El carrito está vacío. Agrega al menos un producto.");
+      showError(ERRORS.EMPTY_CART);
       return;
     }
 
@@ -312,10 +312,11 @@ function TransactionsPage() {
       setShowModal(false);
       handleClearCart();
       const action = isPurchase ? "Compra" : "Venta";
-      showSuccess(`${action} registrada correctamente. ${cart.length} producto(s) procesado(s).`);
+      showSuccess(SUCCESS.TRANSACTION_CREATED(action, cart.length));
     } else {
       const entityError = isPurchase ? resp.data?.supplier?.[0] : resp.data?.customer?.[0];
-      showError(resp.data?.detail || entityError || resp.data?.items?.[0] || `Error al registrar la ${isPurchase ? "compra" : "venta"}.`);
+      const transactionType = isPurchase ? "compra" : "venta";
+      showError(resp.data?.detail || entityError || resp.data?.items?.[0] || ERRORS.TRANSACTION_FAILED(transactionType));
       await fetchAll();
     }
   };
@@ -454,8 +455,8 @@ function TransactionsPage() {
         isOpen={showConfirmClose}
         onClose={handleCancelClose}
         onConfirm={handleConfirmClose}
-        title="¿Cerrar sin guardar?"
-        message="Los cambios no guardados se perderán. ¿Estás seguro de que deseas cerrar?"
+        title={CONFIRM.CLOSE_WITHOUT_SAVE_TITLE}
+        message={CONFIRM.CLOSE_WITHOUT_SAVE}
         confirmText="Cerrar"
         cancelText="Continuar editando"
         type="warning"

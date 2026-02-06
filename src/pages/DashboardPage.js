@@ -7,7 +7,8 @@ import { ChangePasswordForm } from "../components/ChangePasswordForm";
 import { AddUserForm } from "../components/AddUserForm";
 import { Package, DollarSign, Users, Activity, Bell, AlertTriangle, XCircle, AlertOctagon, CheckCircle2 } from "lucide-react";
 import { dismissAlert } from "../services/api";
-import { useDashboardData } from "../hooks/useDashboardData";
+import { useDataStore } from "../store/dataStore";
+import { SUCCESS, ERRORS } from "../constants/messages";
 import "../styles/pages/DashboardPage.css";
 
 export default function DashboardPage() {
@@ -18,19 +19,25 @@ export default function DashboardPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const { alerts, setAlerts, dashboardData, loading: loadingAlerts } = useDashboardData();
+
+  // Zustand store - estado centralizado
+  const alerts = useDataStore(state => state.alerts);
+  const setAlerts = useDataStore(state => state.setAlerts);
+  const dashboardData = useDataStore(state => state.dashboardData);
+  const loadingAlerts = useDataStore(state => state.loading);
+
   const [message, setMessage] = useState("");
 
   const dismissAlertHandler = useCallback(async (id) => {
     const res = await dismissAlert(id);
     if (res.ok) {
-      setAlerts(prev => prev.filter(a => a.id !== id));
-      setMessage(res.data?.message || "✅ Alerta cerrada correctamente");
+      setAlerts(alerts.filter(a => a.id !== id));
+      setMessage(res.data?.message || SUCCESS.ALERT_DISMISSED);
     } else {
-      setMessage("❌ No se pudo cerrar la alerta");
+      setMessage(ERRORS.ALERT_DISMISS_FAILED);
     }
     setTimeout(() => setMessage(""), 4000);
-  }, []);
+  }, [alerts, setAlerts]);
 
   const handleSaveEdit = useCallback((data) => {
     setUser(data);

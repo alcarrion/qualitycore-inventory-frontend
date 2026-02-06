@@ -7,6 +7,7 @@ import {
   validateEcuadorianRUC,
   validatePassport
 } from "../utils/ecuadorianValidators";
+import { ERRORS, SUCCESS, ENTITIES } from "../constants/messages";
 import "../styles/components/Form.css";
 
 export default function AddSupplierForm({ onSave, onCancel }) {
@@ -24,7 +25,7 @@ export default function AddSupplierForm({ onSave, onCancel }) {
     setLoading(true);
 
     if (!name || !email || !taxId || !phone || !documentType) {
-      showError("Todos los campos son obligatorios excepto dirección.");
+      showError(ERRORS.REQUIRED_FIELDS_EXCEPT_ADDRESS);
       setLoading(false);
       return;
     }
@@ -46,7 +47,7 @@ export default function AddSupplierForm({ onSave, onCancel }) {
 
     // Validar teléfono
     if (!/^\d{10}$/.test(phone)) {
-      showError("El teléfono debe tener exactamente 10 dígitos.");
+      showError(ERRORS.PHONE_LENGTH);
       setLoading(false);
       return;
     }
@@ -74,19 +75,18 @@ export default function AddSupplierForm({ onSave, onCancel }) {
             })
             .join('. ');
 
-          showError(errorMessages || "No se pudo crear el proveedor.");
+          showError(errorMessages || ERRORS.CREATE_FAILED(ENTITIES.SUPPLIER));
         } else {
-          showError(resp.data?.detail || "No se pudo crear el proveedor.");
+          showError(resp.data?.detail || ERRORS.CREATE_FAILED(ENTITIES.SUPPLIER));
         }
         setLoading(false);
         return;
       }
 
-      showSuccess("Proveedor creado correctamente.");
+      showSuccess(SUCCESS.CREATED('Proveedor'));
       onSave?.(resp.data);
     } catch (err) {
-      const errorMsg = err.message || "Error al crear proveedor.";
-      showError(errorMsg);
+      showError(err.message || ERRORS.CREATE_FAILED(ENTITIES.SUPPLIER));
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { generateReport } from "../services/api";
 import { API_ROOT } from "../services/api";
 import { useApp } from "../contexts/AppContext";
+import { ERRORS } from "../constants/messages";
 import "../styles/pages/ReportsPage.css";
 
 export default function ReportsPage() {
@@ -16,7 +17,7 @@ export default function ReportsPage() {
     setReportUrl(null);
 
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      showError("El rango de fechas es inválido (inicio > fin).");
+      showError(ERRORS.INVALID_DATE_RANGE);
       return;
     }
 

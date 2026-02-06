@@ -8,6 +8,7 @@ import {
 } from "../services/api";
 import { useApp } from "../contexts/AppContext";
 import { validateImage } from "../utils/validateImage";
+import { ERRORS, SUCCESS, ENTITIES } from "../constants/messages";
 import "../styles/components/Form.css";
 
 export default function AddProductForm({ onSave, onCancel }) {
@@ -28,16 +29,14 @@ export default function AddProductForm({ onSave, onCancel }) {
   useEffect(() => {
     (async () => {
       const ps = await getSuppliers();
-      // El backend devuelve paginación: { count, next, previous, results: [...] }
       const suppliersList = ps.data?.results || ps.data || [];
-      const suppliers = Array.isArray(suppliersList) ? suppliersList : [];
-      setSuppliers(suppliers.filter(p => !p.deleted_at));
+      const suppliersArray = Array.isArray(suppliersList) ? suppliersList : [];
+      setSuppliers(suppliersArray.filter(p => !p.deleted_at));
 
       const cs = await getCategories();
-      // Categorías también puede tener paginación
       const categoriesList = cs.data?.results || cs.data || [];
-      const categories = Array.isArray(categoriesList) ? categoriesList : [];
-      setCategories(categories);
+      const categoriesArray = Array.isArray(categoriesList) ? categoriesList : [];
+      setCategories(categoriesArray);
     })();
   }, []);
 
@@ -49,15 +48,13 @@ export default function AddProductForm({ onSave, onCancel }) {
     if (isValid) {
       setImage(file);
     } else {
-      // Limpiar el input si la validación falla
       e.target.value = '';
       setImage(null);
     }
   };
 
-  // Prevenir que el scroll del mouse cambie los valores numéricos
   const handleWheel = (e) => {
-    e.target.blur(); // Quitar el foco del input para prevenir el cambio de valor
+    e.target.blur();
   };
 
   const handleNewCategory = async () => {
@@ -66,22 +63,19 @@ export default function AddProductForm({ onSave, onCancel }) {
     try {
       const res = await postCategory(newCategory.trim());
       if (!res.ok) {
-        showError(res.data?.detail || "No se pudo crear la categoría.");
+        showError(res.data?.detail || ERRORS.CREATE_FAILED(ENTITIES.CATEGORY));
         setLoading(false);
         return;
       }
       const cat = res.data;
-      // Actualizar la lista de categorías con la nueva categoría
       setCategories(prev => [...prev, cat]);
-      // Usar setTimeout para asegurar que React procese primero la actualización de categories
       setTimeout(() => {
-        // Seleccionar automáticamente la categoría recién creada
         setCategory(String(cat.id));
       }, 0);
       setNewCategory("");
-      showSuccess("Categoría creada correctamente.");
+      showSuccess(SUCCESS.CREATED('Categoría'));
     } catch (e) {
-      showError(e.message || "No se pudo crear la categoría.");
+      showError(e.message || ERRORS.CREATE_FAILED(ENTITIES.CATEGORY));
     } finally {
       setLoading(false);
     }
@@ -92,7 +86,7 @@ export default function AddProductForm({ onSave, onCancel }) {
     setLoading(true);
 
     if (!name || !price || !minimumStock || !category || !supplier) {
-      showError("Todos los campos marcados son obligatorios.");
+      showError(ERRORS.REQUIRED_FIELDS);
       setLoading(false);
       return;
     }
@@ -110,7 +104,6 @@ export default function AddProductForm({ onSave, onCancel }) {
     try {
       const res = await postProduct(formData);
       if (!res.ok) {
-        // Manejar errores de validación del backend
         if (res.data && typeof res.data === 'object' && !res.data.detail) {
           const errorMessages = Object.entries(res.data)
             .map(([field, messages]) => {
@@ -120,17 +113,17 @@ export default function AddProductForm({ onSave, onCancel }) {
               return messages;
             })
             .join('. ');
-          showError(errorMessages || "No se pudo crear el producto.");
+          showError(errorMessages || ERRORS.CREATE_FAILED(ENTITIES.PRODUCT));
         } else {
-          showError(res.data?.detail || "No se pudo crear el producto.");
+          showError(res.data?.detail || ERRORS.CREATE_FAILED(ENTITIES.PRODUCT));
         }
         setLoading(false);
         return;
       }
-      showSuccess("Producto creado correctamente.");
+      showSuccess(SUCCESS.CREATED('Producto'));
       onSave?.(res.data);
     } catch (e) {
-      showError(e.message || "Error al crear el producto.");
+      showError(e.message || ERRORS.CREATE_FAILED(ENTITIES.PRODUCT));
     } finally {
       setLoading(false);
     }
@@ -156,7 +149,7 @@ export default function AddProductForm({ onSave, onCancel }) {
           value={category}
           onChange={e => setCategory(e.target.value)}
           required
-          key={categories.length} // Forzar re-render cuando cambia el número de categorías
+          key={categories.length}
         >
           <option value="">Seleccione</option>
           {categories.map(cat => (

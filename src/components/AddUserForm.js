@@ -3,12 +3,15 @@ import React, { useState } from "react";
 import { postUser } from "../services/api";
 import { useApp } from "../contexts/AppContext";
 import { Eye, EyeOff } from "lucide-react";
+import { isSuperAdmin as checkIsSuperAdmin } from "../constants/roles";
+import { ERRORS, SUCCESS, ENTITIES } from "../constants/messages";
+import { validatePassword } from "../utils/validatePassword";
 import "../styles/components/Form.css";
 
 export function AddUserForm({ onSave, onCancel }) {
   const { showSuccess, showError } = useApp();
   const currentUser = JSON.parse(localStorage.getItem("user"));
-  const isSuperAdmin = currentUser?.role === "SuperAdmin";
+  const isSuperAdmin = checkIsSuperAdmin(currentUser?.role);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -24,42 +27,15 @@ export function AddUserForm({ onSave, onCancel }) {
 
     // Validar teléfono
     if (!/^\d{10}$/.test(phone)) {
-      showError("El número de teléfono debe tener exactamente 10 dígitos.");
+      showError(ERRORS.PHONE_LENGTH);
       setLoading(false);
       return;
     }
 
-    // Validar longitud mínima de contraseña
-    if (password.length < 8) {
-      showError("La contraseña debe tener al menos 8 caracteres.");
-      setLoading(false);
-      return;
-    }
-
-    // Validar mayúscula
-    if (!/[A-Z]/.test(password)) {
-      showError("La contraseña debe contener al menos una letra mayúscula.");
-      setLoading(false);
-      return;
-    }
-
-    // Validar minúscula
-    if (!/[a-z]/.test(password)) {
-      showError("La contraseña debe contener al menos una letra minúscula.");
-      setLoading(false);
-      return;
-    }
-
-    // Validar número
-    if (!/\d/.test(password)) {
-      showError("La contraseña debe contener al menos un número.");
-      setLoading(false);
-      return;
-    }
-
-    // Validar carácter especial
-    if (!/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/;~`]/.test(password)) {
-      showError("La contraseña debe contener al menos un carácter especial (!@#$%^&*(),.?\":{}|<>_-+=[]\\\/;~`).");
+    // Validar contraseña
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      showError(passwordValidation.error);
       setLoading(false);
       return;
     }
@@ -68,9 +44,7 @@ export function AddUserForm({ onSave, onCancel }) {
       const resp = await postUser({ name, email, phone, role, password });
 
       if (!resp.ok) {
-        // Manejar errores de validación del backend
         if (resp.data && typeof resp.data === 'object') {
-          // Formatear errores de validación sin el prefijo del campo
           const errorMessages = Object.entries(resp.data)
             .map(([field, messages]) => {
               if (Array.isArray(messages)) {
@@ -80,19 +54,18 @@ export function AddUserForm({ onSave, onCancel }) {
             })
             .join('. ');
 
-          showError(errorMessages || "No se pudo crear el usuario.");
+          showError(errorMessages || ERRORS.CREATE_FAILED(ENTITIES.USER));
         } else {
-          showError(resp.data?.detail || "No se pudo crear el usuario.");
+          showError(resp.data?.detail || ERRORS.CREATE_FAILED(ENTITIES.USER));
         }
         setLoading(false);
         return;
       }
 
-      showSuccess("Usuario creado correctamente.");
+      showSuccess(SUCCESS.CREATED('Usuario'));
       onSave?.(resp.data);
     } catch (err) {
-      const errorMsg = err.message || "Hubo un error al crear el usuario.";
-      showError(errorMsg);
+      showError(err.message || ERRORS.CREATE_FAILED(ENTITIES.USER));
     } finally {
       setLoading(false);
     }

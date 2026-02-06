@@ -1,22 +1,38 @@
 // ============================================================
 // services/api/auth.js
-// Funciones de autenticación y gestión de contraseñas
+// Funciones de autenticación y gestión de contraseñas con JWT
 // ============================================================
 
-import { apiFetch, initCsrf } from "./config";
+import { apiFetch, initCsrf, setTokens, clearTokens } from "./config";
 
 /**
  * loginUser
  * - Autenticación por email/password.
- * - Tras login exitoso, refresca CSRF porque Django lo rota al autenticarse.
+ * - Guarda tokens JWT en localStorage.
+ * - Refresca CSRF porque Django lo rota al autenticarse.
  */
 export async function loginUser(email, password) {
   const r = await apiFetch(`/login/`, {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+
+  if (r.ok && r.data?.tokens) {
+    // Guardar tokens JWT
+    setTokens(r.data.tokens.access, r.data.tokens.refresh);
+  }
+
   if (r.ok) await initCsrf();
   return r;
+}
+
+/**
+ * logoutUser
+ * - Limpia tokens JWT y datos de usuario del localStorage.
+ */
+export function logoutUser() {
+  clearTokens();
+  localStorage.removeItem("user");
 }
 
 /** forgotPassword - Envía correo de recuperación */

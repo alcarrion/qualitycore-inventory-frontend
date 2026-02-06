@@ -3,6 +3,8 @@ import React, { useState, useEffect, lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { setToastHandler } from "./utils/errorHandler";
+import { logoutUser } from "./services/api/auth";
+import { useDataStore } from "./store/dataStore";
 import Layout from "./components/Layout";
 import ToastContainer from "./components/ToastContainer";
 import LoadingSpinner from "./components/LoadingSpinner";
@@ -22,7 +24,9 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const UsersPage = lazy(() => import("./pages/UsersPage"));
 
 function AppContent() {
-  const { toasts, removeToast, isLoading, addToast } = useApp();
+  const { toasts, removeToast, addToast } = useApp();
+  const fetchAll = useDataStore(state => state.fetchAll);
+
   // Inicializa el usuario desde localStorage, si existe
   const [user, setUser] = useState(() =>
     JSON.parse(localStorage.getItem("user")) || null
@@ -32,6 +36,13 @@ function AppContent() {
   useEffect(() => {
     setToastHandler(addToast);
   }, [addToast]);
+
+  // Cargar datos globales cuando el usuario está autenticado
+  useEffect(() => {
+    if (user) {
+      fetchAll();
+    }
+  }, [user, fetchAll]);
 
   // Escuchar cambios en localStorage para actualizar el usuario
   useEffect(() => {
@@ -54,9 +65,9 @@ function AppContent() {
     };
   }, []);
 
-  // Cerrar sesión
+  // Cerrar sesión (limpia JWT tokens y datos de usuario)
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    logoutUser();  // Limpia tokens JWT y user de localStorage
     setUser(null);
     window.location.href = "/";
   };

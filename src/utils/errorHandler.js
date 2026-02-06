@@ -1,4 +1,5 @@
 // src/utils/errorHandler.js
+import { ERRORS } from '../constants/messages';
 
 /**
  * Manejo centralizado de errores de API
@@ -6,12 +7,27 @@
  */
 
 // Variable global para almacenar la función showToast
-// Se inicializa desde App.js
+// Se inicializa desde App.js con addToast del AppContext
 let showToastFn = null;
 
 export function setToastHandler(fn) {
   showToastFn = fn;
 }
+
+/**
+ * Mensajes de error por código HTTP
+ */
+const HTTP_ERROR_MESSAGES = {
+  401: ERRORS.SESSION_EXPIRED,
+  403: ERRORS.NO_PERMISSION,
+  404: 'El recurso solicitado no fue encontrado.',
+  408: ERRORS.NETWORK_ERROR,
+  429: 'Demasiadas solicitudes. Por favor espera un momento.',
+  500: ERRORS.SERVER_ERROR,
+  502: ERRORS.SERVER_ERROR,
+  503: ERRORS.SERVER_ERROR,
+  504: ERRORS.SERVER_ERROR,
+};
 
 /**
  * Maneja errores de red y del servidor
@@ -20,63 +36,54 @@ export function setToastHandler(fn) {
  * @returns {string} Mensaje de error formateado
  */
 export function handleApiError(response, data) {
-  // Error 401 - No autenticado
+  // Error 401 - No autenticado (manejado por JWT refresh, esto es fallback)
   if (response.status === 401) {
-    // Limpiar sesión y redirigir al login
     localStorage.removeItem("user");
-    window.location.href = "/login";
-    return "Sesión expirada. Por favor inicia sesión nuevamente.";
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    window.location.href = "/";
+    return HTTP_ERROR_MESSAGES[401];
   }
 
-  // Error 403 - Sin permisos
-  if (response.status === 403) {
-    return "No tienes permisos para realizar esta acción.";
+  // Buscar mensaje por código HTTP
+  if (HTTP_ERROR_MESSAGES[response.status]) {
+    return HTTP_ERROR_MESSAGES[response.status];
   }
 
-  // Error 404 - No encontrado
-  if (response.status === 404) {
-    return "El recurso solicitado no fue encontrado.";
-  }
-
-  // Error 500 - Error del servidor
+  // Error 5xx genérico
   if (response.status >= 500) {
-    return "Error del servidor. Por favor intenta más tarde.";
+    return ERRORS.SERVER_ERROR;
   }
 
-  // Otros errores - Intentar extraer mensaje del backend
+  // Intentar extraer mensaje del backend
   if (data && typeof data === "object") {
-    // Si hay un mensaje directo
     if (data.message) return data.message;
     if (data.error) return data.error;
     if (data.detail) return data.detail;
 
-    // Si hay errores de validación de campos
+    // Errores de validación de campos
     if (data.errors) {
       const firstError = Object.values(data.errors)[0];
       return Array.isArray(firstError) ? firstError[0] : firstError;
     }
   }
 
-  return "Ha ocurrido un error. Por favor intenta nuevamente.";
+  return 'Ha ocurrido un error. Por favor intenta nuevamente.';
 }
 
 /**
  * Muestra un toast de error
- * @param {string} message - Mensaje de error
  */
 export function showErrorToast(message) {
   if (showToastFn) {
     showToastFn("error", message);
   } else {
-    // Fallback a alert si no hay toast disponible
     console.error(message);
-    alert(message);
   }
 }
 
 /**
  * Muestra un toast de éxito
- * @param {string} message - Mensaje de éxito
  */
 export function showSuccessToast(message) {
   if (showToastFn) {
@@ -85,10 +92,18 @@ export function showSuccessToast(message) {
 }
 
 /**
+ * Muestra un toast de advertencia
+ */
+export function showWarningToast(message) {
+  if (showToastFn) {
+    showToastFn("warning", message);
+  }
+}
+
+/**
  * Maneja errores de red (fetch falló)
  */
 export function handleNetworkError() {
-  const message = "Error de conexión. Verifica tu conexión a internet.";
-  showErrorToast(message);
-  return message;
+  showErrorToast(ERRORS.NETWORK_ERROR);
+  return ERRORS.NETWORK_ERROR;
 }

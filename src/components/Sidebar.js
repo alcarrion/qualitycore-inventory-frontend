@@ -7,17 +7,20 @@ import {
 } from "lucide-react";
 import ConfirmDialog from "./ConfirmDialog";
 import { translateRole } from "../utils/translateRole";
+import { PERMISSIONS } from "../constants/roles";
+import { CONFIRM } from "../constants/messages";
 import "../styles/components/Sidebar.css";
 
 export default function Sidebar({ user, onLogout, onShowPerfil, isOpen, onClose }) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const role = user?.role || "";
+  const canViewUsers = PERMISSIONS.CAN_VIEW_USERS(role);
 
   const handleLogout = () => {
     setShowLogoutConfirm(true);
   };
 
   const handleNavClick = () => {
-    // Cerrar sidebar en móvil cuando se hace clic en un enlace
     if (onClose) {
       onClose();
     }
@@ -44,8 +47,7 @@ export default function Sidebar({ user, onLogout, onShowPerfil, isOpen, onClose 
         <NavLink to="/quotation" onClick={handleNavClick}><DollarSign size={20} /> Cotización</NavLink>
         <NavLink to="/reports" onClick={handleNavClick}><BarChart2 size={20} /> Reportes</NavLink>
 
-        {/* Solo el administrador o super admin pueden ver esto */}
-        {(user?.role === "Administrator" || user?.role === "SuperAdmin") && (
+        {canViewUsers && (
           <NavLink to="/users" onClick={handleNavClick}><Users size={20} /> Usuarios</NavLink>
         )}
       </nav>
@@ -76,7 +78,7 @@ export default function Sidebar({ user, onLogout, onShowPerfil, isOpen, onClose 
         onClose={() => setShowLogoutConfirm(false)}
         onConfirm={onLogout}
         title="Cerrar Sesión"
-        message="¿Estás seguro que quieres cerrar sesión?"
+        message={CONFIRM.LOGOUT}
         confirmText="Cerrar Sesión"
         cancelText="Cancelar"
         type="warning"

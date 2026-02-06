@@ -7,6 +7,7 @@ import {
   validateEcuadorianRUC,
   validatePassport
 } from "../utils/ecuadorianValidators";
+import { ERRORS, SUCCESS, ENTITIES } from "../constants/messages";
 import "../styles/components/Form.css";
 
 export default function AddCustomerForm({ onSave, onCancel }) {
@@ -24,7 +25,7 @@ export default function AddCustomerForm({ onSave, onCancel }) {
     setLoading(true);
 
     if (!name || !email || !document || !phone || !documentType) {
-      showError("Todos los campos son obligatorios excepto dirección.");
+      showError(ERRORS.REQUIRED_FIELDS);
       setLoading(false);
       return;
     }
@@ -46,7 +47,7 @@ export default function AddCustomerForm({ onSave, onCancel }) {
 
     // Validar teléfono
     if (!/^\d{10}$/.test(phone)) {
-      showError("El teléfono debe tener exactamente 10 dígitos.");
+      showError(ERRORS.PHONE_LENGTH);
       setLoading(false);
       return;
     }
@@ -62,9 +63,7 @@ export default function AddCustomerForm({ onSave, onCancel }) {
       });
 
       if (!resp.ok) {
-        // Manejar errores de validación del backend
         if (resp.data && typeof resp.data === 'object') {
-          // Formatear errores de validación (ej: {phone: ["mensaje"], email: ["mensaje"]})
           const errorMessages = Object.entries(resp.data)
             .map(([field, messages]) => {
               if (Array.isArray(messages)) {
@@ -74,19 +73,18 @@ export default function AddCustomerForm({ onSave, onCancel }) {
             })
             .join('. ');
 
-          showError(errorMessages || "No se pudo crear el cliente.");
+          showError(errorMessages || ERRORS.CREATE_FAILED(ENTITIES.CUSTOMER));
         } else {
-          showError(resp.data?.detail || "No se pudo crear el cliente.");
+          showError(resp.data?.detail || ERRORS.CREATE_FAILED(ENTITIES.CUSTOMER));
         }
         setLoading(false);
         return;
       }
 
-      showSuccess("Cliente creado correctamente.");
+      showSuccess(SUCCESS.CREATED('Cliente'));
       onSave?.(resp.data);
     } catch (err) {
-      const errorMsg = err.message || "Error al crear cliente.";
-      showError(errorMsg);
+      showError(err.message || ERRORS.CREATE_FAILED(ENTITIES.CUSTOMER));
     } finally {
       setLoading(false);
     }
@@ -144,7 +142,7 @@ export default function AddCustomerForm({ onSave, onCancel }) {
           value={documentType}
           onChange={(e) => {
             setDocumentType(e.target.value);
-            setDocument(""); // Limpiar el documento cuando cambia el tipo
+            setDocument("");
           }}
           required
         >

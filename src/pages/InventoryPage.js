@@ -10,16 +10,26 @@ import { useApp } from "../contexts/AppContext";
 import "../styles/pages/InventoryPage.css";
 
 import { patchProductJson } from "../services/api";
-import { useInventoryData } from "../hooks/useInventoryData";
+import { useDataStore } from "../store/dataStore";
+import { PERMISSIONS } from "../constants/roles";
+import { ERRORS, SUCCESS, ENTITIES, CONFIRM } from "../constants/messages";
 
 export default function InventoryPage({ user }) {
   const { showSuccess, showError, showWarning, setLoading } = useApp();
   const currentUser = user || JSON.parse(localStorage.getItem("user"));
-  const role = (currentUser?.role || "").toLowerCase();
-  const isAdmin = role === "administrator" || role === "superadmin" || role === "super administrador";
-  const isSuperAdmin = role === "superadmin" || role === "super administrador";
+  const role = currentUser?.role || "";
 
-  const { products, suppliers, categories, fetchProducts, fetchCategories, error: dataError } = useInventoryData();
+  // Permisos basados en rol (usando constantes centralizadas)
+  const canAddProduct = PERMISSIONS.CAN_ADD_PRODUCT(role);
+  const canDeleteProduct = PERMISSIONS.CAN_DELETE_PRODUCT(role);
+
+  // Zustand store - estado centralizado
+  const products = useDataStore(state => state.products);
+  const suppliers = useDataStore(state => state.suppliers);
+  const categories = useDataStore(state => state.categories);
+  const fetchProducts = useDataStore(state => state.fetchProducts);
+  const fetchCategories = useDataStore(state => state.fetchCategories);
+  const dataError = useDataStore(state => state.error);
 
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -79,13 +89,13 @@ export default function InventoryPage({ user }) {
 
   // ✅ Optimización: useCallback para evitar recrear la función en cada render
   const handleDelete = useCallback(async (product) => {
-    if (!isSuperAdmin) {
-      showWarning("Solo los Super Administradores pueden eliminar productos.");
+    if (!canDeleteProduct) {
+      showWarning(ERRORS.ONLY_SUPER_ADMIN);
       return;
     }
     setProductToDelete(product);
     setShowDeleteConfirm(true);
-  }, [isSuperAdmin, showWarning]);
+  }, [canDeleteProduct, showWarning]);
 
   // ✅ Optimización: useCallback para confirmDelete
   const confirmDelete = useCallback(async () => {
@@ -96,12 +106,12 @@ export default function InventoryPage({ user }) {
       const resp = await patchProductJson(productToDelete.id, { deleted_at: new Date().toISOString() });
       if (resp.ok) {
         fetchProducts();
-        showSuccess("Producto eliminado correctamente.");
+        showSuccess(SUCCESS.DELETED(ENTITIES.PRODUCT));
       } else {
-        showError(resp.data?.detail || "No se pudo eliminar el producto.");
+        showError(resp.data?.detail || ERRORS.DELETE_FAILED(ENTITIES.PRODUCT));
       }
     } catch (error) {
-      showError("Error al eliminar el producto.");
+      showError(ERRORS.DELETE_FAILED(ENTITIES.PRODUCT));
     } finally {
       setLoading(false);
     }
@@ -122,7 +132,7 @@ export default function InventoryPage({ user }) {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {isAdmin && (
+        {canAddProduct && (
           <button className="btn-add-product" onClick={() => setShowAdd(true)}>
             <FaPlus /> AÑADIR PRODUCTO
           </button>
@@ -190,8 +200,8 @@ export default function InventoryPage({ user }) {
           <ProductCard
             key={product.id}
             product={product}
-            isAdmin={isAdmin}
-            canDelete={isSuperAdmin}
+            isAdmin={canAddProduct}
+            canDelete={canDeleteProduct}
             onEdit={(p) => {
               setEditingProduct(p);
               setShowEdit(true);
@@ -245,7 +255,7 @@ export default function InventoryPage({ user }) {
         }}
         onConfirm={confirmDelete}
         title="Eliminar Producto"
-        message={`¿Estás seguro de que deseas eliminar el producto "${productToDelete?.name}"? Esta acción no se puede deshacer.`}
+        message={CONFIRM.DELETE(ENTITIES.PRODUCT, productToDelete?.name)}
         confirmText="Eliminar"
         cancelText="Cancelar"
         type="danger"

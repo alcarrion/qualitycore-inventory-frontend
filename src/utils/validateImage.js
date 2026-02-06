@@ -1,4 +1,6 @@
 // utils/validateImage.js
+import { IMAGE_CONFIG } from '../constants/config';
+import { ERRORS } from '../constants/messages';
 
 /**
  * Validates an image file for type, size, and dimensions.
@@ -7,38 +9,31 @@
  * @returns {Promise<boolean>} true if valid, false otherwise
  */
 export async function validateImage(file, showError) {
-  const MAX_SIZE = 2 * 1024 * 1024; // 2MB en bytes
-  const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
-  const MIN_WIDTH = 300;
-  const MIN_HEIGHT = 300;
-  const MAX_WIDTH = 2000;
-  const MAX_HEIGHT = 2000;
-
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    showError("Solo se permiten imágenes JPG o PNG.");
+  if (!IMAGE_CONFIG.ALLOWED_TYPES.includes(file.type)) {
+    showError(ERRORS.IMAGE_FORMAT);
     return false;
   }
 
-  if (file.size > MAX_SIZE) {
-    showError("El archivo debe ser menor a 2MB.");
+  if (file.size > IMAGE_CONFIG.MAX_SIZE_BYTES) {
+    showError(ERRORS.IMAGE_SIZE);
     return false;
   }
 
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      if (img.width < MIN_WIDTH || img.height < MIN_HEIGHT) {
-        showError(`La imagen debe tener al menos ${MIN_WIDTH}x${MIN_HEIGHT} píxeles.`);
+      if (img.width < IMAGE_CONFIG.MIN_WIDTH || img.height < IMAGE_CONFIG.MIN_HEIGHT) {
+        showError(ERRORS.IMAGE_MIN_DIMENSIONS(IMAGE_CONFIG.MIN_WIDTH));
         resolve(false);
-      } else if (img.width > MAX_WIDTH || img.height > MAX_HEIGHT) {
-        showError(`La imagen es demasiado grande (máximo ${MAX_WIDTH}x${MAX_HEIGHT} píxeles).`);
+      } else if (img.width > IMAGE_CONFIG.MAX_WIDTH || img.height > IMAGE_CONFIG.MAX_HEIGHT) {
+        showError(ERRORS.IMAGE_MAX_DIMENSIONS(IMAGE_CONFIG.MAX_WIDTH));
         resolve(false);
       } else {
         resolve(true);
       }
     };
     img.onerror = () => {
-      showError("No se pudo cargar la imagen.");
+      showError(ERRORS.IMAGE_LOAD_ERROR);
       resolve(false);
     };
     img.src = URL.createObjectURL(file);

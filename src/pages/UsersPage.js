@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import Modal from "../components/Modal";
 import { AddUserForm } from "../components/AddUserForm";
 import { useApp } from "../contexts/AppContext";
+import { PERMISSIONS, isAdmin as checkIsAdmin, isSuperAdmin as checkIsSuperAdmin } from "../constants/roles";
+import { ERRORS, SUCCESS } from "../constants/messages";
 import "../styles/pages/UsersPage.css";
 import { getUsers, patchUser } from "../services/api";
 import { translateRole } from "../utils/translateRole";
@@ -17,8 +19,10 @@ export default function UsersPage({ user }) {
   const [showAdd, setShowAdd] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
 
-  const isAdmin = currentUser?.role === "Administrator" || currentUser?.role === "SuperAdmin";
-  const isSuperAdmin = currentUser?.role === "SuperAdmin";
+  const role = currentUser?.role || "";
+  const isAdmin = checkIsAdmin(role);
+  const isSuperAdmin = checkIsSuperAdmin(role);
+  const canAddUser = PERMISSIONS.CAN_ADD_USER(role);
 
   useEffect(() => {
     if (!isAdmin) navigate("/dashboard", { replace: true });
@@ -29,8 +33,6 @@ export default function UsersPage({ user }) {
     (async () => {
       try {
         const res = await getUsers();
-        // El backend devuelve paginación: { count, next, previous, results: [...] }
-        // Extraemos el array de usuarios desde "results"
         const usersList = res.data?.results || res.data || [];
         setUsers(Array.isArray(usersList) ? usersList : []);
 
@@ -39,12 +41,11 @@ export default function UsersPage({ user }) {
         if (currentUserInList && currentUserInList.role !== currentUser?.role) {
           const updatedUser = { ...currentUser, role: currentUserInList.role };
           localStorage.setItem("user", JSON.stringify(updatedUser));
-          // Disparar evento personalizado para que App.js actualice el estado
           window.dispatchEvent(new Event("userUpdated"));
         }
       } catch (error) {
         console.error("Error al cargar usuarios:", error);
-        showError("Error al cargar la lista de usuarios. Por favor, intenta nuevamente.");
+        showError(ERRORS.LOAD_FAILED('los usuarios'));
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -55,13 +56,13 @@ export default function UsersPage({ user }) {
       setLoadingId(userId);
       const resp = await patchUser(userId, { role: newRole });
       if (!resp.ok) {
-        const errorMsg = resp.data?.role?.[0] || resp.data?.detail || "Error cambiando rol";
+        const errorMsg = resp.data?.role?.[0] || resp.data?.detail || ERRORS.UPDATE_FAILED('el rol');
         throw new Error(errorMsg);
       }
       setUsers(prev => prev.map(u => (u.id === userId ? { ...u, role: newRole } : u)));
-      showSuccess("Rol actualizado correctamente.");
+      showSuccess(SUCCESS.UPDATED('Rol'));
     } catch (e) {
-      showError(e.message || "No se pudo cambiar el rol");
+      showError(e.message || ERRORS.UPDATE_FAILED('el rol'));
     } finally {
       setLoadingId(null);
     }
@@ -72,13 +73,13 @@ export default function UsersPage({ user }) {
       setLoadingId(userId);
       const resp = await patchUser(userId, { is_active: !isActive });
       if (!resp.ok) {
-        const errorMsg = resp.data?.detail || resp.data?.non_field_errors?.[0] || "Error cambiando estado";
+        const errorMsg = resp.data?.detail || resp.data?.non_field_errors?.[0] || ERRORS.UPDATE_FAILED('el estado');
         throw new Error(errorMsg);
       }
       setUsers(prev => prev.map(u => (u.id === userId ? { ...u, is_active: !isActive } : u)));
       showSuccess(`Usuario ${!isActive ? "activado" : "inactivado"} correctamente.`);
     } catch (e) {
-      showError(e.message || "No se pudo cambiar el estado");
+      showError(e.message || ERRORS.UPDATE_FAILED('el estado'));
     } finally {
       setLoadingId(null);
     }
@@ -90,7 +91,7 @@ export default function UsersPage({ user }) {
     <div className="users-page-container">
       <div className="users-page-header">
         <h2>USUARIOS</h2>
-        {isSuperAdmin && (
+        {canAddUser && (
           <button className="btn-primary" onClick={() => setShowAdd(true)}>
             Añadir Usuario
           </button>

@@ -1,5 +1,5 @@
 // src/pages/QuotationPage.js
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   User,
   Package,
@@ -14,21 +14,24 @@ import {
 } from "lucide-react";
 
 import {
-  getCustomers,
-  getProducts,
   postQuotation,
   getQuotationPDF,
   checkPDFStatus,
 } from "../services/api";
 
+import { useDataStore } from "../store/dataStore";
 import { useApp } from "../contexts/AppContext";
+import { ERRORS, SUCCESS } from "../constants/messages";
 import "../styles/pages/QuotationPage.css";
 
 export default function QuotationPage() {
   const { showSuccess, showError } = useApp();
+
+  // Zustand store - datos centralizados (ya se cargan en App.js al autenticarse)
+  const customers = useDataStore(state => state.customers);
+  const products = useDataStore(state => state.products);
+
   const [customer, setCustomer] = useState("");
-  const [customers, setCustomers] = useState([]);
-  const [products, setProducts] = useState([]);
   const [observations, setObservations] = useState("");
   const [quotedProducts, setQuotedProducts] = useState([]);
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -36,37 +39,6 @@ export default function QuotationPage() {
   const [subtotal, setSubtotal] = useState(0);
   const [vat, setVat] = useState(0);
   const [total, setTotal] = useState(0);
-
-  useEffect(() => {
-    fetchCustomers();
-    fetchProducts();
-  }, []);
-
-  const fetchCustomers = async () => {
-    try {
-      const res = await getCustomers();
-      // El backend devuelve paginación: { count, next, previous, results: [...] }
-      const list = res.data?.results || res.data || [];
-      const customersList = Array.isArray(list) ? list : [];
-      setCustomers(customersList.filter(c => !c.deleted_at));
-    } catch (error) {
-      console.error("Error al cargar clientes:", error);
-      showError("Error al cargar clientes. Por favor, intenta nuevamente.");
-    }
-  };
-
-  const fetchProducts = async () => {
-    try {
-      const res = await getProducts();
-      // El backend devuelve paginación: { count, next, previous, results: [...] }
-      const list = res.data?.results || res.data || [];
-      const productsList = Array.isArray(list) ? list : [];
-      setProducts(productsList.filter(p => !p.deleted_at));
-    } catch (error) {
-      console.error("Error al cargar productos:", error);
-      showError("Error al cargar productos. Por favor, intenta nuevamente.");
-    }
-  };
 
   const handleAddProduct = () => {
     setQuotedProducts(prev => [
@@ -122,18 +94,18 @@ export default function QuotationPage() {
     setPdfUrl(null); // Limpiar PDF anterior
 
     if (!customer) {
-      showError("Selecciona un cliente.");
+      showError(ERRORS.SELECT_CUSTOMER);
       return;
     }
     if (quotedProducts.length === 0) {
-      showError("Agrega al menos un producto.");
+      showError(ERRORS.ADD_AT_LEAST_ONE_PRODUCT);
       return;
     }
     const validItems = quotedProducts.every(
       (p) => p.product && Number(p.quantity) > 0 && Number(p.unit_price) >= 0
     );
     if (!validItems) {
-      showError("Revisa cantidades y precios de los productos.");
+      showError(ERRORS.CHECK_QUANTITIES_AND_PRICES);
       return;
     }
 
@@ -151,14 +123,14 @@ export default function QuotationPage() {
     const res = await postQuotation(payload);
 
     if (res.ok && res.data?.quotation?.id) {
-      showSuccess("Cotización guardada correctamente.");
+      showSuccess(SUCCESS.QUOTATION_SAVED);
 
       // Iniciar generación asíncrona del PDF
       const pdfResponse = await getQuotationPDF(res.data.quotation.id);
 
       if (pdfResponse.ok && pdfResponse.data?.task_id) {
         const taskId = pdfResponse.data.task_id;
-        showSuccess("Cotización guardada. Generando PDF...");
+        showSuccess(SUCCESS.QUOTATION_SAVED_GENERATING_PDF);
 
         // Consultar el estado cada 2 segundos
         const interval = setInterval(async () => {
@@ -169,11 +141,11 @@ export default function QuotationPage() {
 
             if (state === "SUCCESS") {
               clearInterval(interval);
-              showSuccess("PDF generado correctamente.");
+              showSuccess(SUCCESS.PDF_GENERATED);
               setPdfUrl(`${process.env.REACT_APP_API_URL.replace(/\/api\/products\/?$/, "")}${download_url}`);
             } else if (state === "FAILURE") {
               clearInterval(interval);
-              showError(`Error al generar PDF: ${error || "Error desconocido"}`);
+              showError(ERRORS.PDF_GENERATION_FAILED(error));
             }
             // Si está PENDING o STARTED, continuar esperando
           }
@@ -181,7 +153,7 @@ export default function QuotationPage() {
       }
     } else {
       console.error("Error al guardar:", res.data);
-      showError("Error al guardar la cotización.");
+      showError(ERRORS.QUOTATION_SAVE_FAILED);
     }
   };
 

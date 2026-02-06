@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { patchUser } from "../services/api";
 import { useApp } from "../contexts/AppContext";
+import { ERRORS, SUCCESS } from "../constants/messages";
 import "../styles/components/Form.css";
 
 export default function EditProfileForm({ user, onSave, onCancel }) {
@@ -17,13 +18,13 @@ export default function EditProfileForm({ user, onSave, onCancel }) {
 
     // Validar email
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      showError("Por favor ingresa un correo electrónico válido.");
+      showError(ERRORS.INVALID_EMAIL);
       setLoading(false);
       return;
     }
 
     if (phone && !/^\d{10}$/.test(phone)) {
-      showError("El número de teléfono debe tener exactamente 10 dígitos numéricos.");
+      showError(ERRORS.PHONE_LENGTH);
       setLoading(false);
       return;
     }
@@ -42,9 +43,9 @@ export default function EditProfileForm({ user, onSave, onCancel }) {
               return messages;
             })
             .join('. ');
-          showError(errorMessages || "No se pudo actualizar el perfil.");
+          showError(errorMessages || ERRORS.UPDATE_FAILED('el perfil'));
         } else {
-          showError(resp.data?.detail || "No se pudo actualizar el perfil.");
+          showError(resp.data?.detail || ERRORS.UPDATE_FAILED('el perfil'));
         }
         setLoading(false);
         return;
@@ -55,10 +56,10 @@ export default function EditProfileForm({ user, onSave, onCancel }) {
         localStorage.setItem("user", JSON.stringify(updated));
       } catch {}
 
-      showSuccess("Perfil actualizado correctamente.");
+      showSuccess(SUCCESS.UPDATED('Perfil'));
       onSave?.(resp.data);
     } catch (err) {
-      showError(err.message || "Hubo un error al guardar los cambios.");
+      showError(err.message || ERRORS.UPDATE_FAILED('el perfil'));
     } finally {
       setLoading(false);
     }
