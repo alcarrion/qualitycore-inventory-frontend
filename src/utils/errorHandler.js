@@ -1,5 +1,6 @@
 // src/utils/errorHandler.js
 import { ERRORS } from '../constants/messages';
+import { logger } from './logger';
 
 /**
  * Manejo centralizado de errores de API
@@ -78,7 +79,7 @@ export function showErrorToast(message) {
   if (showToastFn) {
     showToastFn("error", message);
   } else {
-    console.error(message);
+    logger.error(message);
   }
 }
 

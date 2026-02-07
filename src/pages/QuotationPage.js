@@ -22,6 +22,8 @@ import {
 import { useDataStore } from "../store/dataStore";
 import { useApp } from "../contexts/AppContext";
 import { ERRORS, SUCCESS } from "../constants/messages";
+import { TIMEOUTS } from "../constants/config";
+import { logger } from "../utils/logger";
 import "../styles/pages/QuotationPage.css";
 
 export default function QuotationPage() {
@@ -30,6 +32,7 @@ export default function QuotationPage() {
   // Zustand store - datos centralizados (ya se cargan en App.js al autenticarse)
   const customers = useDataStore(state => state.customers);
   const products = useDataStore(state => state.products);
+  const appConfig = useDataStore(state => state.appConfig);
 
   const [customer, setCustomer] = useState("");
   const [observations, setObservations] = useState("");
@@ -77,7 +80,8 @@ export default function QuotationPage() {
 
   const recalculateTotals = (items) => {
     const newSubtotal = items.reduce((acc, p) => acc + (Number(p.subtotal) || 0), 0);
-    const newVat = newSubtotal * 0.15;
+    const taxRate = appConfig.tax_rate.iva;  // Desde el backend
+    const newVat = newSubtotal * taxRate;
     const newTotal = newSubtotal + newVat;
 
     setSubtotal(newSubtotal.toFixed(2));
@@ -142,17 +146,17 @@ export default function QuotationPage() {
             if (state === "SUCCESS") {
               clearInterval(interval);
               showSuccess(SUCCESS.PDF_GENERATED);
-              setPdfUrl(`${process.env.REACT_APP_API_URL.replace(/\/api\/products\/?$/, "")}${download_url}`);
+              setPdfUrl(`${process.env.REACT_APP_API_URL.replace(/\/api\/?$/, "")}${download_url}`);
             } else if (state === "FAILURE") {
               clearInterval(interval);
               showError(ERRORS.PDF_GENERATION_FAILED(error));
             }
             // Si está PENDING o STARTED, continuar esperando
           }
-        }, 2000); // Consultar cada 2 segundos
+        }, TIMEOUTS.POLLING_INTERVAL); // Consultar cada 2 segundos
       }
     } else {
-      console.error("Error al guardar:", res.data);
+      logger.error("Error al guardar:", res.data);
       showError(ERRORS.QUOTATION_SAVE_FAILED);
     }
   };
@@ -287,7 +291,7 @@ export default function QuotationPage() {
               <span className="cotiz-icon-box" style={{ backgroundColor: "#f3f4f6", color: "#1f2937" }}>
                 <Receipt size={16} />
               </span>
-              IVA (15%):
+              IVA ({(appConfig.tax_rate.iva * 100).toFixed(0)}%):
             </span>
             <span>${vat}</span>
           </div>

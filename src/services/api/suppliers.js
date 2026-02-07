@@ -5,9 +5,10 @@
 
 import { apiFetch } from "./config";
 
-/** Listar proveedores */
-export async function getSuppliers() {
-  return await apiFetch(`/suppliers/`);
+/** Listar proveedores (con paginación opcional) */
+export async function getSuppliers(page = null) {
+  const url = page ? `/suppliers/?page=${page}` : `/suppliers/`;
+  return await apiFetch(url);
 }
 
 /** Crear proveedor */

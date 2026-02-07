@@ -4,6 +4,13 @@
 // ============================================================
 
 /**
+ * Tasas de impuestos
+ */
+export const TAX_RATE = {
+  IVA: 0.15,  // 15% IVA Ecuador
+};
+
+/**
  * Timeouts (en milisegundos)
  */
 export const TIMEOUTS = {
@@ -11,6 +18,9 @@ export const TIMEOUTS = {
   TOAST_DEFAULT: 5000,
   TOAST_SHORT: 3000,
   TOAST_LONG: 8000,
+
+  // Mensajes temporales en UI
+  MESSAGE_DISPLAY: 4000,
 
   // Redirecciones
   REDIRECT_DELAY: 2000,

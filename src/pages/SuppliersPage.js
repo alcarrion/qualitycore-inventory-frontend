@@ -1,10 +1,10 @@
 // src/pages/SuppliersPage.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Modal from "../components/Modal";
 import ConfirmDialog from "../components/ConfirmDialog";
+import Pagination from "../components/Pagination";
 import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
-import AddSupplierForm from "../components/AddSupplierForm";
-import EditSupplierForm from "../components/EditSupplierForm";
+import SupplierForm from "../components/SupplierForm";
 import { useApp } from "../contexts/AppContext";
 import { useDataStore } from "../store/dataStore";
 import { PERMISSIONS } from "../constants/roles";
@@ -12,6 +12,7 @@ import { ERRORS, SUCCESS, ENTITIES, CONFIRM } from "../constants/messages";
 import "../styles/pages/SuppliersPage.css";
 
 import { patchSupplier } from "../services/api";
+import { PAGINATION } from "../constants/config";
 
 export default function SuppliersPage({ user }) {
   const { showSuccess, showError, showWarning, setLoading } = useApp();
@@ -34,17 +35,30 @@ export default function SuppliersPage({ user }) {
   const [search, setSearch] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (dataError) showError(dataError);
   }, [dataError, showError]);
 
-  const filtered = suppliers.filter(p =>
+  // Resetear a página 1 cuando cambia la búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const filtered = useMemo(() => suppliers.filter(p =>
     (p.name && p.name.toLowerCase().includes(search.toLowerCase())) ||
     (p.tax_id && p.tax_id.includes(search)) ||
     (p.email && p.email.toLowerCase().includes(search.toLowerCase())) ||
     (p.phone && p.phone.includes(search))
-  );
+  ), [suppliers, search]);
+
+  // Calcular paginación
+  const totalPages = Math.ceil(filtered.length / PAGINATION.DEFAULT_PAGE_SIZE);
+  const paginatedSuppliers = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGINATION.DEFAULT_PAGE_SIZE;
+    return filtered.slice(startIndex, startIndex + PAGINATION.DEFAULT_PAGE_SIZE);
+  }, [filtered, currentPage]);
 
   const handleDelete = async (supplier) => {
     if (!canDelete) {
@@ -97,7 +111,7 @@ export default function SuppliersPage({ user }) {
       </div>
 
       <div className="suppliers-list">
-        {filtered.map(supplier => {
+        {paginatedSuppliers.map(supplier => {
           const getDocumentLabel = (type) => {
             switch (type) {
               case 'cedula':
@@ -157,9 +171,18 @@ export default function SuppliersPage({ user }) {
         {filtered.length === 0 && <div className="no-data">No hay proveedores para mostrar.</div>}
       </div>
 
+      {/* Paginación */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        totalItems={filtered.length}
+        pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
+      />
+
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
-          <AddSupplierForm
+          <SupplierForm
             onSave={() => {
               setShowAdd(false);
               fetchSuppliers();
@@ -171,7 +194,7 @@ export default function SuppliersPage({ user }) {
 
       {showEdit && editingSupplier && (
         <Modal onClose={() => { setShowEdit(false); setEditingSupplier(null); }}>
-          <EditSupplierForm
+          <SupplierForm
             supplier={editingSupplier}
             onSave={() => {
               setShowEdit(false);

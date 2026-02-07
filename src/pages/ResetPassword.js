@@ -5,6 +5,7 @@ import { Lock, Eye, EyeOff } from "lucide-react";
 import { postResetPassword } from "../services/api";
 import { useApp } from "../contexts/AppContext";
 import { ERRORS, SUCCESS } from "../constants/messages";
+import { TIMEOUTS } from "../constants/config";
 import { validatePassword } from "../utils/validatePassword";
 import "../styles/pages/ResetPassword.css";
 
@@ -46,7 +47,7 @@ export default function ResetPassword() {
       const resp = await postResetPassword({ uid, token, new_password: password });
       if (resp.ok) {
         showSuccess(SUCCESS.PASSWORD_RESET_SUCCESS);
-        setTimeout(() => navigate("/login"), 2000);
+        setTimeout(() => navigate("/login"), TIMEOUTS.REDIRECT_DELAY);
       } else {
         const d = resp.data || {};
         const errorMsg = d.message || d.detail || ERRORS.PASSWORD_CHANGE_FAILED;

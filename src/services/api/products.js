@@ -5,9 +5,10 @@
 
 import { apiFetch, apiFetchForm } from "./config";
 
-/** Listar productos */
-export async function getProducts() {
-  return await apiFetch(`/products/`);
+/** Listar productos (con paginación opcional) */
+export async function getProducts(page = null) {
+  const url = page ? `/products/?page=${page}` : `/products/`;
+  return await apiFetch(url);
 }
 
 /** Crear producto (multipart) */

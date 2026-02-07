@@ -9,6 +9,7 @@ import { ERRORS, SUCCESS } from "../constants/messages";
 import "../styles/pages/UsersPage.css";
 import { getUsers, patchUser } from "../services/api";
 import { translateRole } from "../utils/translateRole";
+import { logger } from "../utils/logger";
 
 export default function UsersPage({ user }) {
   const { showSuccess, showError } = useApp();
@@ -44,7 +45,7 @@ export default function UsersPage({ user }) {
           window.dispatchEvent(new Event("userUpdated"));
         }
       } catch (error) {
-        console.error("Error al cargar usuarios:", error);
+        logger.error("Error al cargar usuarios:", error);
         showError(ERRORS.LOAD_FAILED('los usuarios'));
       }
     })();

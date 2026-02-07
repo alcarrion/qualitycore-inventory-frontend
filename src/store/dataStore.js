@@ -4,6 +4,7 @@
 // ============================================================
 
 import { create } from 'zustand';
+import { logger } from '../utils/logger';
 import {
   getProducts,
   getSuppliers,
@@ -14,7 +15,32 @@ import {
   getMovements,
   getSales,
   getPurchases,
+  getAppConfig,
 } from '../services/api';
+
+/**
+ * Helper: Carga todas las páginas de un endpoint paginado
+ */
+async function fetchAllPages(fetchFn) {
+  let allItems = [];
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const res = await fetchFn(page);
+    const results = res.data?.results || res.data || [];
+
+    if (Array.isArray(results) && results.length > 0) {
+      allItems = [...allItems, ...results];
+      hasMore = !!res.data?.next;
+      page++;
+    } else {
+      hasMore = false;
+    }
+  }
+
+  return allItems;
+}
 
 /**
  * Store global de datos de la aplicación
@@ -22,6 +48,29 @@ import {
  */
 export const useDataStore = create((set, get) => ({
   // ==================== ESTADO ====================
+
+  // Configuración del sistema (desde backend)
+  appConfig: {
+    tax_rate: { iva: 0.15 },
+    pagination: { default_page_size: 20, page_size_options: [10, 20, 50, 100] },
+    validation: { phone_length: 10, password_min_length: 8 },
+    timeouts: {
+      toast_default: 5000,
+      toast_short: 3000,
+      toast_long: 8000,
+      message_display: 4000,
+      redirect_delay: 2000,
+      polling_interval: 2000,
+      clock_interval: 1000,
+    },
+    image: {
+      max_size_mb: 2,
+      max_size_bytes: 2097152,
+      allowed_types: ['image/jpeg', 'image/png'],
+    },
+    limits: { max_product_price: 9999999.99, max_quantity: 99999 },
+  },
+  configLoaded: false,
 
   // Inventario
   products: [],
@@ -54,28 +103,37 @@ export const useDataStore = create((set, get) => ({
 
   // ==================== ACCIONES ====================
 
-  // --- Productos ---
+  // --- Configuración del sistema (desde backend) ---
+  fetchAppConfig: async () => {
+    try {
+      const res = await getAppConfig();
+      if (res.ok && res.data) {
+        set({ appConfig: res.data, configLoaded: true });
+      }
+    } catch (error) {
+      logger.error('Error fetching app config:', error);
+      // Si falla, mantener valores por defecto
+    }
+  },
+
+  // --- Productos (carga TODAS las páginas) ---
   fetchProducts: async () => {
     try {
-      const res = await getProducts();
-      const list = res.data?.results || res.data || [];
-      const productsList = Array.isArray(list) ? list : [];
-      set({ products: productsList.filter(p => !p.deleted_at) });
+      const allProducts = await fetchAllPages(getProducts);
+      set({ products: allProducts.filter(p => !p.deleted_at) });
     } catch (error) {
-      console.error('Error fetching products:', error);
+      logger.error('Error fetching products:', error);
       set({ error: 'Error al cargar productos' });
     }
   },
 
-  // --- Proveedores ---
+  // --- Proveedores (carga TODAS las páginas) ---
   fetchSuppliers: async () => {
     try {
-      const res = await getSuppliers();
-      const list = res.data?.results || res.data || [];
-      const suppliersList = Array.isArray(list) ? list : [];
-      set({ suppliers: suppliersList.filter(s => !s.deleted_at) });
+      const allSuppliers = await fetchAllPages(getSuppliers);
+      set({ suppliers: allSuppliers.filter(s => !s.deleted_at) });
     } catch (error) {
-      console.error('Error fetching suppliers:', error);
+      logger.error('Error fetching suppliers:', error);
       set({ error: 'Error al cargar proveedores' });
     }
   },
@@ -88,20 +146,18 @@ export const useDataStore = create((set, get) => ({
       const categoriesList = Array.isArray(list) ? list : [];
       set({ categories: categoriesList });
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      logger.error('Error fetching categories:', error);
       set({ error: 'Error al cargar categorías' });
     }
   },
 
-  // --- Clientes ---
+  // --- Clientes (carga TODAS las páginas) ---
   fetchCustomers: async () => {
     try {
-      const res = await getCustomers();
-      const list = res.data?.results || res.data || [];
-      const customersList = Array.isArray(list) ? list : [];
-      set({ customers: customersList.filter(c => !c.deleted_at) });
+      const allCustomers = await fetchAllPages(getCustomers);
+      set({ customers: allCustomers.filter(c => !c.deleted_at) });
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      logger.error('Error fetching customers:', error);
       set({ error: 'Error al cargar clientes' });
     }
   },
@@ -114,7 +170,7 @@ export const useDataStore = create((set, get) => ({
       const alertsList = Array.isArray(list) ? list : [];
       set({ alerts: alertsList });
     } catch (error) {
-      console.error('Error fetching alerts:', error);
+      logger.error('Error fetching alerts:', error);
       set({ error: 'Error al cargar alertas' });
     }
   },
@@ -127,7 +183,7 @@ export const useDataStore = create((set, get) => ({
         set({ dashboardData: res.data });
       }
     } catch (error) {
-      console.error('Error fetching dashboard:', error);
+      logger.error('Error fetching dashboard:', error);
       set({ error: 'Error al cargar dashboard' });
     }
   },
@@ -140,33 +196,29 @@ export const useDataStore = create((set, get) => ({
       const movementsList = Array.isArray(list) ? list : [];
       set({ movements: movementsList });
     } catch (error) {
-      console.error('Error fetching movements:', error);
+      logger.error('Error fetching movements:', error);
       set({ error: 'Error al cargar movimientos' });
     }
   },
 
-  // --- Ventas ---
+  // --- Ventas (carga TODAS las páginas) ---
   fetchSales: async () => {
     try {
-      const res = await getSales();
-      const list = res.data?.results || res.data || [];
-      const salesList = Array.isArray(list) ? list : [];
-      set({ sales: salesList });
+      const allSales = await fetchAllPages(getSales);
+      set({ sales: allSales });
     } catch (error) {
-      console.error('Error fetching sales:', error);
+      logger.error('Error fetching sales:', error);
       set({ error: 'Error al cargar ventas' });
     }
   },
 
-  // --- Compras ---
+  // --- Compras (carga TODAS las páginas) ---
   fetchPurchases: async () => {
     try {
-      const res = await getPurchases();
-      const list = res.data?.results || res.data || [];
-      const purchasesList = Array.isArray(list) ? list : [];
-      set({ purchases: purchasesList });
+      const allPurchases = await fetchAllPages(getPurchases);
+      set({ purchases: allPurchases });
     } catch (error) {
-      console.error('Error fetching purchases:', error);
+      logger.error('Error fetching purchases:', error);
       set({ error: 'Error al cargar compras' });
     }
   },
@@ -176,6 +228,11 @@ export const useDataStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const store = get();
+
+      // Cargar configuración primero (no bloquea si falla)
+      await store.fetchAppConfig();
+
+      // Cargar datos en paralelo
       await Promise.all([
         store.fetchProducts(),
         store.fetchSuppliers(),
@@ -188,7 +245,7 @@ export const useDataStore = create((set, get) => ({
         store.fetchPurchases(),
       ]);
     } catch (error) {
-      console.error('Error in fetchAll:', error);
+      logger.error('Error in fetchAll:', error);
       set({ error: 'Error al cargar datos' });
     } finally {
       set({ loading: false });

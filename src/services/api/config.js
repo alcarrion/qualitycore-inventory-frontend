@@ -4,12 +4,13 @@
 // ============================================================
 
 import { RETRY_CONFIG } from '../../constants/config';
+import { logger } from '../../utils/logger';
 
 // ===================== CONFIGURACIÓN BASE =====================
 export const API_URL = process.env.REACT_APP_API_URL;
 
 // (Opcional) Raíz del backend, por si necesitas enlaces absolutos a /media, etc.
-export const API_ROOT = API_URL.replace(/\/api\/products\/?$/, "");
+export const API_ROOT = API_URL.replace(/\/api\/?$/, "");
 
 // Guardamos el token CSRF que expone el backend en /csrf/
 let CSRF_TOKEN = null;
@@ -84,7 +85,7 @@ export async function refreshAccessToken() {
     clearTokens();
     return false;
   } catch (e) {
-    console.error("refreshAccessToken failed", e);
+    logger.error("refreshAccessToken failed", e);
     clearTokens();
     return false;
   }
@@ -178,7 +179,7 @@ export async function initCsrf() {
     const data = await res.json().catch(() => ({}));
     if (data?.csrfToken) CSRF_TOKEN = data.csrfToken;
   } catch (e) {
-    console.error("initCsrf failed", e);
+    logger.error("initCsrf failed", e);
   }
 }
 
@@ -220,7 +221,7 @@ export async function apiFetch(endpoint, options = {}) {
     }
   } catch (networkError) {
     // Error de red sin respuesta
-    console.error('Network error:', networkError);
+    logger.error('Network error:', networkError);
     return { ok: false, status: 0, data: null, networkError: true };
   }
 

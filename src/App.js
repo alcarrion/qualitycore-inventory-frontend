@@ -8,6 +8,7 @@ import { useDataStore } from "./store/dataStore";
 import Layout from "./components/Layout";
 import ToastContainer from "./components/ToastContainer";
 import LoadingSpinner from "./components/LoadingSpinner";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // ===== LAZY LOADING DE PÁGINAS =====
 // Las páginas se cargan bajo demanda para mejorar el tiempo de carga inicial
@@ -83,8 +84,9 @@ function AppContent() {
 
       {/* Resto de la aplicación */}
       <Router>
-        <Suspense fallback={<LoadingSpinner fullScreen message="Cargando página..." />}>
-          <Routes>
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner fullScreen message="Cargando página..." />}>
+            <Routes>
             <Route path="/" element={<LoginPage setUser={setUser} />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
@@ -114,8 +116,9 @@ function AppContent() {
             </Route>
 
             <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </Suspense>
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </Router>
     </>
   );

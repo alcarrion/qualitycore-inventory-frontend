@@ -9,6 +9,7 @@ import { Package, DollarSign, Users, Activity, Bell, AlertTriangle, XCircle, Ale
 import { dismissAlert } from "../services/api";
 import { useDataStore } from "../store/dataStore";
 import { SUCCESS, ERRORS } from "../constants/messages";
+import { TIMEOUTS } from "../constants/config";
 import "../styles/pages/DashboardPage.css";
 
 export default function DashboardPage() {
@@ -36,7 +37,7 @@ export default function DashboardPage() {
     } else {
       setMessage(ERRORS.ALERT_DISMISS_FAILED);
     }
-    setTimeout(() => setMessage(""), 4000);
+    setTimeout(() => setMessage(""), TIMEOUTS.MESSAGE_DISPLAY);
   }, [alerts, setAlerts]);
 
   const handleSaveEdit = useCallback((data) => {

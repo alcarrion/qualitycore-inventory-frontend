@@ -1,15 +1,16 @@
 // src/pages/CustomersPage.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Modal from "../components/Modal";
 import ConfirmDialog from "../components/ConfirmDialog";
+import Pagination from "../components/Pagination";
 import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
-import AddCustomerForm from "../components/AddCustomerForm";
-import EditCustomerForm from "../components/EditCustomerForm";
+import CustomerForm from "../components/CustomerForm";
 import { patchCustomer } from "../services/api";
 import { useDataStore } from "../store/dataStore";
 import { useApp } from "../contexts/AppContext";
 import { PERMISSIONS } from "../constants/roles";
 import { ERRORS, SUCCESS, ENTITIES, CONFIRM } from "../constants/messages";
+import { PAGINATION } from "../constants/config";
 import "../styles/pages/CustomersPage.css";
 
 export default function CustomersPage({ user }) {
@@ -33,19 +34,32 @@ export default function CustomersPage({ user }) {
   const [search, setSearch] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (dataError) showError(dataError);
   }, [dataError, showError]);
 
-  const filtered = customers.filter(
+  // Resetear a página 1 cuando cambia la búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const filtered = useMemo(() => customers.filter(
     (c) =>
       (c.name && c.name.toLowerCase().includes(search.toLowerCase())) ||
       (c.document && c.document.includes(search)) ||
       (c.phone && c.phone.includes(search)) ||
       (c.email && c.email.toLowerCase().includes(search.toLowerCase())) ||
       (c.address && c.address.toLowerCase().includes(search.toLowerCase()))
-  );
+  ), [customers, search]);
+
+  // Calcular paginación
+  const totalPages = Math.ceil(filtered.length / PAGINATION.DEFAULT_PAGE_SIZE);
+  const paginatedCustomers = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGINATION.DEFAULT_PAGE_SIZE;
+    return filtered.slice(startIndex, startIndex + PAGINATION.DEFAULT_PAGE_SIZE);
+  }, [filtered, currentPage]);
 
   const handleDelete = async (customer) => {
     if (!CAN_DELETE) {
@@ -100,7 +114,7 @@ export default function CustomersPage({ user }) {
       </div>
 
       <div className="customers-list">
-        {filtered.map((customer) => {
+        {paginatedCustomers.map((customer) => {
           // Función para obtener el label del tipo de documento
           const getDocumentLabel = (type) => {
             switch (type) {
@@ -170,9 +184,18 @@ export default function CustomersPage({ user }) {
         )}
       </div>
 
+      {/* Paginación */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        totalItems={filtered.length}
+        pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
+      />
+
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
-          <AddCustomerForm
+          <CustomerForm
             onSave={() => {
               setShowAdd(false);
               fetchCustomers();
@@ -189,7 +212,7 @@ export default function CustomersPage({ user }) {
             setEditingCustomer(null);
           }}
         >
-          <EditCustomerForm
+          <CustomerForm
             customer={editingCustomer}
             onSave={() => {
               setShowEdit(false);

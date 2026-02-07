@@ -5,9 +5,10 @@
 
 import { apiFetch } from "./config";
 
-/** Listar ventas */
-export async function getSales() {
-  return await apiFetch(`/sales/`);
+/** Listar ventas (con paginación opcional) */
+export async function getSales(page = null) {
+  const url = page ? `/sales/?page=${page}` : `/sales/`;
+  return await apiFetch(url);
 }
 
 /** Crear venta con múltiples productos */

@@ -3,8 +3,8 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import ProductCard from "../components/ProductCard";
 import Modal from "../components/Modal";
 import ConfirmDialog from "../components/ConfirmDialog";
-import AddProductForm from "../components/AddProductForm";
-import EditProductForm from "../components/EditProductForm";
+import ProductForm from "../components/ProductForm";
+import Pagination from "../components/Pagination";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import { useApp } from "../contexts/AppContext";
 import "../styles/pages/InventoryPage.css";
@@ -13,6 +13,7 @@ import { patchProductJson } from "../services/api";
 import { useDataStore } from "../store/dataStore";
 import { PERMISSIONS } from "../constants/roles";
 import { ERRORS, SUCCESS, ENTITIES, CONFIRM } from "../constants/messages";
+import { PAGINATION } from "../constants/config";
 
 export default function InventoryPage({ user }) {
   const { showSuccess, showError, showWarning, setLoading } = useApp();
@@ -40,6 +41,7 @@ export default function InventoryPage({ user }) {
   const [filterStatus, setFilterStatus] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (dataError) showError(dataError);
@@ -86,6 +88,18 @@ export default function InventoryPage({ user }) {
       return matchesSearch && matchesCategory && matchesSupplier && matchesStatus;
     });
   }, [productsWithNames, search, filterCategory, filterSupplier, filterStatus]);
+
+  // Resetear a página 1 cuando cambian los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterCategory, filterSupplier, filterStatus]);
+
+  // Calcular paginación
+  const totalPages = Math.ceil(filtered.length / PAGINATION.DEFAULT_PAGE_SIZE);
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGINATION.DEFAULT_PAGE_SIZE;
+    return filtered.slice(startIndex, startIndex + PAGINATION.DEFAULT_PAGE_SIZE);
+  }, [filtered, currentPage]);
 
   // ✅ Optimización: useCallback para evitar recrear la función en cada render
   const handleDelete = useCallback(async (product) => {
@@ -196,7 +210,7 @@ export default function InventoryPage({ user }) {
       </div>
 
       <div className="product-list">
-        {filtered.map((product) => (
+        {paginatedProducts.map((product) => (
           <ProductCard
             key={product.id}
             product={product}
@@ -214,9 +228,18 @@ export default function InventoryPage({ user }) {
         )}
       </div>
 
+      {/* Paginación */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        totalItems={filtered.length}
+        pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
+      />
+
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)}>
-          <AddProductForm
+          <ProductForm
             onSave={() => {
               setShowAdd(false);
               fetchProducts();
@@ -232,7 +255,7 @@ export default function InventoryPage({ user }) {
           setShowEdit(false);
           setEditingProduct(null);
         }}>
-          <EditProductForm
+          <ProductForm
             product={editingProduct}
             onSave={() => {
               setShowEdit(false);

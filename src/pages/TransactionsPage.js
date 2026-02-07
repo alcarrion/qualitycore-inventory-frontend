@@ -1,6 +1,7 @@
 // src/pages/TransactionsPage.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import ConfirmDialog from "../components/ConfirmDialog";
+import Pagination from "../components/Pagination";
 import { postSale, postPurchase } from "../services/api";
 import { useDataStore } from "../store/dataStore";
 import { useCart } from "../hooks/useCart";
@@ -14,6 +15,7 @@ import InvoiceModal from "./TransactionsPage/InvoiceModal";
 import { useApp } from "../contexts/AppContext";
 import { PERMISSIONS } from "../constants/roles";
 import { ERRORS, SUCCESS, CONFIRM } from "../constants/messages";
+import { PAGINATION } from "../constants/config";
 import "../styles/pages/TransactionsPage.css";
 
 function TransactionsPage() {
@@ -51,6 +53,8 @@ function TransactionsPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedSale, setSelectedSale] = useState(null); // Para mostrar modal de detalle de venta
   const [selectedPurchase, setSelectedPurchase] = useState(null); // Para mostrar modal de detalle de compra
+  const [currentPagePurchases, setCurrentPagePurchases] = useState(1);
+  const [currentPageSales, setCurrentPageSales] = useState(1);
 
   // Actualizar el reloj cada segundo cuando el modal está abierto
   useEffect(() => {
@@ -90,6 +94,12 @@ function TransactionsPage() {
       showError(dataError);
     }
   }, [dataError, showError]);
+
+  // Resetear a página 1 cuando cambian los filtros
+  useEffect(() => {
+    setCurrentPagePurchases(1);
+    setCurrentPageSales(1);
+  }, [searchTerm, startDate, endDate]);
 
   // Estado para entradas (sin cambios)
   const [formData, setFormData] = useState({
@@ -347,8 +357,23 @@ function TransactionsPage() {
     });
   };
 
-  const filteredPurchases = filterPurchases(purchases);
-  const filteredSales = filterSales(sales);
+  // Aplicar filtros con useMemo para optimización
+  const filteredPurchases = useMemo(() => filterPurchases(purchases), [purchases, searchTerm, startDate, endDate]);
+  const filteredSales = useMemo(() => filterSales(sales), [sales, searchTerm, startDate, endDate]);
+
+  // Calcular paginación para compras
+  const totalPagesPurchases = Math.ceil(filteredPurchases.length / PAGINATION.DEFAULT_PAGE_SIZE);
+  const paginatedPurchases = useMemo(() => {
+    const startIndex = (currentPagePurchases - 1) * PAGINATION.DEFAULT_PAGE_SIZE;
+    return filteredPurchases.slice(startIndex, startIndex + PAGINATION.DEFAULT_PAGE_SIZE);
+  }, [filteredPurchases, currentPagePurchases]);
+
+  // Calcular paginación para ventas
+  const totalPagesSales = Math.ceil(filteredSales.length / PAGINATION.DEFAULT_PAGE_SIZE);
+  const paginatedSales = useMemo(() => {
+    const startIndex = (currentPageSales - 1) * PAGINATION.DEFAULT_PAGE_SIZE;
+    return filteredSales.slice(startIndex, startIndex + PAGINATION.DEFAULT_PAGE_SIZE);
+  }, [filteredSales, currentPageSales]);
 
   return (
     <div className="transactions-page">
@@ -389,14 +414,28 @@ function TransactionsPage() {
 
       {/* Entradas - Compras Agrupadas */}
       <PurchasesList
-        purchases={filteredPurchases}
+        purchases={paginatedPurchases}
         onViewDetails={setSelectedPurchase}
+      />
+      <Pagination
+        currentPage={currentPagePurchases}
+        totalPages={totalPagesPurchases}
+        onPageChange={setCurrentPagePurchases}
+        totalItems={filteredPurchases.length}
+        pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
       />
 
       {/* Salidas - Ventas Agrupadas */}
       <SalesList
-        sales={filteredSales}
+        sales={paginatedSales}
         onViewDetails={setSelectedSale}
+      />
+      <Pagination
+        currentPage={currentPageSales}
+        totalPages={totalPagesSales}
+        onPageChange={setCurrentPageSales}
+        totalItems={filteredSales.length}
+        pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
       />
 
       {/* Modal - ✅ FASE 3.1: Usar componente TransactionFormModal */}

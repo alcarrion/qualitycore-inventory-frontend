@@ -5,9 +5,10 @@
 
 import { apiFetch } from "./config";
 
-/** Listar compras */
-export async function getPurchases() {
-  return await apiFetch(`/purchases/`);
+/** Listar compras (con paginación opcional) */
+export async function getPurchases(page = null) {
+  const url = page ? `/purchases/?page=${page}` : `/purchases/`;
+  return await apiFetch(url);
 }
 
 /** Crear compra con múltiples productos */

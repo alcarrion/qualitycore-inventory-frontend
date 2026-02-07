@@ -66,3 +66,6 @@ export { getReports, postReport, generateReport } from "./reports";
 
 // Alertas
 export { getAlerts, dismissAlert } from "./alerts";
+
+// Configuración del sistema
+export { getAppConfig } from "./appConfig";
