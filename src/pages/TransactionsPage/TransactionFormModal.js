@@ -6,7 +6,6 @@ import {
   User,
   Boxes,
   ArrowUpToLine,
-  Package,
   ShoppingCart,
 } from "lucide-react";
 
@@ -218,20 +217,6 @@ function TransactionFormModal({
                 )}
               </div>
             )}
-            {selectedSupplier && (
-              <div style={{
-                marginTop: '8px',
-                padding: '8px 12px',
-                background: 'var(--bg-success)',
-                border: '1px solid var(--border-success)',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: '500',
-                color: 'var(--text-success)'
-              }}>
-                ✓ Proveedor seleccionado: {selectedSupplier}
-              </div>
-            )}
           </div>
         )}
 
@@ -336,20 +321,6 @@ function TransactionFormModal({
                 )}
               </div>
             )}
-            {selectedCustomer && (
-              <div style={{
-                marginTop: '8px',
-                padding: '8px 12px',
-                background: 'var(--bg-success)',
-                border: '1px solid var(--border-success)',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: '500',
-                color: 'var(--text-success)'
-              }}>
-                ✓ Cliente seleccionado: {selectedCustomer}
-              </div>
-            )}
           </div>
         )}
 
@@ -452,10 +423,10 @@ function TransactionFormModal({
                         </div>
                         <div style={{
                           fontSize: '0.75em',
-                          color: p.current_stock > p.min_stock ? 'var(--text-success)' : 'var(--text-danger)',
+                          color: (p.availableStock ?? p.current_stock) > p.min_stock ? 'var(--text-success)' : 'var(--text-danger)',
                           fontWeight: '500'
                         }}>
-                          Stock: {p.current_stock}
+                          Stock: {p.availableStock ?? p.current_stock}
                         </div>
                       </div>
                     </div>
@@ -466,28 +437,6 @@ function TransactionFormModal({
                   No se encontraron productos
                 </div>
               )}
-            </div>
-          )}
-          {formData.product && (
-            <div style={{
-              marginTop: '8px',
-              padding: '10px 12px',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '6px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <div>
-                <div style={{ fontWeight: '500', fontSize: '14px' }}>
-                  <Package size={14} style={{ marginRight: '4px', display: 'inline-block', verticalAlign: 'middle' }} />
-                  {formData.product.name}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  Precio: ${parseFloat(formData.product.price).toLocaleString('es-EC', { minimumFractionDigits: 2 })} | Stock: {formData.product.current_stock}
-                </div>
-              </div>
             </div>
           )}
         </div>

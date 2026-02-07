@@ -1,5 +1,5 @@
 // src/pages/DashboardPage.js
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import UserProfile from "../components/UserProfile";
 import Modal from "../components/Modal";
 import EditProfileForm from "../components/EditProfileForm";
@@ -26,6 +26,14 @@ export default function DashboardPage() {
   const setAlerts = useDataStore(state => state.setAlerts);
   const dashboardData = useDataStore(state => state.dashboardData);
   const loadingAlerts = useDataStore(state => state.loading);
+  const fetchDashboard = useDataStore(state => state.fetchDashboard);
+  const fetchAlerts = useDataStore(state => state.fetchAlerts);
+
+  // Refrescar datos del dashboard cada vez que el usuario navega a esta página
+  useEffect(() => {
+    fetchDashboard();
+    fetchAlerts();
+  }, [fetchDashboard, fetchAlerts]);
 
   const [message, setMessage] = useState("");
 

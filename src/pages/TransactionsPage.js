@@ -274,9 +274,19 @@ function TransactionsPage() {
     setShowCustomerDropdown(false);
   };
 
+  // Limpiar carrito cuando se cambia o borra el proveedor
+  const handleSupplierChange = (newSupplierId) => {
+    if (cart.length > 0 && selectedSupplier && selectedSupplier !== newSupplierId) {
+      cartClearCart();
+      setProductSearch("");
+      setFormData({ ...formData, product: "", quantity: "" });
+    }
+    setSelectedSupplier(newSupplierId);
+  };
+
   // Seleccionar proveedor del autocompletado
   const selectSupplier = (supplier) => {
-    setSelectedSupplier(supplier.id);
+    handleSupplierChange(supplier.id);
     setSupplierSearch(supplier.name);
     setShowSupplierDropdown(false);
   };
@@ -284,7 +294,8 @@ function TransactionsPage() {
   // Seleccionar producto del autocompletado
   const selectProduct = (product) => {
     setFormData({ ...formData, product: product.id });
-    setProductSearch(`${product.name} (Stock: ${product.current_stock})`);
+    const displayStock = product.availableStock ?? product.current_stock;
+    setProductSearch(`${product.name} (Stock: ${displayStock})`);
     setShowProductDropdown(false);
     setShowCustomerDropdown(false);
     setShowSupplierDropdown(false);
@@ -451,7 +462,7 @@ function TransactionsPage() {
         showSupplierDropdown={showSupplierDropdown}
         onShowSupplierDropdownChange={setShowSupplierDropdown}
         selectedSupplier={selectedSupplier}
-        onSelectSupplier={setSelectedSupplier}
+        onSelectSupplier={handleSupplierChange}
         onSupplierSelect={selectSupplier}
         filteredSuppliers={filteredSuppliers}
 
