@@ -1,5 +1,6 @@
 // hooks/useCart.js
 import { useState, useCallback } from "react";
+import { ERRORS } from "../constants/messages";
 
 /**
  * Hook personalizado para manejar la lógica del carrito de compras
@@ -20,7 +21,7 @@ export function useCart() {
    */
   const addToCart = useCallback((product, quantity, type, showError) => {
     if (!product || !quantity) {
-      showError?.("Selecciona un producto y la cantidad.");
+      showError?.(ERRORS.SELECT_PRODUCT_AND_QUANTITY);
       return false;
     }
 
@@ -28,7 +29,7 @@ export function useCart() {
 
     // Validar que la cantidad sea un número positivo
     if (isNaN(quantityNum) || quantityNum <= 0) {
-      showError?.("La cantidad debe ser un número mayor a 0.");
+      showError?.(ERRORS.QUANTITY_MUST_BE_POSITIVE);
       return false;
     }
 
@@ -42,7 +43,7 @@ export function useCart() {
 
       // Verificar stock disponible (considerando lo que ya está en el carrito)
       if (quantityNum > availableStock) {
-        showError?.(`Stock insuficiente. Disponible: ${availableStock} (${currentInCart} ya en carrito)`);
+        showError?.(ERRORS.STOCK_INSUFFICIENT(availableStock, currentInCart));
         return false;
       }
     }
@@ -77,7 +78,7 @@ export function useCart() {
     const quantity = Number(newQuantity);
 
     if (isNaN(quantity) || quantity <= 0) {
-      showError?.("La cantidad debe ser un número mayor a 0.");
+      showError?.(ERRORS.QUANTITY_MUST_BE_POSITIVE);
       return false;
     }
 
@@ -94,7 +95,7 @@ export function useCart() {
       const availableStock = item.product.current_stock - otherCartQuantity;
 
       if (quantity > availableStock) {
-        showError?.(`Stock insuficiente. Disponible: ${availableStock}`);
+        showError?.(ERRORS.STOCK_INSUFFICIENT(availableStock));
         return false;
       }
     }

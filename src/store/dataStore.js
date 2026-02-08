@@ -43,6 +43,39 @@ async function fetchAllPages(fetchFn) {
 }
 
 /**
+ * Helper: Crea un fetcher paginado (carga todas las páginas)
+ */
+function createPaginatedFetcher(set, key, apiFn, label, filter) {
+  return async () => {
+    try {
+      const all = await fetchAllPages(apiFn);
+      set({ [key]: filter ? all.filter(filter) : all });
+    } catch (error) {
+      logger.error(`Error fetching ${key}:`, error);
+      set({ error: `Error al cargar ${label}` });
+    }
+  };
+}
+
+/**
+ * Helper: Crea un fetcher de página única (extrae results o data)
+ */
+function createSimpleFetcher(set, key, apiFn, label) {
+  return async () => {
+    try {
+      const res = await apiFn();
+      const list = res.data?.results || res.data || [];
+      set({ [key]: Array.isArray(list) ? list : [] });
+    } catch (error) {
+      logger.error(`Error fetching ${key}:`, error);
+      set({ error: `Error al cargar ${label}` });
+    }
+  };
+}
+
+const notDeleted = item => !item.deleted_at;
+
+/**
  * Store global de datos de la aplicación
  * Centraliza todos los datos compartidos entre páginas
  */
@@ -112,68 +145,20 @@ export const useDataStore = create((set, get) => ({
       }
     } catch (error) {
       logger.error('Error fetching app config:', error);
-      // Si falla, mantener valores por defecto
     }
   },
 
-  // --- Productos (carga TODAS las páginas) ---
-  fetchProducts: async () => {
-    try {
-      const allProducts = await fetchAllPages(getProducts);
-      set({ products: allProducts.filter(p => !p.deleted_at) });
-    } catch (error) {
-      logger.error('Error fetching products:', error);
-      set({ error: 'Error al cargar productos' });
-    }
-  },
+  // --- Fetchers paginados ---
+  fetchProducts:  createPaginatedFetcher(set, 'products',  getProducts,  'productos',    notDeleted),
+  fetchSuppliers: createPaginatedFetcher(set, 'suppliers', getSuppliers, 'proveedores',  notDeleted),
+  fetchCustomers: createPaginatedFetcher(set, 'customers', getCustomers, 'clientes',     notDeleted),
+  fetchSales:     createPaginatedFetcher(set, 'sales',     getSales,     'ventas'),
+  fetchPurchases: createPaginatedFetcher(set, 'purchases', getPurchases, 'compras'),
 
-  // --- Proveedores (carga TODAS las páginas) ---
-  fetchSuppliers: async () => {
-    try {
-      const allSuppliers = await fetchAllPages(getSuppliers);
-      set({ suppliers: allSuppliers.filter(s => !s.deleted_at) });
-    } catch (error) {
-      logger.error('Error fetching suppliers:', error);
-      set({ error: 'Error al cargar proveedores' });
-    }
-  },
-
-  // --- Categorías ---
-  fetchCategories: async () => {
-    try {
-      const res = await getCategories();
-      const list = res.data?.results || res.data || [];
-      const categoriesList = Array.isArray(list) ? list : [];
-      set({ categories: categoriesList });
-    } catch (error) {
-      logger.error('Error fetching categories:', error);
-      set({ error: 'Error al cargar categorías' });
-    }
-  },
-
-  // --- Clientes (carga TODAS las páginas) ---
-  fetchCustomers: async () => {
-    try {
-      const allCustomers = await fetchAllPages(getCustomers);
-      set({ customers: allCustomers.filter(c => !c.deleted_at) });
-    } catch (error) {
-      logger.error('Error fetching customers:', error);
-      set({ error: 'Error al cargar clientes' });
-    }
-  },
-
-  // --- Alertas ---
-  fetchAlerts: async () => {
-    try {
-      const res = await getAlerts();
-      const list = res.data?.results || res.data || [];
-      const alertsList = Array.isArray(list) ? list : [];
-      set({ alerts: alertsList });
-    } catch (error) {
-      logger.error('Error fetching alerts:', error);
-      set({ error: 'Error al cargar alertas' });
-    }
-  },
+  // --- Fetchers de página única ---
+  fetchCategories: createSimpleFetcher(set, 'categories', getCategories, 'categorías'),
+  fetchAlerts:     createSimpleFetcher(set, 'alerts',     getAlerts,     'alertas'),
+  fetchMovements:  createSimpleFetcher(set, 'movements',  getMovements,  'movimientos'),
 
   // --- Dashboard Summary ---
   fetchDashboard: async () => {
@@ -185,41 +170,6 @@ export const useDataStore = create((set, get) => ({
     } catch (error) {
       logger.error('Error fetching dashboard:', error);
       set({ error: 'Error al cargar dashboard' });
-    }
-  },
-
-  // --- Movimientos ---
-  fetchMovements: async () => {
-    try {
-      const res = await getMovements();
-      const list = res.data?.results || res.data || [];
-      const movementsList = Array.isArray(list) ? list : [];
-      set({ movements: movementsList });
-    } catch (error) {
-      logger.error('Error fetching movements:', error);
-      set({ error: 'Error al cargar movimientos' });
-    }
-  },
-
-  // --- Ventas (carga TODAS las páginas) ---
-  fetchSales: async () => {
-    try {
-      const allSales = await fetchAllPages(getSales);
-      set({ sales: allSales });
-    } catch (error) {
-      logger.error('Error fetching sales:', error);
-      set({ error: 'Error al cargar ventas' });
-    }
-  },
-
-  // --- Compras (carga TODAS las páginas) ---
-  fetchPurchases: async () => {
-    try {
-      const allPurchases = await fetchAllPages(getPurchases);
-      set({ purchases: allPurchases });
-    } catch (error) {
-      logger.error('Error fetching purchases:', error);
-      set({ error: 'Error al cargar compras' });
     }
   },
 

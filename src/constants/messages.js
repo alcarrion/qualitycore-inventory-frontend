@@ -54,6 +54,11 @@ export const ERRORS = {
   DELETE_FAILED: (entity) => `No se pudo eliminar ${entity}.`,
   LOAD_FAILED: (entity) => `Error al cargar ${entity}.`,
 
+  // Cantidades y stock
+  QUANTITY_MUST_BE_POSITIVE: 'La cantidad debe ser un número mayor a 0.',
+  STOCK_INSUFFICIENT: (available, inCart) =>
+    inCart ? `Stock insuficiente. Disponible: ${available} (${inCart} ya en carrito)` : `Stock insuficiente. Disponible: ${available}`,
+
   // Transacciones
   SELECT_SUPPLIER_FIRST: 'Por favor selecciona un proveedor primero.',
   SELECT_CUSTOMER_FIRST: 'Por favor selecciona un cliente primero.',
