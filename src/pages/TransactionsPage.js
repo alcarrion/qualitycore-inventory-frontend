@@ -1,5 +1,5 @@
 // src/pages/TransactionsPage.js
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import ConfirmDialog from "../components/ConfirmDialog";
 import Pagination from "../components/Pagination";
 import { postSale, postPurchase } from "../services/api";
@@ -215,7 +215,7 @@ function TransactionsPage() {
   };
 
   // Helper: filtrar por rango de fechas
-  const matchesDateRange = (dateStr) => {
+  const matchesDateRange = useCallback((dateStr) => {
     if (!startDate && !endDate) return true;
     const d = new Date(dateStr);
     const dateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -228,7 +228,7 @@ function TransactionsPage() {
       if (dateOnly > new Date(e.getFullYear(), e.getMonth(), e.getDate())) return false;
     }
     return true;
-  };
+  }, [startDate, endDate]);
 
   // Helper: ordenar por relevancia de búsqueda
   const sortBySearch = (search) => (a, b) =>
@@ -344,7 +344,7 @@ function TransactionsPage() {
   };
 
   // Función para filtrar ventas por término de búsqueda y fechas
-  const filterSales = (sales) => {
+  const filterSales = useCallback((sales) => {
     return sales.filter((s) => {
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
@@ -354,10 +354,10 @@ function TransactionsPage() {
       }
       return matchesDateRange(s.date);
     });
-  };
+  }, [searchTerm, matchesDateRange]);
 
   // Función para filtrar compras por término de búsqueda y fechas
-  const filterPurchases = (purchases) => {
+  const filterPurchases = useCallback((purchases) => {
     return purchases.filter((p) => {
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
@@ -367,11 +367,11 @@ function TransactionsPage() {
       }
       return matchesDateRange(p.date);
     });
-  };
+  }, [searchTerm, matchesDateRange]);
 
   // Aplicar filtros con useMemo para optimización
-  const filteredPurchases = useMemo(() => filterPurchases(purchases), [purchases, searchTerm, startDate, endDate]);
-  const filteredSales = useMemo(() => filterSales(sales), [sales, searchTerm, startDate, endDate]);
+  const filteredPurchases = useMemo(() => filterPurchases(purchases), [purchases, searchTerm, startDate, endDate, filterPurchases]);
+  const filteredSales = useMemo(() => filterSales(sales), [sales, searchTerm, startDate, endDate, filterSales]);
 
   // Calcular paginación para compras
   const totalPagesPurchases = Math.ceil(filteredPurchases.length / PAGINATION.DEFAULT_PAGE_SIZE);
