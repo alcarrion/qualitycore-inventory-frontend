@@ -1,5 +1,6 @@
 // src/pages/DashboardPage.js
 import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import UserProfile from "../components/UserProfile";
 import Modal from "../components/Modal";
 import EditProfileForm from "../components/EditProfileForm";
@@ -13,9 +14,8 @@ import { TIMEOUTS } from "../constants/config";
 import "../styles/pages/DashboardPage.css";
 
 export default function DashboardPage() {
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem("user")) || { name: "Usuario", role: "Sin rol" }
-  );
+  const { user: contextUser } = useOutletContext();
+  const [user, setUser] = useState(contextUser);
   const [showProfile, setShowProfile] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showPass, setShowPass] = useState(false);
@@ -40,13 +40,13 @@ export default function DashboardPage() {
   const dismissAlertHandler = useCallback(async (id) => {
     const res = await dismissAlert(id);
     if (res.ok) {
-      setAlerts(alerts.filter(a => a.id !== id));
+      setAlerts(prev => prev.filter(a => a.id !== id));
       setMessage(res.data?.message || SUCCESS.ALERT_DISMISSED);
     } else {
       setMessage(ERRORS.ALERT_DISMISS_FAILED);
     }
     setTimeout(() => setMessage(""), TIMEOUTS.MESSAGE_DISPLAY);
-  }, [alerts, setAlerts]);
+  }, [setAlerts]);
 
   const handleSaveEdit = useCallback((data) => {
     setUser(data);
@@ -138,7 +138,7 @@ export default function DashboardPage() {
 
             <div className="dashboard-widget">
               <div className="dashboard-widget-title">
-                <Bell size={24} style={{ marginRight: "8px", verticalAlign: "middle" }} />
+                <Bell size={24} />
                 Alertas de Bajo Stock
               </div>
               {loadingAlerts ? (
@@ -164,7 +164,7 @@ export default function DashboardPage() {
 
                     return (
                       <li key={alert.id} className={`dashboard-alert-item alert-${alert.type}`}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div>
                           {getAlertIcon(alert.type)}
                           <span>
                             <strong>{alert.product_name}:</strong> {alert.message}

@@ -3,8 +3,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import Modal from "../components/Modal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import Pagination from "../components/Pagination";
-import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import CustomerForm from "../components/CustomerForm";
+import { useOutletContext } from "react-router-dom";
 import { patchCustomer } from "../services/api";
 import { useDataStore } from "../store/dataStore";
 import { useApp } from "../contexts/AppContext";
@@ -13,10 +14,10 @@ import { ERRORS, SUCCESS, ENTITIES, CONFIRM } from "../constants/messages";
 import { PAGINATION } from "../constants/config";
 import "../styles/pages/CustomersPage.css";
 
-export default function CustomersPage({ user }) {
+export default function CustomersPage() {
+  const { user } = useOutletContext();
   const { showSuccess, showError, showWarning, setLoading } = useApp();
-  const currentUser = user || JSON.parse(localStorage.getItem("user"));
-  const role = currentUser?.role || "";
+  const role = user?.role || "";
 
   // Permisos basados en rol (usando constantes centralizadas)
   const CAN_ADD = PERMISSIONS.CAN_ADD_CUSTOMER(role);
@@ -98,7 +99,7 @@ export default function CustomersPage({ user }) {
 
       <div className="customers-actions">
         <div className="search-bar">
-          <FaSearch />
+          <Search size={16} />
           <input
             placeholder="Buscar clientes..."
             value={search}
@@ -108,7 +109,7 @@ export default function CustomersPage({ user }) {
 
         {CAN_ADD && (
           <button className="btn-add-customer" onClick={() => setShowAdd(true)}>
-            <FaPlus /> AÑADIR CLIENTES
+            <Plus size={16} /> AÑADIR CLIENTES
           </button>
         )}
       </div>
@@ -161,7 +162,7 @@ export default function CustomersPage({ user }) {
                       setShowEdit(true);
                     }}
                   >
-                    <FaEdit />
+                    <Pencil size={16} />
                   </button>
                 )}
 
@@ -170,7 +171,7 @@ export default function CustomersPage({ user }) {
                     className="btn-icon btn-delete"
                     onClick={() => handleDelete(customer)}
                   >
-                    <FaTrash />
+                    <Trash2 size={16} />
                   </button>
                 )}
               </div>

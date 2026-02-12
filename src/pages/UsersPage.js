@@ -1,6 +1,6 @@
 // src/pages/UsersPage.js
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import Modal from "../components/Modal";
 import { AddUserForm } from "../components/AddUserForm";
 import { useApp } from "../contexts/AppContext";
@@ -11,16 +11,16 @@ import { getUsers, patchUser } from "../services/api";
 import { translateRole } from "../utils/translateRole";
 import { logger } from "../utils/logger";
 
-export default function UsersPage({ user }) {
+export default function UsersPage() {
+  const { user } = useOutletContext();
   const { showSuccess, showError } = useApp();
-  const currentUser = user || JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
 
   const [users, setUsers] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
 
-  const role = currentUser?.role || "";
+  const role = user?.role || "";
   const isAdmin = checkIsAdmin(role);
   const isSuperAdmin = checkIsSuperAdmin(role);
   const canAddUser = PERMISSIONS.CAN_ADD_USER(role);
@@ -38,9 +38,9 @@ export default function UsersPage({ user }) {
         setUsers(Array.isArray(usersList) ? usersList : []);
 
         // Actualizar localStorage si el usuario actual está en la lista
-        const currentUserInList = usersList.find(u => u.id === currentUser?.id);
-        if (currentUserInList && currentUserInList.role !== currentUser?.role) {
-          const updatedUser = { ...currentUser, role: currentUserInList.role };
+        const userInList = usersList.find(u => u.id === user?.id);
+        if (userInList && userInList.role !== user?.role) {
+          const updatedUser = { ...user, role: userInList.role };
           localStorage.setItem("user", JSON.stringify(updatedUser));
           window.dispatchEvent(new Event("userUpdated"));
         }
@@ -124,7 +124,7 @@ export default function UsersPage({ user }) {
               <td>{u.email}</td>
               <td>{u.phone}</td>
               <td>
-                {currentUser.id !== u.id && (isSuperAdmin || u.role === "User") ? (
+                {user.id !== u.id && (isSuperAdmin || u.role === "User") ? (
                   <select
                     value={u.role}
                     onChange={(e) => handleChangeRole(u.id, e.target.value)}
@@ -154,7 +154,7 @@ export default function UsersPage({ user }) {
                 {u.is_active ? "Activo" : "Inactivo"}
               </td>
               <td>
-                {currentUser.id !== u.id && (isSuperAdmin || u.role === "User") ? (
+                {user.id !== u.id && (isSuperAdmin || u.role === "User") ? (
                   <button
                     className="btn-secondary"
                     onClick={() => handleToggleActive(u.id, u.is_active)}

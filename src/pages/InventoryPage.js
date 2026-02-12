@@ -5,7 +5,8 @@ import Modal from "../components/Modal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import ProductForm from "../components/ProductForm";
 import Pagination from "../components/Pagination";
-import { FaPlus, FaSearch } from "react-icons/fa";
+import { Plus, Search } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import "../styles/pages/InventoryPage.css";
 
@@ -15,10 +16,10 @@ import { PERMISSIONS } from "../constants/roles";
 import { ERRORS, SUCCESS, ENTITIES, CONFIRM } from "../constants/messages";
 import { PAGINATION } from "../constants/config";
 
-export default function InventoryPage({ user }) {
+export default function InventoryPage() {
+  const { user } = useOutletContext();
   const { showSuccess, showError, showWarning, setLoading } = useApp();
-  const currentUser = user || JSON.parse(localStorage.getItem("user"));
-  const role = currentUser?.role || "";
+  const role = user?.role || "";
 
   // Permisos basados en rol (usando constantes centralizadas)
   const canAddProduct = PERMISSIONS.CAN_ADD_PRODUCT(role);
@@ -139,7 +140,7 @@ export default function InventoryPage({ user }) {
 
       <div className="inventory-actions">
         <div className="inventory-search-bar">
-          <FaSearch />
+          <Search size={16} />
           <input
             placeholder="Buscar productos..."
             value={search}
@@ -148,7 +149,7 @@ export default function InventoryPage({ user }) {
         </div>
         {canAddProduct && (
           <button className="btn-add-product" onClick={() => setShowAdd(true)}>
-            <FaPlus /> AÑADIR PRODUCTO
+            <Plus size={16} /> AÑADIR PRODUCTO
           </button>
         )}
       </div>

@@ -3,8 +3,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import Modal from "../components/Modal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import Pagination from "../components/Pagination";
-import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import SupplierForm from "../components/SupplierForm";
+import { useOutletContext } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { useDataStore } from "../store/dataStore";
 import { PERMISSIONS } from "../constants/roles";
@@ -14,10 +15,10 @@ import "../styles/pages/SuppliersPage.css";
 import { patchSupplier } from "../services/api";
 import { PAGINATION } from "../constants/config";
 
-export default function SuppliersPage({ user }) {
+export default function SuppliersPage() {
+  const { user } = useOutletContext();
   const { showSuccess, showError, showWarning, setLoading } = useApp();
-  const currentUser = user || JSON.parse(localStorage.getItem("user"));
-  const role = currentUser?.role || "";
+  const role = user?.role || "";
 
   // Permisos basados en rol
   const canAdd = PERMISSIONS.CAN_ADD_SUPPLIER(role);
@@ -96,7 +97,7 @@ export default function SuppliersPage({ user }) {
 
       <div className="suppliers-actions">
         <div className="search-bar">
-          <FaSearch />
+          <Search size={16} />
           <input
             placeholder="Buscar proveedores..."
             value={search}
@@ -105,7 +106,7 @@ export default function SuppliersPage({ user }) {
         </div>
         {canAdd && (
           <button className="btn-add-supplier" onClick={() => setShowAdd(true)}>
-            <FaPlus /> AÑADIR PROVEEDOR
+            <Plus size={16} /> AÑADIR PROVEEDOR
           </button>
         )}
       </div>
@@ -153,14 +154,14 @@ export default function SuppliersPage({ user }) {
                   className="btn-icon"
                   onClick={() => { setEditingSupplier(supplier); setShowEdit(true); }}
                 >
-                  <FaEdit />
+                  <Pencil size={16} />
                 </button>
                 {canDelete && (
                   <button
                     className="btn-icon btn-delete"
                     onClick={() => handleDelete(supplier)}
                   >
-                    <FaTrash />
+                    <Trash2 size={16} />
                   </button>
                 )}
               </div>

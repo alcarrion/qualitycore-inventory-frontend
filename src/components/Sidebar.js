@@ -1,6 +1,6 @@
 // src/components/Sidebar.js
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Box, BarChart2, Users,
   User, DollarSign, Truck, LogOut
@@ -11,7 +11,8 @@ import { PERMISSIONS } from "../constants/roles";
 import { CONFIRM } from "../constants/messages";
 import "../styles/components/Sidebar.css";
 
-export default function Sidebar({ user, onLogout, onShowPerfil, isOpen, onClose }) {
+export default function Sidebar({ user, onLogout, isOpen, onClose }) {
+  const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const role = user?.role || "";
   const canViewUsers = PERMISSIONS.CAN_VIEW_USERS(role);
@@ -52,13 +53,12 @@ export default function Sidebar({ user, onLogout, onShowPerfil, isOpen, onClose 
         )}
       </nav>
 
-      <div style={{ flex: '1 1 auto' }} />
+      <div className="sidebar-spacer" />
 
       <div className="sidebar-user">
         <div
           className="sidebar-user-info clickable"
-          onClick={() => window.location.href = "/profile"}
-          style={{ cursor: "pointer" }}
+          onClick={() => navigate("/profile")}
         >
           <div className="sidebar-user-avatar">
             {user?.name?.[0]?.toUpperCase() || "U"}

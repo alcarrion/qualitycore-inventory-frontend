@@ -12,6 +12,7 @@ import TransactionActions from "./TransactionsPage/TransactionActions";
 import TransactionFormModal from "./TransactionsPage/TransactionFormModal";
 import InvoiceModal from "./TransactionsPage/InvoiceModal";
 
+import { useOutletContext } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { PERMISSIONS } from "../constants/roles";
 import { ERRORS, SUCCESS, CONFIRM } from "../constants/messages";
@@ -116,7 +117,7 @@ function TransactionsPage() {
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const { user } = useOutletContext();
   const canCreateMovements = PERMISSIONS.CAN_CREATE_MOVEMENT(user?.role);
 
   // ✅ FASE 1.1: Fetch functions eliminadas - ahora las maneja useTransactionsData hook

@@ -5,7 +5,7 @@ import { Outlet } from "react-router-dom";
 import { Menu } from "lucide-react";
 import "../styles/components/Layout.css";
 
-export default function Layout({ user, onLogout, onShowPerfil }) {
+export default function Layout({ user, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleSidebar = () => {
@@ -26,7 +26,6 @@ export default function Layout({ user, onLogout, onShowPerfil }) {
       <Sidebar
         user={user}
         onLogout={onLogout}
-        onShowPerfil={onShowPerfil}
         isOpen={sidebarOpen}
         onClose={closeSidebar}
       />
@@ -37,7 +36,7 @@ export default function Layout({ user, onLogout, onShowPerfil }) {
       </button>
 
       <main className="layout-main">
-        <Outlet />
+        <Outlet context={{ user }} />
       </main>
     </div>
   );

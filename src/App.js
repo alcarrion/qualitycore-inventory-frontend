@@ -73,10 +73,6 @@ function AppContent() {
     window.location.href = "/";
   };
 
-  const handleShowPerfil = () => {
-    window.location.href = "/profile";
-  };
-
   return (
     <>
       {/* Container de toasts - Muestra las notificaciones */}
@@ -97,7 +93,6 @@ function AppContent() {
                   <Layout
                     user={user}
                     onLogout={handleLogout}
-                    onShowPerfil={handleShowPerfil}
                   />
                 ) : (
                   <Navigate to="/" />
@@ -111,8 +106,8 @@ function AppContent() {
               <Route path="/suppliers" element={<SuppliersPage />} />
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/quotation" element={<QuotationPage />} />
-              <Route path="/profile" element={<ProfilePage user={user} />} />
-              <Route path="/users" element={<UsersPage user={user} />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/users" element={<UsersPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" />} />

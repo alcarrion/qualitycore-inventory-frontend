@@ -1,6 +1,6 @@
 import React, { useState, memo } from "react";
 import ReactDOM from "react-dom";
-import { FaEdit, FaTrash, FaTimes } from "react-icons/fa";
+import { Pencil, Trash2, X } from "lucide-react";
 
 // ✅ Optimización: React.memo para evitar re-renders innecesarios
 // Solo se re-renderiza si las props cambian
@@ -68,9 +68,9 @@ function ProductCard({ product, onEdit, onDelete, isAdmin, canDelete = false }) 
 
       {isAdmin && (
         <div className="product-card-actions">
-          <button className="btn-icon" onClick={() => onEdit(product)}><FaEdit /></button>
+          <button className="btn-icon" onClick={() => onEdit(product)}><Pencil size={16} /></button>
           {canDelete && (
-            <button className="btn-icon btn-delete" onClick={() => onDelete(product)}><FaTrash /></button>
+            <button className="btn-icon btn-delete" onClick={() => onDelete(product)}><Trash2 size={16} /></button>
           )}
         </div>
       )}
@@ -78,7 +78,7 @@ function ProductCard({ product, onEdit, onDelete, isAdmin, canDelete = false }) 
       {showImageModal && showImage && ReactDOM.createPortal(
         <div className="image-modal-overlay" onClick={() => setShowImageModal(false)}>
           <button className="image-modal-close" onClick={() => setShowImageModal(false)}>
-            <FaTimes />
+            <X size={16} />
           </button>
           <img
             src={product.image_url}

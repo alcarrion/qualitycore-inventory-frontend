@@ -188,6 +188,7 @@
   transition: color var(--transition-slow);
   display: flex;
   align-items: center;
+  gap: var(--space-sm);
 }
 
 .dashboard-widget-placeholder {
@@ -237,6 +238,9 @@
 .dashboard-alert-item > div {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
   color: var(--color-warning-text);
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);

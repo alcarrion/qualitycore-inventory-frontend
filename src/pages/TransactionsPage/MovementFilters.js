@@ -1,6 +1,6 @@
 // TransactionsPage/MovementFilters.js
 import React from "react";
-import { FaSearch } from "react-icons/fa";
+import { Search } from "lucide-react";
 
 /**
  * Componente de filtros para la página de transacciones
@@ -10,7 +10,7 @@ function MovementFilters({ searchTerm, onSearchChange, startDate, onStartDateCha
   return (
     <div className="filters-container">
       <div className="search-bar">
-        <FaSearch />
+        <Search size={16} />
         <input
           type="text"
           placeholder="Buscar por producto, proveedor, cliente o usuario..."

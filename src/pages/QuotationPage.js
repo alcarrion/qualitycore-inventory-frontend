@@ -124,39 +124,54 @@ export default function QuotationPage() {
       vat: Number(vat),
     };
 
-    const res = await postQuotation(payload);
+    try {
+      const res = await postQuotation(payload);
 
-    if (res.ok && res.data?.quotation?.id) {
-      showSuccess(SUCCESS.QUOTATION_SAVED);
+      if (res.ok && res.data?.quotation?.id) {
+        showSuccess(SUCCESS.QUOTATION_SAVED);
 
-      // Iniciar generación asíncrona del PDF
-      const pdfResponse = await getQuotationPDF(res.data.quotation.id);
+        // Iniciar generación asíncrona del PDF
+        const pdfResponse = await getQuotationPDF(res.data.quotation.id);
 
-      if (pdfResponse.ok && pdfResponse.data?.task_id) {
-        const taskId = pdfResponse.data.task_id;
-        showSuccess(SUCCESS.QUOTATION_SAVED_GENERATING_PDF);
+        if (pdfResponse.ok && pdfResponse.data?.task_id) {
+          const taskId = pdfResponse.data.task_id;
+          showSuccess(SUCCESS.QUOTATION_SAVED_GENERATING_PDF);
 
-        // Consultar el estado cada 2 segundos
-        const interval = setInterval(async () => {
-          const statusResponse = await checkPDFStatus(taskId);
+          // Consultar el estado cada 2 segundos (máximo 30 intentos = 60s)
+          let attempts = 0;
+          const MAX_ATTEMPTS = 30;
 
-          if (statusResponse.ok && statusResponse.data) {
-            const { state, download_url, error } = statusResponse.data;
+          const interval = setInterval(async () => {
+            attempts++;
 
-            if (state === "SUCCESS") {
+            if (attempts >= MAX_ATTEMPTS) {
               clearInterval(interval);
-              showSuccess(SUCCESS.PDF_GENERATED);
-              setPdfUrl(`${process.env.REACT_APP_API_URL.replace(/\/api\/?$/, "")}${download_url}`);
-            } else if (state === "FAILURE") {
-              clearInterval(interval);
-              showError(ERRORS.PDF_GENERATION_FAILED(error));
+              showError("Tiempo de espera agotado generando el PDF. Intenta de nuevo.");
+              return;
             }
-            // Si está PENDING o STARTED, continuar esperando
-          }
-        }, TIMEOUTS.POLLING_INTERVAL); // Consultar cada 2 segundos
+
+            const statusResponse = await checkPDFStatus(taskId);
+
+            if (statusResponse.ok && statusResponse.data) {
+              const { state, download_url, error } = statusResponse.data;
+
+              if (state === "SUCCESS") {
+                clearInterval(interval);
+                showSuccess(SUCCESS.PDF_GENERATED);
+                setPdfUrl(`${process.env.REACT_APP_API_URL.replace(/\/api\/?$/, "")}${download_url}`);
+              } else if (state === "FAILURE") {
+                clearInterval(interval);
+                showError(ERRORS.PDF_GENERATION_FAILED(error));
+              }
+            }
+          }, TIMEOUTS.POLLING_INTERVAL);
+        }
+      } else {
+        logger.error("Error al guardar:", res.data);
+        showError(ERRORS.QUOTATION_SAVE_FAILED);
       }
-    } else {
-      logger.error("Error al guardar:", res.data);
+    } catch (err) {
+      logger.error("Error inesperado al guardar cotización:", err);
       showError(ERRORS.QUOTATION_SAVE_FAILED);
     }
   };
@@ -177,7 +192,7 @@ export default function QuotationPage() {
         {/* Cliente */}
         <div className="cotiz-section">
           <div className="cotiz-title">
-            <span className="cotiz-icon-box" style={{ backgroundColor: "#f3f4f6", color: "#1f2937" }}>
+            <span className="cotiz-icon-box">
               <User size={18} />
             </span>
             Información del Cliente
@@ -194,13 +209,13 @@ export default function QuotationPage() {
         {/* Productos Cotizados */}
         <div className="cotiz-section">
           <div className="cotiz-title">
-            <span className="cotiz-icon-box" style={{ backgroundColor: "#f3f4f6", color: "#1f2937" }}>
+            <span className="cotiz-icon-box">
               <Package size={18} />
             </span>
             Productos Cotizados
           </div>
           <button onClick={handleAddProduct} className="cotiz-btn" type="button">
-            <Plus size={16} style={{ marginRight: "6px" }} />
+            <Plus size={16} />
             Añadir Producto
           </button>
 
@@ -217,7 +232,7 @@ export default function QuotationPage() {
           <div className="cotiz-prod-list">
             {quotedProducts.length === 0 ? (
               <div className="cotiz-empty">
-                <Package size={16} style={{ marginRight: "6px" }} />
+                <Package size={16} />
                 No hay productos agregados
               </div>
             ) : (
@@ -272,14 +287,14 @@ export default function QuotationPage() {
         {/* Resumen */}
         <div className="cotiz-summary">
           <h3 className="cotiz-title">
-            <span className="cotiz-icon-box" style={{ backgroundColor: "#f3f4f6", color: "#1f2937" }}>
+            <span className="cotiz-icon-box">
               <FileSpreadsheet size={18} />
             </span>
             Resumen de Cotización
           </h3>
           <div className="cotiz-summary-row">
             <span>
-              <span className="cotiz-icon-box" style={{ backgroundColor: "#f3f4f6", color: "#1f2937" }}>
+              <span className="cotiz-icon-box">
                 <FileSpreadsheet size={16} />
               </span>
               Subtotal:
@@ -288,7 +303,7 @@ export default function QuotationPage() {
           </div>
           <div className="cotiz-summary-row">
             <span>
-              <span className="cotiz-icon-box" style={{ backgroundColor: "#f3f4f6", color: "#1f2937" }}>
+              <span className="cotiz-icon-box">
                 <Receipt size={16} />
               </span>
               IVA ({(appConfig.tax_rate.iva * 100).toFixed(0)}%):
@@ -297,7 +312,7 @@ export default function QuotationPage() {
           </div>
           <div className="cotiz-summary-row">
             <span>
-              <span className="cotiz-icon-box" style={{ backgroundColor: "#f3f4f6", color: "#1f2937" }}>
+              <span className="cotiz-icon-box">
                 <CreditCard size={16} />
               </span>
               Total:
@@ -309,7 +324,7 @@ export default function QuotationPage() {
         {/* Observaciones */}
         <div className="cotiz-section">
           <div className="cotiz-title">
-            <span className="cotiz-icon-box" style={{ backgroundColor: "#f3f4f6", color: "#1f2937" }}>
+            <span className="cotiz-icon-box">
               <StickyNote size={18} />
             </span>
             Observaciones
@@ -321,34 +336,32 @@ export default function QuotationPage() {
             rows="4"
             className="cotiz-input"
             placeholder="Ejemplo: Incluye garantía de 1 año. Tiempo de entrega: 5 días hábiles."
-            style={{ resize: "vertical", minHeight: "100px" }}
           />
         </div>
 
         {/* Guardar */}
-        <button onClick={handleSave} className="cotiz-btn" style={{ width: "100%" }}>
-          <Save size={16} style={{ marginRight: "6px" }} />
+        <button onClick={handleSave} className="cotiz-btn cotiz-btn--full">
+          <Save size={16} />
           Guardar Cotización
         </button>
 
         {/* PDF */}
         {pdfUrl && (
-          <div style={{ textAlign: "center", marginTop: "16px" }}>
+          <div className="cotiz-pdf-section">
             <a
               href={pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="cotiz-pdf-link"
             >
-              <File size={16} style={{ marginRight: "6px" }} />
+              <File size={16} />
               Ver PDF de la Cotización
             </a>
             <button
               onClick={handleNewQuotation}
-              className="cotiz-btn"
-              style={{ marginTop: "12px", width: "100%", background: "#10b981" }}
+              className="cotiz-btn cotiz-btn--full cotiz-btn--new"
             >
-              <Plus size={16} style={{ marginRight: "6px" }} />
+              <Plus size={16} />
               Nueva Cotización
             </button>
           </div>

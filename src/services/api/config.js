@@ -239,6 +239,11 @@ export async function apiFetch(endpoint, options = {}) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       res = await doFetch(getAccessToken());
+    } else {
+      // Refresh token expirado - redirigir al login
+      localStorage.removeItem("user");
+      window.location.href = "/";
+      return { ok: false, status: 401, data: null };
     }
   }
 
@@ -291,6 +296,11 @@ export async function apiFetchForm(endpoint, formData, options = {}) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       res = await doFetch(getAccessToken());
+    } else {
+      // Refresh token expirado - redirigir al login
+      localStorage.removeItem("user");
+      window.location.href = "/";
+      return { ok: false, status: 401, data: null };
     }
   }
 
@@ -302,12 +312,4 @@ export async function apiFetchForm(endpoint, formData, options = {}) {
     data = raw;
   }
   return { ok: res.ok, status: res.status, data };
-}
-
-/**
- * Compat: getCookie()
- * - Dejado por compatibilidad; ya no se usa porque el CSRF viene de /csrf/.
- */
-export function getCookie() {
-  return null;
 }

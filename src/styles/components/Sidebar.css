@@ -126,12 +126,17 @@
   transition: border-color var(--transition-slow);
 }
 
+.sidebar-spacer {
+  flex: 1 1 auto;
+}
+
 .sidebar-user-info {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-xs);
   width: 100%;
+  cursor: pointer;
 }
 
 .sidebar-user-avatar {

@@ -1,12 +1,14 @@
 // src/pages/ProfilePage.js
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import UserProfile from "../components/UserProfile";
 import EditProfileForm from "../components/EditProfileForm";
 import { ChangePasswordForm } from "../components/ChangePasswordForm";
 import Modal from "../components/Modal";
-import "../styles/pages/ProfilePage.css"; 
+import "../styles/pages/ProfilePage.css";
 
-export default function ProfilePage({ user }) {
+export default function ProfilePage() {
+  const { user } = useOutletContext();
   const [showEdit, setShowEdit] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [profile, setProfile] = useState(user);

@@ -11,7 +11,6 @@ export {
   initCsrf,
   apiFetch,
   apiFetchForm,
-  getCookie,
 } from "./config";
 
 // Autenticación

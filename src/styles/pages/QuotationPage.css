@@ -73,7 +73,7 @@ textarea.cotiz-input {
 
 textarea.cotiz-input {
   resize: vertical;
-  min-height: 80px;
+  min-height: 100px;
 }
 
 .cotiz-select:focus,
@@ -244,6 +244,27 @@ textarea.cotiz-input:focus {
 
 .cotiz-pdf-link:active {
   transform: translateY(0);
+}
+
+.cotiz-pdf-section {
+  text-align: center;
+  margin-top: var(--space-md);
+}
+
+.cotiz-btn--full {
+  width: 100%;
+}
+
+.cotiz-btn--new {
+  margin-top: var(--space-md);
+  width: 100%;
+  background: var(--color-success);
+}
+
+.cotiz-btn svg,
+.cotiz-pdf-link svg,
+.cotiz-empty svg {
+  margin-right: 6px;
 }
 
 /* =============================================================================

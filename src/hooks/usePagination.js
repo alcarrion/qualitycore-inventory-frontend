@@ -102,7 +102,7 @@ export function usePagination(fetchFn, options = {}) {
     if (autoFetch) {
       fetchPage(1);
     }
-  }, []);  // Solo al montar
+  }, [autoFetch, fetchPage]);
 
   return {
     // Datos
