@@ -1,4 +1,19 @@
 /* =============================================================================
+   EMPTY STATES
+   ============================================================================= */
+
+.no-data {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: var(--space-3xl) 0;
+  font-size: var(--font-size-lg);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--border-primary);
+  transition: all var(--transition-slow);
+}
+
+/* =============================================================================
    7. BADGES & TAGS
    ============================================================================= */
 
@@ -145,6 +160,11 @@ body.dark-mode .loading-overlay {
   table td {
     padding: var(--space-sm) var(--space-md);
     font-size: var(--font-size-xs);
+  }
+
+  .no-data {
+    padding: var(--space-2xl) var(--space-md);
+    font-size: var(--font-size-base);
   }
 }
 

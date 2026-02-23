@@ -193,6 +193,18 @@
   transform: translateY(-1px);
 }
 
+.ajusteBtn {
+  background-color: var(--color-warning-bg, #fef3c7);
+  color: var(--color-warning-text, #92400e);
+}
+
+.ajusteBtn:hover {
+  background-color: var(--color-warning, #f59e0b);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
 .btn:active {
   transform: translateY(0);
 }
@@ -503,6 +515,114 @@
 .tabla-movimientos tr:focus-within {
   outline: 2px solid var(--border-focus);
   outline-offset: -2px;
+}
+
+/* =============================================================================
+   ADJUSTMENT TYPE BADGES
+   ============================================================================= */
+
+.adjustment-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--space-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-sm);
+}
+
+.type-adjustment {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+}
+
+.type-correction {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.12);
+  border: 1px solid rgba(129, 140, 248, 0.35);
+}
+
+/* Referencia a factura en su propia celda */
+.correction-invoice-ref {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: var(--font-size-sm);
+  color: #818cf8;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Lista de correcciones dentro de una celda */
+.correction-details-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Cada línea de detalle: producto + cantidad arriba, motivo abajo */
+.correction-detail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.correction-detail-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.correction-detail-product {
+  font-weight: var(--font-weight-semibold);
+}
+
+.correction-detail-qty {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+}
+
+.correction-detail-qty.positive {
+  color: #34d399;
+}
+
+.correction-detail-qty.negative {
+  color: #f87171;
+}
+
+.correction-detail-reason {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-style: italic;
+  padding-left: 2px;
+}
+
+/* Formato "original → corregido" para correcciones */
+.correction-detail-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.correction-qty-original {
+  color: var(--text-secondary);
+}
+
+.correction-qty-arrow {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.correction-qty-new {
+  color: #34d399;
+}
+
+.correction-qty-decreased {
+  color: #f87171;
 }
 
 /* Reduce motion for users who prefer it */

@@ -1,10 +1,11 @@
 // ============================================================
 // services/api/config.js
-// Configuración base y utilidades de CSRF/fetch con JWT
+// Configuración base y utilidades de CSRF/fetch con JWT httpOnly cookies
 // ============================================================
 
-import { RETRY_CONFIG } from '../../constants/config';
+import { RETRY_CONFIG, TIMEOUTS } from '../../constants/config';
 import { logger } from '../../utils/logger';
+import { clearSession } from '../authService';
 
 // ===================== CONFIGURACIÓN BASE =====================
 export const API_URL = process.env.REACT_APP_API_URL;
@@ -15,80 +16,45 @@ export const API_ROOT = API_URL.replace(/\/api\/?$/, "");
 // Guardamos el token CSRF que expone el backend en /csrf/
 let CSRF_TOKEN = null;
 
+// Mutex: si ya hay una renovación en curso, reutilizar esa promise
+let _csrfPromise = null;
+let _refreshPromise = null;
+
 // Utilidad para unir URL base + endpoint sin barras duplicadas
 const join = (b, p) => b.replace(/\/+$/, "") + "/" + p.replace(/^\/+/, "");
 
 
-// ===================== JWT TOKEN MANAGEMENT =====================
+// ===================== TOKEN REFRESH =====================
 
 /**
- * setTokens - Guarda los tokens JWT en localStorage
+ * refreshAccessToken - Pide al backend renovar el access token.
+ * El refresh token se envía automáticamente como cookie httpOnly.
+ * Retorna true si tuvo éxito, false si no (sesión expirada).
  */
-export function setTokens(access, refresh) {
-  localStorage.setItem("access_token", access);
-  localStorage.setItem("refresh_token", refresh);
-}
+export function refreshAccessToken() {
+  // Si ya hay un refresh en curso, reutilizar la misma promise
+  if (_refreshPromise) return _refreshPromise;
 
-/**
- * getAccessToken - Obtiene el access token actual
- */
-export function getAccessToken() {
-  return localStorage.getItem("access_token");
-}
-
-/**
- * getRefreshToken - Obtiene el refresh token actual
- */
-export function getRefreshToken() {
-  return localStorage.getItem("refresh_token");
-}
-
-/**
- * clearTokens - Elimina los tokens (logout)
- */
-export function clearTokens() {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
-}
-
-/**
- * refreshAccessToken - Usa el refresh token para obtener un nuevo access token
- * Retorna true si tuvo éxito, false si no (sesión expirada)
- */
-export async function refreshAccessToken() {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return false;
-
-  try {
-    const res = await fetch(join(API_URL, "/token/refresh/"), {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(CSRF_TOKEN ? { "X-CSRFToken": CSRF_TOKEN } : {}),
-      },
-      body: JSON.stringify({ refresh: refreshToken }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.access) {
-        localStorage.setItem("access_token", data.access);
-        // Si el backend rota el refresh token, guardarlo también
-        if (data.refresh) {
-          localStorage.setItem("refresh_token", data.refresh);
-        }
-        return true;
-      }
+  _refreshPromise = (async () => {
+    try {
+      const res = await fetch(join(API_URL, "/token/refresh/"), {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(CSRF_TOKEN ? { "X-CSRFToken": CSRF_TOKEN } : {}),
+        },
+      });
+      return res.ok;
+    } catch (e) {
+      logger.error("refreshAccessToken failed", e);
+      return false;
+    } finally {
+      _refreshPromise = null;
     }
-    // Si falla el refresh, limpiar tokens (sesión expirada)
-    clearTokens();
-    return false;
-  } catch (e) {
-    logger.error("refreshAccessToken failed", e);
-    clearTokens();
-    return false;
-  }
+  })();
+
+  return _refreshPromise;
 }
 
 
@@ -113,12 +79,34 @@ function isRetryableError(error, status, method) {
     return true;
   }
 
-  // Códigos de estado recuperables
+  // 429 Too Many Requests — se maneja con Retry-After
+  if (status === 429) {
+    return true;
+  }
+
+  // Solo errores de servidor (500, 502, 503, 504)
   if (status && RETRY_CONFIG.RETRYABLE_STATUS_CODES.includes(status)) {
     return true;
   }
 
   return false;
+}
+
+/**
+ * Extrae el delay del header Retry-After (en ms).
+ * Soporta segundos ("30") o fecha HTTP ("Sun, 23 Feb 2026 00:00:00 GMT").
+ */
+function getRetryAfterMs(response) {
+  const header = response?.headers?.get('Retry-After');
+  if (!header) return null;
+
+  const seconds = Number(header);
+  if (!isNaN(seconds)) return seconds * 1000;
+
+  const date = new Date(header);
+  if (!isNaN(date.getTime())) return Math.max(0, date.getTime() - Date.now());
+
+  return null;
 }
 
 /**
@@ -144,10 +132,15 @@ async function fetchWithRetry(fetchFn, method = 'GET', maxRetries = RETRY_CONFIG
         return res;
       }
 
-      // Esperar antes de reintentar (con backoff exponencial)
-      await delay(RETRY_CONFIG.RETRY_DELAY * Math.pow(2, attempt));
+      // Para 429, usar Retry-After del servidor si está disponible
+      const retryAfter = res.status === 429 ? getRetryAfterMs(res) : null;
+      const waitMs = retryAfter || (RETRY_CONFIG.RETRY_DELAY * Math.pow(2, attempt));
+      await delay(waitMs);
 
     } catch (error) {
+      // Si fue cancelado por AbortController, no reintentar
+      if (error.name === 'AbortError') throw error;
+
       lastError = error;
 
       // Si es error de red y no es último intento, reintentar
@@ -173,14 +166,30 @@ async function fetchWithRetry(fetchFn, method = 'GET', maxRetries = RETRY_CONFIG
  * - Pide al backend el token CSRF y lo cachea en memoria.
  * - Se usa al inicio y cuando Django rota el token (por ejemplo, tras login).
  */
-export async function initCsrf() {
-  try {
-    const res = await fetch(`${API_URL}/csrf/`, { credentials: "include" });
-    const data = await res.json().catch(() => ({}));
-    if (data?.csrfToken) CSRF_TOKEN = data.csrfToken;
-  } catch (e) {
-    logger.error("initCsrf failed", e);
-  }
+export function initCsrf() {
+  // Si ya hay una renovación en curso, reutilizar la misma promise
+  if (_csrfPromise) return _csrfPromise;
+
+  _csrfPromise = (async () => {
+    try {
+      const res = await fetch(`${API_URL}/csrf/`, { credentials: "include" });
+      if (!res.ok) {
+        logger.error(`initCsrf: HTTP ${res.status} ${res.statusText}`);
+        return;
+      }
+      const data = await res.json().catch((err) => {
+        logger.error("initCsrf: JSON parse failed", err);
+        return {};
+      });
+      if (data?.csrfToken) CSRF_TOKEN = data.csrfToken;
+    } catch (e) {
+      logger.error("initCsrf failed", e);
+    } finally {
+      _csrfPromise = null;
+    }
+  })();
+
+  return _csrfPromise;
 }
 
 /**
@@ -188,26 +197,34 @@ export async function initCsrf() {
  * - Envoltorio de fetch que:
  *   a) incluye credenciales (cookies) automáticamente
  *   b) agrega X-CSRFToken si existe
- *   c) agrega Authorization Bearer token si existe (JWT)
+ *   c) JWT access token se envía como cookie httpOnly (automático por el browser)
  *   d) reintenta automáticamente en errores de red (GET solamente)
  *   e) reintenta 1 vez si recibe 403 por CSRF rotado
- *   f) reintenta 1 vez si recibe 401 con refresh token
+ *   f) reintenta 1 vez si recibe 401 (refresh via cookie)
  *   g) intenta parsear JSON; si no, retorna el texto crudo
  */
 export async function apiFetch(endpoint, options = {}) {
-  const accessToken = getAccessToken();
   const method = options.method || 'GET';
+  const { signal } = options;
+  const timeout = options.timeout ?? TIMEOUTS.API_TIMEOUT;
 
-  const doFetch = (token = accessToken) =>
+  // Combinar signal del caller con timeout
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), timeout);
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, timeoutController.signal])
+    : timeoutController.signal;
+
+  const doFetch = () =>
     fetch(join(API_URL, endpoint), {
       credentials: "include",
       headers: {
         ...(options.body ? { "Content-Type": "application/json" } : {}),
         ...(CSRF_TOKEN ? { "X-CSRFToken": CSRF_TOKEN } : {}),
-        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
         ...(options.headers || {}),
       },
       ...options,
+      signal: combinedSignal,
     });
 
   let res;
@@ -219,9 +236,12 @@ export async function apiFetch(endpoint, options = {}) {
     } else {
       res = await doFetch();
     }
-  } catch (networkError) {
-    // Error de red sin respuesta
-    logger.error('Network error:', networkError);
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      return { ok: false, status: 0, data: null, aborted: true };
+    }
+    logger.error('Network error:', error);
     return { ok: false, status: 0, data: null, networkError: true };
   }
 
@@ -235,17 +255,19 @@ export async function apiFetch(endpoint, options = {}) {
   }
 
   // Reintento automático si token expirado (401)
-  if (res.status === 401 && getRefreshToken()) {
+  if (res.status === 401) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
-      res = await doFetch(getAccessToken());
+      res = await doFetch();
     } else {
       // Refresh token expirado - redirigir al login
-      localStorage.removeItem("user");
+      clearSession();
       window.location.href = "/";
       return { ok: false, status: 401, data: null };
     }
   }
+
+  clearTimeout(timeoutId);
 
   const raw = await res.text();
   let data;
@@ -266,22 +288,38 @@ export async function apiFetch(endpoint, options = {}) {
  */
 export async function apiFetchForm(endpoint, formData, options = {}) {
   const url = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-  const accessToken = getAccessToken();
+  const { signal } = options;
+  const timeout = options.timeout ?? TIMEOUTS.API_TIMEOUT;
 
-  const doFetch = (token = accessToken) =>
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), timeout);
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, timeoutController.signal])
+    : timeoutController.signal;
+
+  const doFetch = () =>
     fetch(`${API_URL.replace(/\/+$/, "")}${url}`, {
       method: options.method || "POST",
       credentials: "include",
       headers: {
         ...(CSRF_TOKEN ? { "X-CSRFToken": CSRF_TOKEN } : {}),
-        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
         ...(options.headers || {}),
       },
       body: formData,
       ...options,
+      signal: combinedSignal,
     });
 
-  let res = await doFetch();
+  let res;
+  try {
+    res = await doFetch();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      return { ok: false, status: 0, data: null, aborted: true };
+    }
+    throw error;
+  }
 
   if (res.status === 403) {
     const text = await res.clone().text().catch(() => "");
@@ -292,17 +330,19 @@ export async function apiFetchForm(endpoint, formData, options = {}) {
   }
 
   // Reintento automático si token expirado (401)
-  if (res.status === 401 && getRefreshToken()) {
+  if (res.status === 401) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
-      res = await doFetch(getAccessToken());
+      res = await doFetch();
     } else {
       // Refresh token expirado - redirigir al login
-      localStorage.removeItem("user");
+      clearSession();
       window.location.href = "/";
       return { ok: false, status: 401, data: null };
     }
   }
+
+  clearTimeout(timeoutId);
 
   const raw = await res.text();
   let data;

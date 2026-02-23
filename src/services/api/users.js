@@ -6,8 +6,8 @@
 import { apiFetch } from "./config";
 
 /** Listar usuarios */
-export async function getUsers() {
-  return await apiFetch(`/users/`);
+export async function getUsers(options = {}) {
+  return await apiFetch(`/users/`, options);
 }
 
 /** Crear usuario */

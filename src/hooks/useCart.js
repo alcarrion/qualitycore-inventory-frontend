@@ -1,5 +1,5 @@
 // hooks/useCart.js
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { ERRORS } from "../constants/messages";
 
 /**
@@ -11,13 +11,12 @@ export function useCart() {
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [selectedSupplier, setSelectedSupplier] = useState("");
 
+  // Ref para acceder al cart actual sin agregarlo como dependencia
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
+
   /**
    * Agrega un producto al carrito o incrementa su cantidad si ya existe
-   * @param {Object} product - Producto a agregar
-   * @param {number} quantity - Cantidad a agregar
-   * @param {string} type - Tipo de movimiento ('input' o 'output')
-   * @param {function} showError - Función para mostrar errores
-   * @returns {boolean} - true si se agregó exitosamente, false si hubo error
    */
   const addToCart = useCallback((product, quantity, type, showError) => {
     if (!product || !quantity) {
@@ -27,21 +26,18 @@ export function useCart() {
 
     const quantityNum = Number(quantity);
 
-    // Validar que la cantidad sea un número positivo
     if (isNaN(quantityNum) || quantityNum <= 0) {
       showError?.(ERRORS.QUANTITY_MUST_BE_POSITIVE);
       return false;
     }
 
-    // Verificar si el producto ya está en el carrito
-    const existingItem = cart.find((item) => item.product.id === product.id);
+    // Leer cart actual via ref (no necesita estar en deps)
+    const currentCart = cartRef.current;
+    const existingItem = currentCart.find((item) => item.product.id === product.id);
     const currentInCart = existingItem ? existingItem.quantity : 0;
 
-    // Solo verificar stock en salidas (output), no en entradas (input)
     if (type === "output") {
       const availableStock = product.current_stock - currentInCart;
-
-      // Verificar stock disponible (considerando lo que ya está en el carrito)
       if (quantityNum > availableStock) {
         showError?.(ERRORS.STOCK_INSUFFICIENT(availableStock, currentInCart));
         return false;
@@ -49,7 +45,6 @@ export function useCart() {
     }
 
     if (existingItem) {
-      // Actualizar cantidad si ya existe
       const newQuantity = existingItem.quantity + quantityNum;
       setCart(prevCart => prevCart.map((item) =>
         item.product.id === product.id
@@ -57,12 +52,11 @@ export function useCart() {
           : item
       ));
     } else {
-      // Agregar nuevo item al carrito
       setCart(prevCart => [...prevCart, { product, quantity: quantityNum }]);
     }
 
     return true;
-  }, [cart]);
+  }, []);
 
   /**
    * Elimina un producto del carrito
@@ -82,13 +76,12 @@ export function useCart() {
       return false;
     }
 
-    const item = cart.find(item => item.product.id === productId);
+    const currentCart = cartRef.current;
+    const item = currentCart.find(item => item.product.id === productId);
     if (!item) return false;
 
-    // Verificar stock para salidas
     if (type === "output") {
-      // Calcular cuánto hay en el carrito sin contar este item
-      const otherCartQuantity = cart
+      const otherCartQuantity = currentCart
         .filter(i => i.product.id !== productId)
         .reduce((sum, i) => sum + i.quantity, 0);
 
@@ -107,7 +100,7 @@ export function useCart() {
     ));
 
     return true;
-  }, [cart]);
+  }, []);
 
   /**
    * Limpia el carrito y resetea selecciones
@@ -116,6 +109,30 @@ export function useCart() {
     setCart([]);
     setSelectedCustomer("");
     setSelectedSupplier("");
+  }, []);
+
+  /**
+   * Ajusta el carrito según disponibilidad real de stock.
+   * Remueve productos sin stock y reduce cantidades excedentes.
+   * @param {Array<{product_id: number, available: number}>} unavailable
+   */
+  const adjustCartStock = useCallback((unavailable) => {
+    const unavailableMap = new Map(
+      unavailable.map(u => [u.product_id, u.available])
+    );
+    setCart(prev => prev
+      .filter(item => {
+        const available = unavailableMap.get(item.product.id);
+        return available === undefined || available > 0;
+      })
+      .map(item => {
+        const available = unavailableMap.get(item.product.id);
+        if (available !== undefined && item.quantity > available) {
+          return { ...item, quantity: available };
+        }
+        return item;
+      })
+    );
   }, []);
 
   /**
@@ -141,6 +158,7 @@ export function useCart() {
     addToCart,
     removeFromCart,
     updateCartQuantity,
+    adjustCartStock,
     clearCart,
     calculateTotal,
   };

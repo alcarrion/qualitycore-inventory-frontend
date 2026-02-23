@@ -1,0 +1,98 @@
+/* SearchableDropdown.css */
+
+.sd-container {
+  position: relative;
+}
+
+.sd-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.sd-input-wrapper {
+  position: relative;
+}
+
+.sd-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.sd-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.sd-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sd-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 18px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.sd-clear-btn:hover {
+  color: var(--text-primary);
+}
+
+.sd-dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-top: 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.sd-dropdown-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+
+.sd-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.sd-dropdown-item:hover,
+.sd-dropdown-item--highlighted {
+  background: var(--bg-secondary);
+}
+
+.sd-empty-message {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-secondary);
+}

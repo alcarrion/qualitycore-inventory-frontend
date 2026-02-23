@@ -6,8 +6,8 @@
 import { apiFetch } from "./config";
 
 /** Listar alertas */
-export async function getAlerts() {
-  return await apiFetch(`/alerts/`);
+export async function getAlerts(_, options = {}) {
+  return await apiFetch(`/alerts/`, options);
 }
 
 /** Descartar alerta */

@@ -11,6 +11,7 @@ import { dismissAlert } from "../services/api";
 import { useDataStore } from "../store/dataStore";
 import { SUCCESS, ERRORS } from "../constants/messages";
 import { TIMEOUTS } from "../constants/config";
+import { setStoredUser } from "../services/authService";
 import "../styles/pages/DashboardPage.css";
 
 export default function DashboardPage() {
@@ -40,17 +41,17 @@ export default function DashboardPage() {
   const dismissAlertHandler = useCallback(async (id) => {
     const res = await dismissAlert(id);
     if (res.ok) {
-      setAlerts(prev => prev.filter(a => a.id !== id));
+      setAlerts(alerts.filter(a => a.id !== id));
       setMessage(res.data?.message || SUCCESS.ALERT_DISMISSED);
     } else {
       setMessage(ERRORS.ALERT_DISMISS_FAILED);
     }
     setTimeout(() => setMessage(""), TIMEOUTS.MESSAGE_DISPLAY);
-  }, [setAlerts]);
+  }, [alerts, setAlerts]);
 
   const handleSaveEdit = useCallback((data) => {
     setUser(data);
-    localStorage.setItem("user", JSON.stringify(data));
+    setStoredUser(data);
     setShowEdit(false);
   }, []);
 

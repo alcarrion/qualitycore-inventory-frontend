@@ -6,10 +6,13 @@ import { AddUserForm } from "../components/AddUserForm";
 import { useApp } from "../contexts/AppContext";
 import { PERMISSIONS, isAdmin as checkIsAdmin, isSuperAdmin as checkIsSuperAdmin } from "../constants/roles";
 import { ERRORS, SUCCESS } from "../constants/messages";
+import { extractFormErrors } from "../utils/errorHandler";
+import { setStoredUser } from "../services/authService";
 import "../styles/pages/UsersPage.css";
 import { getUsers, patchUser } from "../services/api";
 import { translateRole } from "../utils/translateRole";
 import { logger } from "../utils/logger";
+import { useAbortSignal } from "../hooks/useAbortSignal";
 
 export default function UsersPage() {
   const { user } = useOutletContext();
@@ -24,6 +27,7 @@ export default function UsersPage() {
   const isAdmin = checkIsAdmin(role);
   const isSuperAdmin = checkIsSuperAdmin(role);
   const canAddUser = PERMISSIONS.CAN_ADD_USER(role);
+  const getSignal = useAbortSignal();
 
   useEffect(() => {
     if (!isAdmin) navigate("/dashboard", { replace: true });
@@ -31,9 +35,11 @@ export default function UsersPage() {
 
   useEffect(() => {
     if (!isAdmin) return;
+    const signal = getSignal();
     (async () => {
       try {
-        const res = await getUsers();
+        const res = await getUsers({ signal });
+        if (res.aborted) return;
         const usersList = res.data?.results || res.data || [];
         setUsers(Array.isArray(usersList) ? usersList : []);
 
@@ -41,10 +47,10 @@ export default function UsersPage() {
         const userInList = usersList.find(u => u.id === user?.id);
         if (userInList && userInList.role !== user?.role) {
           const updatedUser = { ...user, role: userInList.role };
-          localStorage.setItem("user", JSON.stringify(updatedUser));
-          window.dispatchEvent(new Event("userUpdated"));
+          setStoredUser(updatedUser);
         }
       } catch (error) {
+        if (error.name === 'AbortError') return;
         logger.error("Error al cargar usuarios:", error);
         showError(ERRORS.LOAD_FAILED('los usuarios'));
       }
@@ -57,8 +63,7 @@ export default function UsersPage() {
       setLoadingId(userId);
       const resp = await patchUser(userId, { role: newRole });
       if (!resp.ok) {
-        const errorMsg = resp.data?.role?.[0] || resp.data?.detail || ERRORS.UPDATE_FAILED('el rol');
-        throw new Error(errorMsg);
+        throw new Error(extractFormErrors(resp.data, ERRORS.UPDATE_FAILED('el rol')));
       }
       setUsers(prev => prev.map(u => (u.id === userId ? { ...u, role: newRole } : u)));
       showSuccess(SUCCESS.UPDATED('Rol'));
@@ -74,8 +79,7 @@ export default function UsersPage() {
       setLoadingId(userId);
       const resp = await patchUser(userId, { is_active: !isActive });
       if (!resp.ok) {
-        const errorMsg = resp.data?.detail || resp.data?.non_field_errors?.[0] || ERRORS.UPDATE_FAILED('el estado');
-        throw new Error(errorMsg);
+        throw new Error(extractFormErrors(resp.data, ERRORS.UPDATE_FAILED('el estado')));
       }
       setUsers(prev => prev.map(u => (u.id === userId ? { ...u, is_active: !isActive } : u)));
       showSuccess(`Usuario ${!isActive ? "activado" : "inactivado"} correctamente.`);

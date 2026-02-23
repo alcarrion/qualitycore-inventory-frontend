@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { patchUser } from "../services/api";
 import { useApp } from "../contexts/AppContext";
 import { ERRORS, SUCCESS } from "../constants/messages";
+import { extractFormErrors } from "../utils/errorHandler";
+import { updateStoredUser } from "../services/authService";
 import "../styles/components/Form.css";
 
 export default function EditProfileForm({ user, onSave, onCancel }) {
@@ -33,28 +35,12 @@ export default function EditProfileForm({ user, onSave, onCancel }) {
       const resp = await patchUser(user.id, { name, email, phone: phone || null });
 
       if (!resp.ok) {
-        // Manejar errores de validación del backend
-        if (resp.data && typeof resp.data === 'object') {
-          const errorMessages = Object.entries(resp.data)
-            .map(([field, messages]) => {
-              if (Array.isArray(messages)) {
-                return messages.join(', ');
-              }
-              return messages;
-            })
-            .join('. ');
-          showError(errorMessages || ERRORS.UPDATE_FAILED('el perfil'));
-        } else {
-          showError(resp.data?.detail || ERRORS.UPDATE_FAILED('el perfil'));
-        }
+        showError(extractFormErrors(resp.data, ERRORS.UPDATE_FAILED('el perfil')));
         setLoading(false);
         return;
       }
 
-      try {
-        const updated = { ...user, ...(resp.data || {}) };
-        localStorage.setItem("user", JSON.stringify(updated));
-      } catch {}
+      updateStoredUser(resp.data || {});
 
       showSuccess(SUCCESS.UPDATED('Perfil'));
       onSave?.(resp.data);

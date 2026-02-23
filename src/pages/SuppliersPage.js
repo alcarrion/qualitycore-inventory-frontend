@@ -1,228 +1,38 @@
 // src/pages/SuppliersPage.js
-import React, { useState, useEffect, useMemo } from "react";
-import Modal from "../components/Modal";
-import ConfirmDialog from "../components/ConfirmDialog";
-import Pagination from "../components/Pagination";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import React from "react";
+import EntityPage from "../components/EntityPage";
 import SupplierForm from "../components/SupplierForm";
-import { useOutletContext } from "react-router-dom";
-import { useApp } from "../contexts/AppContext";
-import { useDataStore } from "../store/dataStore";
-import { PERMISSIONS } from "../constants/roles";
-import { ERRORS, SUCCESS, ENTITIES, CONFIRM } from "../constants/messages";
-import "../styles/pages/SuppliersPage.css";
-
 import { patchSupplier } from "../services/api";
-import { PAGINATION } from "../constants/config";
+import { PERMISSIONS } from "../constants/roles";
+import { ENTITIES } from "../constants/messages";
+
+const SUPPLIER_CONFIG = {
+  title: "PROVEEDORES",
+  entityLabel: ENTITIES.SUPPLIER,
+  emptyLabel: "proveedores",
+  searchPlaceholder: "Buscar proveedores...",
+  addButtonLabel: "AÑADIR PROVEEDOR",
+  deleteTitle: "Eliminar Proveedor",
+  storeKey: "suppliers",
+  fetchKey: "fetchSuppliers",
+  patchFn: patchSupplier,
+  documentField: "tax_id",
+  formEntityProp: "supplier",
+  FormComponent: SupplierForm,
+  canAdd: PERMISSIONS.CAN_ADD_SUPPLIER,
+  canEdit: PERMISSIONS.CAN_EDIT_SUPPLIER,
+  canDelete: PERMISSIONS.CAN_DELETE_SUPPLIER,
+  filterFn: (item, search) => {
+    const s = search.toLowerCase();
+    return (
+      (item.name && item.name.toLowerCase().includes(s)) ||
+      (item.tax_id && item.tax_id.includes(search)) ||
+      (item.email && item.email.toLowerCase().includes(s)) ||
+      (item.phone && item.phone.includes(search))
+    );
+  },
+};
 
 export default function SuppliersPage() {
-  const { user } = useOutletContext();
-  const { showSuccess, showError, showWarning, setLoading } = useApp();
-  const role = user?.role || "";
-
-  // Permisos basados en rol
-  const canAdd = PERMISSIONS.CAN_ADD_SUPPLIER(role);
-  const canEdit = PERMISSIONS.CAN_EDIT_SUPPLIER(role);
-  const canDelete = PERMISSIONS.CAN_DELETE_SUPPLIER(role);
-
-  // Zustand store
-  const suppliers = useDataStore(state => state.suppliers);
-  const fetchSuppliers = useDataStore(state => state.fetchSuppliers);
-  const dataError = useDataStore(state => state.error);
-
-  const [showAdd, setShowAdd] = useState(false);
-  const [showEdit, setShowEdit] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState(null);
-  const [search, setSearch] = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [supplierToDelete, setSupplierToDelete] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  useEffect(() => {
-    if (dataError) showError(dataError);
-  }, [dataError, showError]);
-
-  // Resetear a página 1 cuando cambia la búsqueda
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search]);
-
-  const filtered = useMemo(() => suppliers.filter(p =>
-    (p.name && p.name.toLowerCase().includes(search.toLowerCase())) ||
-    (p.tax_id && p.tax_id.includes(search)) ||
-    (p.email && p.email.toLowerCase().includes(search.toLowerCase())) ||
-    (p.phone && p.phone.includes(search))
-  ), [suppliers, search]);
-
-  // Calcular paginación
-  const totalPages = Math.ceil(filtered.length / PAGINATION.DEFAULT_PAGE_SIZE);
-  const paginatedSuppliers = useMemo(() => {
-    const startIndex = (currentPage - 1) * PAGINATION.DEFAULT_PAGE_SIZE;
-    return filtered.slice(startIndex, startIndex + PAGINATION.DEFAULT_PAGE_SIZE);
-  }, [filtered, currentPage]);
-
-  const handleDelete = async (supplier) => {
-    if (!canDelete) {
-      showWarning(ERRORS.ONLY_SUPER_ADMIN);
-      return;
-    }
-    setSupplierToDelete(supplier);
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!supplierToDelete) return;
-
-    setLoading(true);
-    try {
-      const resp = await patchSupplier(supplierToDelete.id, { deleted_at: new Date().toISOString() });
-      if (resp.ok) {
-        fetchSuppliers();
-        showSuccess(SUCCESS.DELETED(ENTITIES.SUPPLIER));
-      } else {
-        showError(resp.data?.detail || ERRORS.DELETE_FAILED(ENTITIES.SUPPLIER));
-      }
-    } catch (error) {
-      showError(ERRORS.DELETE_FAILED(ENTITIES.SUPPLIER));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="suppliers-page-container">
-      <div className="suppliers-header">
-        <h2>PROVEEDORES</h2>
-      </div>
-
-      <div className="suppliers-actions">
-        <div className="search-bar">
-          <Search size={16} />
-          <input
-            placeholder="Buscar proveedores..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-        {canAdd && (
-          <button className="btn-add-supplier" onClick={() => setShowAdd(true)}>
-            <Plus size={16} /> AÑADIR PROVEEDOR
-          </button>
-        )}
-      </div>
-
-      <div className="suppliers-list">
-        {paginatedSuppliers.map(supplier => {
-          const getDocumentLabel = (type) => {
-            switch (type) {
-              case 'cedula':
-                return 'Cédula:';
-              case 'ruc':
-                return 'RUC:';
-              case 'passport':
-                return 'Pasaporte:';
-              default:
-                return 'Documento:';
-            }
-          };
-
-          return (
-            <div key={supplier.id} className="supplier-card">
-              <div className="supplier-info">
-                <div className="supplier-main">
-                  <div className="supplier-name">{supplier.name}</div>
-                  <div className="supplier-detail">
-                    <span className="supplier-label">{getDocumentLabel(supplier.document_type)}</span> {supplier.tax_id || "-"}
-                  </div>
-                </div>
-              <div className="supplier-contact">
-                <div className="supplier-detail">
-                  <span className="supplier-label">Email:</span> {supplier.email || "-"}
-                </div>
-                <div className="supplier-detail">
-                  <span className="supplier-label">Tel:</span> {supplier.phone || "-"}
-                </div>
-              </div>
-              <div className="supplier-address">
-                <span className="supplier-label">Dirección:</span> {supplier.address || "-"}
-              </div>
-            </div>
-
-            {canEdit && (
-              <div className="supplier-actions">
-                <button
-                  className="btn-icon"
-                  onClick={() => { setEditingSupplier(supplier); setShowEdit(true); }}
-                >
-                  <Pencil size={16} />
-                </button>
-                {canDelete && (
-                  <button
-                    className="btn-icon btn-delete"
-                    onClick={() => handleDelete(supplier)}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-            )}
-            </div>
-          );
-        })}
-        {filtered.length === 0 && <div className="no-data">No hay proveedores para mostrar.</div>}
-      </div>
-
-      {/* Paginación */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        totalItems={filtered.length}
-        pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
-      />
-
-      {showAdd && (
-        <Modal onClose={() => setShowAdd(false)}>
-          <SupplierForm
-            onSave={() => {
-              setShowAdd(false);
-              fetchSuppliers();
-            }}
-            onCancel={() => setShowAdd(false)}
-          />
-        </Modal>
-      )}
-
-      {showEdit && editingSupplier && (
-        <Modal onClose={() => { setShowEdit(false); setEditingSupplier(null); }}>
-          <SupplierForm
-            supplier={editingSupplier}
-            onSave={() => {
-              setShowEdit(false);
-              setEditingSupplier(null);
-              fetchSuppliers();
-            }}
-            onCancel={() => {
-              setShowEdit(false);
-              setEditingSupplier(null);
-            }}
-          />
-        </Modal>
-      )}
-
-      <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setSupplierToDelete(null);
-        }}
-        onConfirm={confirmDelete}
-        title="Eliminar Proveedor"
-        message={CONFIRM.DELETE(ENTITIES.SUPPLIER, supplierToDelete?.name)}
-        confirmText="Eliminar"
-        cancelText="Cancelar"
-        type="danger"
-      />
-    </div>
-  );
+  return <EntityPage config={SUPPLIER_CONFIG} />;
 }

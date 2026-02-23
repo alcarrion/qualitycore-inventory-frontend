@@ -5,6 +5,7 @@ import ForgotPasswordForm from "../components/ForgotPasswordForm";
 import { useNavigate } from "react-router-dom";
 import { initCsrf } from "../services/api";
 import { useApp } from "../contexts/AppContext";
+import { getStoredUser } from "../services/authService";
 import "../styles/pages/LoginPage.css";
 
 export default function LoginPage({ setUser }) {
@@ -14,7 +15,7 @@ export default function LoginPage({ setUser }) {
 
   useEffect(() => {
     initCsrf();
-    const u = JSON.parse(localStorage.getItem("user") || "null");
+    const u = getStoredUser();
     if (u) navigate("/dashboard");
   }, [navigate]);
 

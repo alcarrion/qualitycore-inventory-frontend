@@ -1,14 +1,15 @@
 // ============================================================
 // services/api/auth.js
-// Funciones de autenticación y gestión de contraseñas con JWT
+// Funciones de autenticación y gestión de contraseñas con JWT httpOnly cookies
 // ============================================================
 
-import { apiFetch, initCsrf, setTokens, clearTokens } from "./config";
+import { apiFetch, initCsrf } from "./config";
+import { clearSession } from "../authService";
 
 /**
  * loginUser
  * - Autenticación por email/password.
- * - Guarda tokens JWT en localStorage.
+ * - Los tokens JWT se setean como cookies httpOnly por el backend.
  * - Refresca CSRF porque Django lo rota al autenticarse.
  */
 export async function loginUser(email, password) {
@@ -17,22 +18,23 @@ export async function loginUser(email, password) {
     body: JSON.stringify({ email, password }),
   });
 
-  if (r.ok && r.data?.tokens) {
-    // Guardar tokens JWT
-    setTokens(r.data.tokens.access, r.data.tokens.refresh);
-  }
-
+  // Tokens se reciben como cookies httpOnly (no hay que guardarlos)
   if (r.ok) await initCsrf();
   return r;
 }
 
 /**
  * logoutUser
- * - Limpia tokens JWT y datos de usuario del localStorage.
+ * - Llama al backend para borrar cookies httpOnly.
+ * - Limpia datos de usuario del localStorage.
  */
-export function logoutUser() {
-  clearTokens();
-  localStorage.removeItem("user");
+export async function logoutUser() {
+  try {
+    await apiFetch(`/logout/`, { method: "POST" });
+  } catch {
+    // Aunque falle la petición, limpiar estado local
+  }
+  clearSession();
 }
 
 /** forgotPassword - Envía correo de recuperación */

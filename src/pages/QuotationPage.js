@@ -1,5 +1,5 @@
 // src/pages/QuotationPage.js
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   User,
   Package,
@@ -10,7 +10,7 @@ import {
   CreditCard,
   StickyNote,
   Save,
-  File,
+  FileDown,
 } from "lucide-react";
 
 import {
@@ -21,8 +21,10 @@ import {
 
 import { useDataStore } from "../store/dataStore";
 import { useApp } from "../contexts/AppContext";
+import { usePolling, POLLING_TIMEOUT } from "../hooks/usePolling";
+import { useDropdownSearch } from "../hooks/useDropdownSearch";
+import SearchableDropdown from "../components/SearchableDropdown";
 import { ERRORS, SUCCESS } from "../constants/messages";
-import { TIMEOUTS } from "../constants/config";
 import { logger } from "../utils/logger";
 import "../styles/pages/QuotationPage.css";
 
@@ -39,9 +41,31 @@ export default function QuotationPage() {
   const [quotedProducts, setQuotedProducts] = useState([]);
   const [pdfUrl, setPdfUrl] = useState(null);
 
+  const customerDropdown = useDropdownSearch(customers);
+
   const [subtotal, setSubtotal] = useState(0);
   const [vat, setVat] = useState(0);
   const [total, setTotal] = useState(0);
+
+  const pdfPolling = usePolling(checkPDFStatus);
+
+  // Reaccionar a resultados del polling
+  useEffect(() => {
+    if (pdfPolling.result) {
+      showSuccess(SUCCESS.PDF_GENERATED);
+      setPdfUrl(`${process.env.REACT_APP_API_URL.replace(/\/api\/?$/, "")}${pdfPolling.result}`);
+    }
+  }, [pdfPolling.result, showSuccess]);
+
+  useEffect(() => {
+    if (pdfPolling.error) {
+      if (pdfPolling.error === POLLING_TIMEOUT) {
+        showError("Tiempo de espera agotado generando el PDF. Intenta de nuevo.");
+      } else {
+        showError(ERRORS.PDF_GENERATION_FAILED(pdfPolling.error));
+      }
+    }
+  }, [pdfPolling.error, showError]);
 
   const handleAddProduct = () => {
     setQuotedProducts(prev => [
@@ -95,7 +119,8 @@ export default function QuotationPage() {
   };
 
   const handleSave = async () => {
-    setPdfUrl(null); // Limpiar PDF anterior
+    setPdfUrl(null);
+    pdfPolling.stop();
 
     if (!customer) {
       showError(ERRORS.SELECT_CUSTOMER);
@@ -128,43 +153,14 @@ export default function QuotationPage() {
       const res = await postQuotation(payload);
 
       if (res.ok && res.data?.quotation?.id) {
-        showSuccess(SUCCESS.QUOTATION_SAVED);
-
-        // Iniciar generación asíncrona del PDF
         const pdfResponse = await getQuotationPDF(res.data.quotation.id);
 
         if (pdfResponse.ok && pdfResponse.data?.task_id) {
-          const taskId = pdfResponse.data.task_id;
           showSuccess(SUCCESS.QUOTATION_SAVED_GENERATING_PDF);
-
-          // Consultar el estado cada 2 segundos (máximo 30 intentos = 60s)
-          let attempts = 0;
-          const MAX_ATTEMPTS = 30;
-
-          const interval = setInterval(async () => {
-            attempts++;
-
-            if (attempts >= MAX_ATTEMPTS) {
-              clearInterval(interval);
-              showError("Tiempo de espera agotado generando el PDF. Intenta de nuevo.");
-              return;
-            }
-
-            const statusResponse = await checkPDFStatus(taskId);
-
-            if (statusResponse.ok && statusResponse.data) {
-              const { state, download_url, error } = statusResponse.data;
-
-              if (state === "SUCCESS") {
-                clearInterval(interval);
-                showSuccess(SUCCESS.PDF_GENERATED);
-                setPdfUrl(`${process.env.REACT_APP_API_URL.replace(/\/api\/?$/, "")}${download_url}`);
-              } else if (state === "FAILURE") {
-                clearInterval(interval);
-                showError(ERRORS.PDF_GENERATION_FAILED(error));
-              }
-            }
-          }, TIMEOUTS.POLLING_INTERVAL);
+          pdfPolling.start(pdfResponse.data.task_id);
+        } else {
+          showSuccess(SUCCESS.QUOTATION_SAVED);
+          showError(ERRORS.PDF_GENERATION_FAILED("No se pudo iniciar la generación del PDF."));
         }
       } else {
         logger.error("Error al guardar:", res.data);
@@ -177,8 +173,10 @@ export default function QuotationPage() {
   };
 
   const handleNewQuotation = () => {
+    pdfPolling.stop();
     setQuotedProducts([]);
     setCustomer("");
+    customerDropdown.clear();
     setSubtotal(0);
     setVat(0);
     setTotal(0);
@@ -197,13 +195,19 @@ export default function QuotationPage() {
             </span>
             Información del Cliente
           </div>
-          <label className="cotiz-label">Cliente:</label>
-          <select value={customer} onChange={(e) => setCustomer(e.target.value)} className="cotiz-select">
-            <option value="">-- Selecciona un cliente --</option>
-            {customers.map((cli) => (
-              <option key={cli.id} value={cli.id}>{cli.name}</option>
-            ))}
-          </select>
+          <SearchableDropdown
+            label="Cliente:"
+            icon={<User size={16} />}
+            dropdown={customerDropdown}
+            onSelect={(cli) => {
+              setCustomer(String(cli.id));
+              customerDropdown.select(cli.name);
+            }}
+            onDeselect={() => setCustomer("")}
+            placeholder="Buscar cliente por nombre..."
+            emptyMessage="No se encontraron clientes"
+            maxItems={10}
+          />
         </div>
 
         {/* Productos Cotizados */}
@@ -237,48 +241,20 @@ export default function QuotationPage() {
               </div>
             ) : (
               quotedProducts.map((item, index) => (
-                <div key={index} className="cotiz-prod-row">
-                  <select
-                    value={item.product}
-                    onChange={(e) => handleProductChange(index, "product", e.target.value)}
-                    className="cotiz-select"
-                  >
-                    <option value="">Producto</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => handleProductChange(index, "quantity", e.target.value)}
-                    onWheel={handleWheel}
-                    className="cotiz-input"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.unit_price}
-                    onChange={(e) => handleProductChange(index, "unit_price", e.target.value)}
-                    onWheel={handleWheel}
-                    className="cotiz-input"
-                  />
-                  <input type="text" readOnly value={Number(item.subtotal || 0).toFixed(2)} className="cotiz-input" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const copy = [...quotedProducts];
-                      copy.splice(index, 1);
-                      setQuotedProducts(copy);
-                      recalculateTotals(copy);
-                    }}
-                    className="cotiz-remove-btn"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
+                <QuotedProductRow
+                  key={index}
+                  item={item}
+                  index={index}
+                  products={products}
+                  onProductChange={handleProductChange}
+                  onRemove={() => {
+                    const copy = [...quotedProducts];
+                    copy.splice(index, 1);
+                    setQuotedProducts(copy);
+                    recalculateTotals(copy);
+                  }}
+                  onWheel={handleWheel}
+                />
               ))
             )}
           </div>
@@ -340,33 +316,93 @@ export default function QuotationPage() {
         </div>
 
         {/* Guardar */}
-        <button onClick={handleSave} className="cotiz-btn cotiz-btn--full">
+        <button onClick={handleSave} className="cotiz-btn cotiz-btn--full" disabled={pdfPolling.isPolling}>
           <Save size={16} />
-          Guardar Cotización
+          {pdfPolling.isPolling ? "Generando PDF..." : "Guardar Cotización"}
         </button>
 
-        {/* PDF */}
+        {/* PDF de última cotización */}
         {pdfUrl && (
-          <div className="cotiz-pdf-section">
-            <a
-              href={pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="cotiz-pdf-link"
-            >
-              <File size={16} />
-              Ver PDF de la Cotización
-            </a>
-            <button
-              onClick={handleNewQuotation}
-              className="cotiz-btn cotiz-btn--full cotiz-btn--new"
-            >
-              <Plus size={16} />
-              Nueva Cotización
-            </button>
-          </div>
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cotiz-pdf-link cotiz-btn--full"
+            onClick={handleNewQuotation}
+          >
+            <FileDown size={16} />
+            Ver PDF de la Cotización
+          </a>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Fila de producto cotizado con búsqueda integrada.
+ * Componente separado para poder usar useDropdownSearch por fila.
+ */
+function QuotedProductRow({ item, index, products, onProductChange, onRemove, onWheel }) {
+  const productDropdown = useDropdownSearch(products);
+
+  const handleSelectProduct = useCallback((product) => {
+    productDropdown.select(product.name);
+    onProductChange(index, "product", String(product.id));
+  }, [productDropdown, onProductChange, index]);
+
+  const renderProductItem = useCallback((p) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div>
+        <div style={{ fontWeight: "500" }}>{p.name}</div>
+        <div style={{ fontSize: "0.85em", color: "var(--text-secondary)" }}>
+          Código: {p.code}
+        </div>
+      </div>
+      <div style={{ textAlign: "right", marginLeft: "12px" }}>
+        <div style={{ fontSize: "0.85em", fontWeight: "500", color: "var(--primary-color)" }}>
+          ${parseFloat(p.price).toLocaleString("es-EC", { minimumFractionDigits: 2 })}
+        </div>
+        <div style={{ fontSize: "0.75em", color: "var(--text-secondary)" }}>
+          Stock: {p.current_stock}
+        </div>
+      </div>
+    </div>
+  ), []);
+
+  return (
+    <div className="cotiz-prod-row">
+      <SearchableDropdown
+        dropdown={productDropdown}
+        onSelect={handleSelectProduct}
+        onDeselect={() => onProductChange(index, "product", "")}
+        placeholder="Buscar producto..."
+        emptyMessage="No se encontraron productos"
+        maxItems={10}
+        renderItem={renderProductItem}
+        className="cotiz-prod-search"
+      />
+      <input
+        type="number"
+        min="1"
+        value={item.quantity}
+        onChange={(e) => onProductChange(index, "quantity", e.target.value)}
+        onWheel={onWheel}
+        className="cotiz-input"
+      />
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={item.unit_price}
+        onChange={(e) => onProductChange(index, "unit_price", e.target.value)}
+        onWheel={onWheel}
+        className="cotiz-input"
+      />
+      <input type="text" readOnly value={Number(item.subtotal || 0).toFixed(2)} className="cotiz-input" />
+      <button type="button" onClick={onRemove} className="cotiz-remove-btn">
+        <X size={18} />
+      </button>
     </div>
   );
 }

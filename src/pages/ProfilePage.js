@@ -1,10 +1,11 @@
 // src/pages/ProfilePage.js
 import React, { useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import UserProfile from "../components/UserProfile";
 import EditProfileForm from "../components/EditProfileForm";
 import { ChangePasswordForm } from "../components/ChangePasswordForm";
 import Modal from "../components/Modal";
+import { setStoredUser } from "../services/authService";
 import "../styles/pages/ProfilePage.css";
 
 export default function ProfilePage() {
@@ -13,14 +14,13 @@ export default function ProfilePage() {
   const [showPass, setShowPass] = useState(false);
   const [profile, setProfile] = useState(user);
 
-  const handleClose = () => window.history.back();
+  const navigate = useNavigate();
+  const handleClose = () => navigate('/dashboard');
 
   const handleSaveEdit = (newUser) => {
     setProfile(newUser);
     setShowEdit(false);
-    localStorage.setItem("user", JSON.stringify(newUser));
-    window.dispatchEvent(new Event("storage"));
-    window.dispatchEvent(new Event("userUpdated"));
+    setStoredUser(newUser);
   };
 
   const handleSavePass = () => {

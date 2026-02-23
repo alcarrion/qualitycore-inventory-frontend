@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { loginUser } from "../services/api";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { ERRORS, SUCCESS } from "../constants/messages";
+import { setStoredUser } from "../services/authService";
 import "../styles/pages/LoginPage.css";
 
 export default function LoginForm({ navigate, setUser, showSuccess, showError }) {
@@ -20,7 +21,7 @@ export default function LoginForm({ navigate, setUser, showSuccess, showError })
       const user = result?.data?.user;
 
       if (result.ok && user) {
-        localStorage.setItem("user", JSON.stringify(user));
+        setStoredUser(user);
         setUser(user);
         showSuccess(SUCCESS.LOGIN_SUCCESS);
         navigate("/dashboard");

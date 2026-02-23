@@ -6,10 +6,13 @@ import { Pencil, Trash2, X } from "lucide-react";
 // Solo se re-renderiza si las props cambian
 function ProductCard({ product, onEdit, onDelete, isAdmin, canDelete = false }) {
   const [showImageModal, setShowImageModal] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
-  // Solo mostrar imagen si es URL de Cloudinary válida
-  const showImage = product.image_url &&
+  // Solo mostrar imagen si es URL HTTPS de Cloudinary válida y no hubo error de carga
+  const showImage = !imgError &&
+                   product.image_url &&
                    typeof product.image_url === 'string' &&
+                   product.image_url.startsWith('https://') &&
                    product.image_url.includes('cloudinary.com');
 
   return (
@@ -24,19 +27,14 @@ function ProductCard({ product, onEdit, onDelete, isAdmin, canDelete = false }) 
             src={product.image_url}
             alt={product.name}
             className="product-card-img"
-            onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'flex';
-            }}
+            loading="lazy"
+            onError={() => setImgError(true)}
           />
-        ) : null}
-
-        <div
-          className="product-card-img-placeholder"
-          style={{ display: showImage ? 'none' : 'flex' }}
-        >
-          <div className="no-image-text">Sin imagen</div>
-        </div>
+        ) : (
+          <div className="product-card-img-placeholder" style={{ display: 'flex' }}>
+            <div className="no-image-text">Sin imagen</div>
+          </div>
+        )}
       </div>
 
       <div className="product-card-info-wrapper">

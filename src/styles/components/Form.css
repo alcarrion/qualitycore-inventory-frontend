@@ -286,6 +286,104 @@
   outline-offset: 2px;
 }
 
+/* =============================================================================
+   SEARCHABLE DROPDOWN IN FORM
+   ============================================================================= */
+
+.custom-form .form-sd .sd-input {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  transition: all var(--transition-base);
+  outline: none;
+}
+
+.custom-form .form-sd .sd-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(65, 209, 167, 0.1);
+  background: var(--input-bg);
+}
+
+.custom-form .form-sd .sd-input:hover:not(:focus) {
+  border-color: var(--color-brand-primary);
+}
+
+.custom-form .form-sd .sd-label {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--space-xs);
+}
+
+/* =============================================================================
+   INLINE CATEGORY ROW
+   ============================================================================= */
+
+.form-inline-row {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+/* =============================================================================
+   IMAGE PREVIEW (Edit Mode)
+   ============================================================================= */
+
+.form-image-preview {
+  margin-bottom: var(--space-sm);
+}
+
+.form-image-preview-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  transition: all var(--transition-base);
+}
+
+.form-image-preview-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-secondary);
+}
+
+.form-image-preview-info {
+  flex: 1;
+}
+
+.form-image-preview-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.form-image-preview-filename {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+/* =============================================================================
+   FORM HINTS
+   ============================================================================= */
+
+.form-hint {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-xs);
+  display: block;
+}
+
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
   .custom-form input,

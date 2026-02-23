@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { changePassword } from "../services/api";
 import { useApp } from "../contexts/AppContext";
 import { ERRORS, SUCCESS } from "../constants/messages";
+import { extractFormErrors } from "../utils/errorHandler";
+import { logout } from "../services/authService";
 import { validatePassword } from "../utils/validatePassword";
 import { Eye, EyeOff } from "lucide-react";
 import "../styles/components/Form.css";
@@ -33,20 +35,7 @@ export function ChangePasswordForm({ onSave, onCancel }) {
       const resp = await changePassword(oldPass, newPass);
 
       if (!resp.ok) {
-        // Manejar errores de validación del backend
-        if (resp.data && typeof resp.data === 'object') {
-          const errorMessages = Object.entries(resp.data)
-            .map(([field, messages]) => {
-              if (Array.isArray(messages)) {
-                return messages.join(', ');
-              }
-              return messages;
-            })
-            .join('. ');
-          showError(errorMessages || ERRORS.PASSWORD_CHANGE_FAILED);
-        } else {
-          showError(resp.data?.detail || ERRORS.PASSWORD_CHANGE_FAILED);
-        }
+        showError(extractFormErrors(resp.data, ERRORS.PASSWORD_CHANGE_FAILED));
         setLoading(false);
         return;
       }
@@ -54,13 +43,8 @@ export function ChangePasswordForm({ onSave, onCancel }) {
       showSuccess(SUCCESS.PASSWORD_CHANGED);
       onSave?.();
 
-      // Limpiar localStorage y redirigir al login
-      setTimeout(() => {
-        localStorage.removeItem("user");
-        localStorage.removeItem("access");
-        localStorage.removeItem("refresh");
-        window.location.href = "/";
-      }, 2000); // Dar tiempo para ver el toast antes de redirigir
+      // Limpiar sesión y redirigir al login
+      setTimeout(() => logout(), 2000);
     } catch (err) {
       showError(err.message || ERRORS.PASSWORD_CHANGE_FAILED);
     } finally {

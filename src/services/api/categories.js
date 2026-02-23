@@ -6,8 +6,8 @@
 import { apiFetch } from "./config";
 
 /** Listar categorías */
-export async function getCategories() {
-  return await apiFetch(`/categories/`);
+export async function getCategories(_, options = {}) {
+  return await apiFetch(`/categories/`, options);
 }
 
 /** Crear categoría */

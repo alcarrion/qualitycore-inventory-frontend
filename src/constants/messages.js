@@ -65,6 +65,7 @@ export const ERRORS = {
   SELECT_PRODUCT_AND_QUANTITY: 'Selecciona un producto y la cantidad.',
   PRODUCT_NOT_FOUND: 'Producto no encontrado.',
   EMPTY_CART: 'El carrito está vacío. Agrega al menos un producto.',
+  STOCK_CHANGED: (items) => `Stock insuficiente para: ${items.map(i => `${i.product_name} (disponible: ${i.available}, solicitado: ${i.requested})`).join(', ')}. Otro vendedor pudo haber realizado una venta.`,
   TRANSACTION_FAILED: (type) => `Error al registrar la ${type}.`,
 
   // Cotizaciones

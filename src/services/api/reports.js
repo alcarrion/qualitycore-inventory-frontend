@@ -25,3 +25,8 @@ export async function generateReport(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+/** Consultar estado de generación de reporte */
+export async function checkReportStatus(taskId) {
+  return await apiFetch(`/reports/status/${taskId}/`);
+}

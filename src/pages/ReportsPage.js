@@ -1,8 +1,9 @@
 // src/pages/ReportsPage.js
-import React, { useState } from "react";
-import { generateReport } from "../services/api";
-import { API_ROOT } from "../services/api";
+import React, { useState, useEffect } from "react";
+import { FileDown } from "lucide-react";
+import { generateReport, checkReportStatus, API_ROOT } from "../services/api";
 import { useApp } from "../contexts/AppContext";
+import { usePolling, POLLING_TIMEOUT } from "../hooks/usePolling";
 import { ERRORS } from "../constants/messages";
 import "../styles/pages/ReportsPage.css";
 
@@ -13,8 +14,32 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState("");
   const [reportUrl, setReportUrl] = useState(null);
 
+  const reportPolling = usePolling(checkReportStatus);
+
+  // Reaccionar a resultados del polling
+  useEffect(() => {
+    if (reportPolling.result) {
+      const fullUrl = reportPolling.result.startsWith("http")
+        ? reportPolling.result
+        : `${API_ROOT}${reportPolling.result}`;
+      setReportUrl(fullUrl);
+      showSuccess("Reporte generado correctamente.");
+    }
+  }, [reportPolling.result, showSuccess]);
+
+  useEffect(() => {
+    if (reportPolling.error) {
+      if (reportPolling.error === POLLING_TIMEOUT) {
+        showError("El reporte tardó demasiado en generarse. Intenta nuevamente.");
+      } else {
+        showError(reportPolling.error);
+      }
+    }
+  }, [reportPolling.error, showError]);
+
   const generateReportPdf = async () => {
     setReportUrl(null);
+    reportPolling.stop();
 
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
       showError(ERRORS.INVALID_DATE_RANGE);
@@ -28,12 +53,8 @@ export default function ReportsPage() {
         end_date: endDate || null,
       });
 
-      if (res.ok && res.data?.url) {
-        const fullUrl = res.data.url.startsWith("http")
-          ? res.data.url
-          : `${API_ROOT}${res.data.url}`;
-        setReportUrl(fullUrl);
-        showSuccess(res.data.message || "Reporte generado correctamente.");
+      if (res.ok && res.data?.task_id) {
+        reportPolling.start(res.data.task_id);
       } else {
         showError(res.data?.detail || res.data?.message || `Error al generar el reporte (HTTP ${res.status})`);
       }
@@ -53,6 +74,7 @@ export default function ReportsPage() {
           value={type}
           onChange={(e) => setType(e.target.value)}
           className="report-select"
+          disabled={reportPolling.isPolling}
         >
           <option value="movements">Movimientos recientes</option>
           <option value="top_vendidos">Productos más vendidos</option>
@@ -64,6 +86,7 @@ export default function ReportsPage() {
           className="report-input"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
+          disabled={reportPolling.isPolling}
         />
 
         <label className="report-label">Fecha de fin:</label>
@@ -72,16 +95,22 @@ export default function ReportsPage() {
           className="report-input"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
+          disabled={reportPolling.isPolling}
         />
 
-        <button onClick={generateReportPdf} className="report-btn">Generar Reporte PDF</button>
+        <button
+          onClick={generateReportPdf}
+          className="report-btn"
+          disabled={reportPolling.isPolling}
+        >
+          {reportPolling.isPolling ? "Generando reporte..." : "Generar Reporte PDF"}
+        </button>
 
         {reportUrl && (
-          <div style={{ textAlign: "center", marginTop: "16px" }}>
-            <a href={reportUrl} target="_blank" rel="noopener noreferrer" className="report-pdf-link">
-              Descargar Reporte Generado
-            </a>
-          </div>
+          <a href={reportUrl} target="_blank" rel="noopener noreferrer" className="report-pdf-link">
+            <FileDown size={16} />
+            Descargar Reporte PDF
+          </a>
         )}
       </div>
     </div>

@@ -1,7 +1,13 @@
 // src/components/ConfirmDialog.js
 import React from "react";
-import { X, AlertTriangle } from "lucide-react";
+import { X, AlertTriangle, AlertCircle, Info } from "lucide-react";
 import "../styles/components/ConfirmDialog.css";
+
+const TYPE_ICONS = {
+  danger: AlertTriangle,
+  warning: AlertCircle,
+  info: Info,
+};
 
 /**
  * Componente reutilizable para modales de confirmación
@@ -38,7 +44,7 @@ export default function ConfirmDialog({
         {/* Header */}
         <div className="confirm-dialog-header">
           <div className={`confirm-dialog-icon confirm-dialog-icon-${type}`}>
-            <AlertTriangle size={24} />
+            {React.createElement(TYPE_ICONS[type] || AlertTriangle, { size: 24 })}
           </div>
           <button className="confirm-dialog-close" onClick={onClose}>
             <X size={20} />

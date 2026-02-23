@@ -9,6 +9,6 @@ import { apiFetch } from "./config";
  * Obtener configuración del sistema
  * Este endpoint no requiere autenticación
  */
-export async function getAppConfig() {
-  return await apiFetch(`/config/`);
+export async function getAppConfig(options = {}) {
+  return await apiFetch(`/config/`, options);
 }

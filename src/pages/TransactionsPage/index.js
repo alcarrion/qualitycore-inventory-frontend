@@ -7,3 +7,4 @@ export { default as SalesList } from "./SalesList";
 export { default as TransactionActions } from "./TransactionActions";
 export { default as TransactionFormModal } from "./TransactionFormModal";
 export { default as InvoiceModal } from "./InvoiceModal";
+export { default as AdjustmentFormModal } from "./AdjustmentFormModal";

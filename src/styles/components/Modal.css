@@ -75,6 +75,21 @@
 }
 
 /* =============================================================================
+   MODAL TITLE
+   ============================================================================= */
+
+.modal-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+  margin-bottom: var(--space-md);
+  text-align: center;
+  letter-spacing: -0.01em;
+  line-height: var(--line-height-tight);
+  transition: color var(--transition-slow);
+}
+
+/* =============================================================================
    ANIMATIONS
    ============================================================================= */
 

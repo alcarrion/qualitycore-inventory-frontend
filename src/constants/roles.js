@@ -90,4 +90,7 @@ export const PERMISSIONS = {
 
   // Transacciones
   CAN_CREATE_MOVEMENT: (role) => isUser(role),
+
+  // Ajustes de inventario (solo Admin y SuperAdmin)
+  CAN_CREATE_ADJUSTMENT: (role) => isAdmin(role),
 };

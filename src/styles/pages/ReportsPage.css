@@ -138,6 +138,39 @@
   transform: translateY(0);
 }
 
+.report-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =============================================================================
+   GENERATION STATUS
+   ============================================================================= */
+
+.report-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+}
+
+.report-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--border-primary);
+  border-top-color: var(--color-success);
+  border-radius: 50%;
+  animation: report-spin 0.8s linear infinite;
+}
+
+@keyframes report-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* =============================================================================
    SUCCESS MESSAGE
    ============================================================================= */
@@ -157,20 +190,26 @@
 }
 
 .report-pdf-link {
-  display: inline-block;
-  margin-top: var(--space-lg);
-  background: var(--color-success-bg);
-  color: var(--color-success-text);
-  font-weight: var(--font-weight-bold);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  margin-top: var(--space-md);
+  background-color: #dc2626;
+  color: var(--text-inverse);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
   text-decoration: none;
-  padding: var(--space-sm) var(--space-xl);
-  border-radius: var(--radius-full);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
   transition: all var(--transition-base);
   box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
 }
 
 .report-pdf-link:hover {
-  background: var(--color-success);
+  background-color: #b91c1c;
   color: var(--text-inverse);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
@@ -178,6 +217,7 @@
 
 .report-pdf-link:active {
   transform: translateY(0);
+  color: var(--text-inverse);
 }
 
 /* =============================================================================

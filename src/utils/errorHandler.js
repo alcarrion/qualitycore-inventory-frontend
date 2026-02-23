@@ -1,6 +1,7 @@
 // src/utils/errorHandler.js
 import { ERRORS } from '../constants/messages';
 import { logger } from './logger';
+import { clearSession } from '../services/authService';
 
 /**
  * Manejo centralizado de errores de API
@@ -39,9 +40,7 @@ const HTTP_ERROR_MESSAGES = {
 export function handleApiError(response, data) {
   // Error 401 - No autenticado (manejado por JWT refresh, esto es fallback)
   if (response.status === 401) {
-    localStorage.removeItem("user");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    clearSession();
     window.location.href = "/";
     return HTTP_ERROR_MESSAGES[401];
   }
@@ -56,20 +55,62 @@ export function handleApiError(response, data) {
     return ERRORS.SERVER_ERROR;
   }
 
-  // Intentar extraer mensaje del backend
+  // Intentar extraer mensaje del backend (prioridad: detail > message)
   if (data && typeof data === "object") {
-    if (data.message) return data.message;
-    if (data.error) return data.error;
-    if (data.detail) return data.detail;
-
-    // Errores de validación de campos
-    if (data.errors) {
-      const firstError = Object.values(data.errors)[0];
-      return Array.isArray(firstError) ? firstError[0] : firstError;
+    // 'detail' es el estándar de DRF para errores
+    if (data.detail) {
+      return Array.isArray(data.detail) ? data.detail[0] : data.detail;
     }
+    if (data.message) return data.message;
+
+    // Errores de validación de campos (DRF serializer errors)
+    const fieldErrors = Object.entries(data)
+      .filter(([key]) => key !== 'message')
+      .map(([, messages]) => (Array.isArray(messages) ? messages[0] : messages))
+      .filter(Boolean);
+    if (fieldErrors.length > 0) return fieldErrors[0];
   }
 
   return 'Ha ocurrido un error. Por favor intenta nuevamente.';
+}
+
+/**
+ * Extrae errores de validación de una respuesta de API de formulario.
+ * Maneja los formatos comunes del backend Django REST Framework:
+ * - { "detail": "mensaje" }
+ * - { "campo": ["error1", "error2"], "otro_campo": ["error"] }
+ * - { "non_field_errors": ["error"] }
+ *
+ * @param {object} responseData - resp.data de la respuesta
+ * @param {string} fallbackMessage - Mensaje si no se puede extraer un error
+ * @returns {string} Mensaje de error formateado
+ */
+export function extractFormErrors(responseData, fallbackMessage) {
+  if (!responseData) return fallbackMessage;
+
+  // Si es string directo
+  if (typeof responseData === 'string') return responseData;
+
+  // Si tiene detail (error general de DRF — puede ser string o array)
+  if (responseData.detail) {
+    if (Array.isArray(responseData.detail)) return responseData.detail.join('. ');
+    return responseData.detail;
+  }
+
+  // Iterar campos del objeto para extraer errores de validación
+  if (typeof responseData === 'object') {
+    const errorMessages = Object.entries(responseData)
+      .map(([, messages]) => {
+        if (Array.isArray(messages)) return messages.join(', ');
+        return messages;
+      })
+      .filter(Boolean)
+      .join('. ');
+
+    if (errorMessages) return errorMessages;
+  }
+
+  return fallbackMessage;
 }
 
 /**

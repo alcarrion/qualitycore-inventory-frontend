@@ -85,8 +85,7 @@ class ErrorBoundary extends React.Component {
             <h1 className="error-boundary__title">Algo salió mal</h1>
 
             <p className="error-boundary__message">
-              Ha ocurrido un error inesperado. Puedes intentar recargar la página
-              o contactar a soporte si el problema persiste.
+              {this.props.message || 'Ha ocurrido un error inesperado. Puedes intentar recargar la página o contactar a soporte si el problema persiste.'}
             </p>
 
             <div className="error-boundary__buttons">

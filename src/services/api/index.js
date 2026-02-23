@@ -25,7 +25,7 @@ export {
 export { getDashboardSummary } from "./dashboard";
 
 // Movimientos
-export { getMovements, postMovement } from "./movements";
+export { getMovements, postMovement, postAdjustment, postCorrection } from "./movements";
 
 // Ventas
 export { getSales, postSale, getSale } from "./sales";
@@ -39,6 +39,7 @@ export {
   postProduct,
   patchProduct,
   patchProductJson,
+  checkStock,
 } from "./products";
 
 // Categorías
@@ -61,7 +62,7 @@ export {
 } from "./quotations";
 
 // Reportes
-export { getReports, postReport, generateReport } from "./reports";
+export { getReports, postReport, generateReport, checkReportStatus } from "./reports";
 
 // Alertas
 export { getAlerts, dismissAlert } from "./alerts";

@@ -4,13 +4,6 @@
 // ============================================================
 
 /**
- * Tasas de impuestos
- */
-export const TAX_RATE = {
-  IVA: 0.15,  // 15% IVA Ecuador
-};
-
-/**
  * Timeouts (en milisegundos)
  */
 export const TIMEOUTS = {
@@ -42,8 +35,8 @@ export const TIMEOUTS = {
 export const RETRY_CONFIG = {
   MAX_RETRIES: 3,
   RETRY_DELAY: TIMEOUTS.RETRY_DELAY,
-  // Códigos de estado que ameritan reintento
-  RETRYABLE_STATUS_CODES: [408, 429, 500, 502, 503, 504],
+  // Solo errores de servidor (nunca reintentar 4xx del cliente)
+  RETRYABLE_STATUS_CODES: [500, 502, 503, 504],
   // No reintentar métodos que modifican datos
   RETRYABLE_METHODS: ['GET', 'HEAD', 'OPTIONS'],
 };

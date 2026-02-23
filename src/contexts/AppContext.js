@@ -8,8 +8,11 @@ export function AppProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     // Cargar preferencia desde localStorage
-    const saved = localStorage.getItem("darkMode");
-    return saved === "true";
+    try {
+      return localStorage.getItem("darkMode") === "true";
+    } catch {
+      return false;
+    }
   });
 
   // Función para agregar un toast
@@ -38,7 +41,7 @@ export function AppProvider({ children }) {
   const toggleDarkMode = useCallback(() => {
     setDarkMode((prev) => {
       const newValue = !prev;
-      localStorage.setItem("darkMode", String(newValue));
+      try { localStorage.setItem("darkMode", String(newValue)); } catch { /* ignore */ }
       return newValue;
     });
   }, []);

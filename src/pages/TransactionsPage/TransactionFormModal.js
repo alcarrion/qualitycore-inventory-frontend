@@ -1,6 +1,7 @@
 // TransactionsPage/TransactionFormModal.js
 import React from "react";
 import Modal from "../../components/Modal";
+import SearchableDropdown, { ClearButton, DropdownList, DropdownItem } from "../../components/SearchableDropdown";
 import {
   CalendarClock,
   User,
@@ -11,44 +12,27 @@ import {
 
 /**
  * Modal para añadir entradas (compras) y salidas (ventas)
- * Mantiene toda la lógica en el componente padre TransactionsPage
  */
 function TransactionFormModal({
   // Control de modal
   show,
   onClose,
   type, // "input" | "output"
-
-  // Fecha y hora
   currentTime,
 
-  // Proveedor (para entradas)
-  supplierSearch,
-  onSupplierSearchChange,
-  showSupplierDropdown,
-  onShowSupplierDropdownChange,
+  // Dropdowns (objetos de useDropdownSearch)
+  supplierDropdown,
+  customerDropdown,
+  productDropdown,
+
+  // Selección de entidades
   selectedSupplier,
-  onSelectSupplier,
-  onSupplierSelect,
-  filteredSuppliers,
-
-  // Cliente (para salidas)
-  customerSearch,
-  onCustomerSearchChange,
-  showCustomerDropdown,
-  onShowCustomerDropdownChange,
   selectedCustomer,
+  onSupplierChange,
+  onCustomerChange,
+  onSelectSupplier,
   onSelectCustomer,
-  onCustomerSelect,
-  filteredCustomers,
-
-  // Productos
-  productSearch,
-  onProductSearchChange,
-  showProductDropdown,
-  onShowProductDropdownChange,
-  onProductSelect,
-  filteredProducts,
+  onSelectProduct,
 
   // Form data
   formData,
@@ -118,210 +102,34 @@ function TransactionFormModal({
 
         {/* Proveedor (solo para entradas) */}
         {type === "input" && (
-          <div className="formGroup" style={{ position: 'relative' }}>
-            <label className="form-label">
-              <User size={16} style={{ marginRight: "6px" }} />
-              Proveedor:
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="text"
-                value={supplierSearch}
-                onChange={(e) => {
-                  onSupplierSearchChange(e.target.value);
-                  onShowSupplierDropdownChange(true);
-                  onShowProductDropdownChange(false);
-                  onSelectSupplier("");
-                }}
-                onFocus={() => {
-                  onShowSupplierDropdownChange(true);
-                  onShowProductDropdownChange(false);
-                }}
-                placeholder="Buscar proveedor..."
-                className="input"
-                autoComplete="off"
-                style={{ paddingRight: supplierSearch ? '35px' : '12px' }}
-              />
-              {supplierSearch && (
-                <button
-                  onClick={() => {
-                    onSupplierSearchChange("");
-                    onSelectSupplier("");
-                    onShowSupplierDropdownChange(false);
-                  }}
-                  style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'var(--text-secondary)',
-                    fontSize: '18px',
-                    padding: '2px 6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'color 0.2s'
-                  }}
-                  onMouseOver={(e) => e.target.style.color = 'var(--text-primary)'}
-                  onMouseOut={(e) => e.target.style.color = 'var(--text-secondary)'}
-                  type="button"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            {showSupplierDropdown && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                maxHeight: '200px',
-                overflowY: 'auto',
-                background: 'var(--bg-primary)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                marginTop: '4px',
-                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                zIndex: 1000
-              }}>
-                {filteredSuppliers.length > 0 ? (
-                  filteredSuppliers.slice(0, 10).map((s) => (
-                    <div
-                      key={s.id}
-                      onClick={() => onSupplierSelect(s)}
-                      style={{
-                        padding: '10px 12px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid var(--border-color)',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.target.style.background = 'var(--bg-secondary)'}
-                      onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                    >
-                      <div style={{ fontWeight: '500' }}>{s.name}</div>
-                      {s.email && (
-                        <div style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
-                          {s.email}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    No se encontraron proveedores
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <SearchableDropdown
+            label="Proveedor:"
+            icon={<User size={16} />}
+            dropdown={supplierDropdown}
+            otherDropdowns={[productDropdown]}
+            onDeselect={() => onSupplierChange("")}
+            onSelect={onSelectSupplier}
+            placeholder="Buscar proveedor..."
+            emptyMessage="No se encontraron proveedores"
+            maxItems={10}
+            className="formGroup"
+          />
         )}
 
         {/* Cliente (solo para salidas) */}
         {type === "output" && (
-          <div className="formGroup" style={{ position: 'relative' }}>
-            <label className="form-label">
-              <User size={16} style={{ marginRight: "6px" }} />
-              Cliente:
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="text"
-                value={customerSearch}
-                onChange={(e) => {
-                  onCustomerSearchChange(e.target.value);
-                  onShowCustomerDropdownChange(true);
-                  onShowProductDropdownChange(false);
-                  onSelectCustomer("");
-                }}
-                onFocus={() => {
-                  onShowCustomerDropdownChange(true);
-                  onShowProductDropdownChange(false);
-                }}
-                placeholder="Buscar cliente..."
-                className="input"
-                autoComplete="off"
-                style={{ paddingRight: customerSearch ? '35px' : '12px' }}
-              />
-              {customerSearch && (
-                <button
-                  onClick={() => {
-                    onCustomerSearchChange("");
-                    onSelectCustomer("");
-                    onShowCustomerDropdownChange(false);
-                  }}
-                  style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'var(--text-secondary)',
-                    fontSize: '18px',
-                    padding: '2px 6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'color 0.2s'
-                  }}
-                  onMouseOver={(e) => e.target.style.color = 'var(--text-primary)'}
-                  onMouseOut={(e) => e.target.style.color = 'var(--text-secondary)'}
-                  type="button"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            {showCustomerDropdown && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                maxHeight: '200px',
-                overflowY: 'auto',
-                background: 'var(--bg-primary)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                marginTop: '4px',
-                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                zIndex: 1000
-              }}>
-                {filteredCustomers.length > 0 ? (
-                  filteredCustomers.slice(0, 10).map((c) => (
-                    <div
-                      key={c.id}
-                      onClick={() => onCustomerSelect(c)}
-                      style={{
-                        padding: '10px 12px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid var(--border-color)',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.target.style.background = 'var(--bg-secondary)'}
-                      onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                    >
-                      <div style={{ fontWeight: '500' }}>{c.name}</div>
-                      {c.email && (
-                        <div style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
-                          {c.email}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    No se encontraron clientes
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <SearchableDropdown
+            label="Cliente:"
+            icon={<User size={16} />}
+            dropdown={customerDropdown}
+            otherDropdowns={[productDropdown]}
+            onDeselect={() => onCustomerChange("")}
+            onSelect={onSelectCustomer}
+            placeholder="Buscar cliente..."
+            emptyMessage="No se encontraron clientes"
+            maxItems={10}
+            className="formGroup"
+          />
         )}
 
         {/* Selector de producto y cantidad */}
@@ -333,83 +141,40 @@ function TransactionFormModal({
           <div style={{ position: 'relative' }}>
             <input
               type="text"
-              value={productSearch}
+              value={productDropdown.search}
               onChange={(e) => {
-                onProductSearchChange(e.target.value);
-                onShowProductDropdownChange(true);
-                onShowSupplierDropdownChange(false);
-                onShowCustomerDropdownChange(false);
+                productDropdown.setSearch(e.target.value);
+                productDropdown.setIsOpen(true);
+                supplierDropdown.setIsOpen(false);
+                customerDropdown.setIsOpen(false);
               }}
               onFocus={() => {
-                onShowProductDropdownChange(true);
-                onShowSupplierDropdownChange(false);
-                onShowCustomerDropdownChange(false);
+                productDropdown.setIsOpen(true);
+                supplierDropdown.setIsOpen(false);
+                customerDropdown.setIsOpen(false);
+              }}
+              onKeyDown={(e) => {
+                const selected = productDropdown.onKeyDown(e);
+                if (selected) onSelectProduct(selected);
               }}
               placeholder="Buscar producto por nombre o código..."
               className="input"
               autoComplete="off"
               disabled={(type === "input" && !selectedSupplier) || (type === "output" && !selectedCustomer)}
-              style={{ paddingRight: productSearch ? '35px' : '12px' }}
+              style={{ paddingRight: productDropdown.search ? '35px' : '12px' }}
             />
-            {productSearch && (
-              <button
-                onClick={() => {
-                  onProductSearchChange("");
-                  onShowProductDropdownChange(false);
-                }}
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-secondary)',
-                  fontSize: '18px',
-                  padding: '2px 6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'color 0.2s'
-                }}
-                onMouseOver={(e) => e.target.style.color = 'var(--text-primary)'}
-                onMouseOut={(e) => e.target.style.color = 'var(--text-secondary)'}
-                type="button"
-              >
-                ✕
-              </button>
+            {productDropdown.search && (
+              <ClearButton onClick={() => {
+                productDropdown.setSearch("");
+                productDropdown.setIsOpen(false);
+              }} />
             )}
           </div>
-          {showProductDropdown && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              maxHeight: '250px',
-              overflowY: 'auto',
-              background: 'var(--bg-primary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '6px',
-              marginTop: '4px',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-              zIndex: 1000
-            }}>
-              {filteredProducts.length > 0 ? (
-                filteredProducts.slice(0, 15).map((p) => (
-                  <div
-                    key={p.id}
-                    onClick={() => onProductSelect(p)}
-                    style={{
-                      padding: '10px 12px',
-                      cursor: 'pointer',
-                      borderBottom: '1px solid var(--border-color)',
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.target.style.background = 'var(--bg-secondary)'}
-                    onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                  >
+          {productDropdown.isOpen && (
+            <DropdownList maxHeight="250px">
+              {productDropdown.filtered.length > 0 ? (
+                productDropdown.filtered.slice(0, 15).map((p, idx) => (
+                  <DropdownItem key={p.id} highlighted={idx === productDropdown.highlightedIndex} onClick={() => onSelectProduct(p)}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: '500' }}>{p.name}</div>
@@ -430,14 +195,14 @@ function TransactionFormModal({
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </DropdownItem>
                 ))
               ) : (
                 <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                   No se encontraron productos
                 </div>
               )}
-            </div>
+            </DropdownList>
           )}
         </div>
 
@@ -473,7 +238,7 @@ function TransactionFormModal({
           </div>
         )}
 
-        {/* Carrito (para ambos tipos) */}
+        {/* Carrito */}
         {cart.length > 0 && (
           <div className="formGroup" style={{ marginTop: '16px' }}>
             <label className="form-label" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>

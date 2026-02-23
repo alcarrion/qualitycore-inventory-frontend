@@ -5,10 +5,16 @@
 
 import { apiFetch } from "./config";
 
-/** Listar compras (con paginación opcional) */
-export async function getPurchases(page = null) {
-  const url = page ? `/purchases/?page=${page}` : `/purchases/`;
-  return await apiFetch(url);
+/** Listar compras con paginación y filtros server-side */
+export async function getPurchases(params = {}, options = {}) {
+  const query = new URLSearchParams();
+  if (params.page) query.set('page', params.page);
+  if (params.search) query.set('search', params.search);
+  if (params.start_date) query.set('start_date', params.start_date);
+  if (params.end_date) query.set('end_date', params.end_date);
+  if (params.no_page) query.set('no_page', params.no_page);
+  const qs = query.toString();
+  return await apiFetch(`/purchases/${qs ? `?${qs}` : ''}`, options);
 }
 
 /** Crear compra con múltiples productos */

@@ -6,9 +6,9 @@
 import { apiFetch } from "./config";
 
 /** Listar clientes (con paginación opcional) */
-export async function getCustomers(page = null) {
+export async function getCustomers(page = null, options = {}) {
   const url = page ? `/customers/?page=${page}` : `/customers/`;
-  return await apiFetch(url);
+  return await apiFetch(url, options);
 }
 
 /** Crear cliente */

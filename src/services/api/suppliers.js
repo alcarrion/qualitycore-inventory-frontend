@@ -6,9 +6,9 @@
 import { apiFetch } from "./config";
 
 /** Listar proveedores (con paginación opcional) */
-export async function getSuppliers(page = null) {
+export async function getSuppliers(page = null, options = {}) {
   const url = page ? `/suppliers/?page=${page}` : `/suppliers/`;
-  return await apiFetch(url);
+  return await apiFetch(url, options);
 }
 
 /** Crear proveedor */

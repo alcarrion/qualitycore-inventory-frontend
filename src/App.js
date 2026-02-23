@@ -3,8 +3,9 @@ import React, { useState, useEffect, lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { setToastHandler } from "./utils/errorHandler";
-import { logoutUser } from "./services/api/auth";
 import { useDataStore } from "./store/dataStore";
+import { getStoredUser } from "./services/authService";
+import { logoutUser } from "./services/api/auth";
 import Layout from "./components/Layout";
 import ToastContainer from "./components/ToastContainer";
 import LoadingSpinner from "./components/LoadingSpinner";
@@ -29,9 +30,7 @@ function AppContent() {
   const fetchAll = useDataStore(state => state.fetchAll);
 
   // Inicializa el usuario desde localStorage, si existe
-  const [user, setUser] = useState(() =>
-    JSON.parse(localStorage.getItem("user")) || null
-  );
+  const [user, setUser] = useState(() => getStoredUser());
 
   // Inicializar el error handler con la función de toast
   useEffect(() => {
@@ -40,18 +39,17 @@ function AppContent() {
 
   // Cargar datos globales cuando el usuario está autenticado
   useEffect(() => {
-    if (user) {
-      fetchAll();
-    }
+    if (!user) return;
+    const controller = new AbortController();
+    fetchAll(controller.signal);
+    return () => controller.abort();
   }, [user, fetchAll]);
 
   // Escuchar cambios en localStorage para actualizar el usuario
   useEffect(() => {
     const handleStorageChange = () => {
-      const updatedUser = JSON.parse(localStorage.getItem("user"));
-      if (updatedUser) {
-        setUser(updatedUser);
-      }
+      const updatedUser = getStoredUser();
+      setUser(updatedUser);
     };
 
     // Escuchar evento de storage (solo funciona entre pestañas)
@@ -66,9 +64,9 @@ function AppContent() {
     };
   }, []);
 
-  // Cerrar sesión (limpia JWT tokens y datos de usuario)
-  const handleLogout = () => {
-    logoutUser();  // Limpia tokens JWT y user de localStorage
+  // Cerrar sesión (borra cookies httpOnly en el servidor + datos locales)
+  const handleLogout = async () => {
+    await logoutUser();
     setUser(null);
     window.location.href = "/";
   };
@@ -99,15 +97,15 @@ function AppContent() {
                 )
               }
             >
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/products" element={<InventoryPage />} />
-              <Route path="/transactions" element={<TransactionsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/suppliers" element={<SuppliersPage />} />
-              <Route path="/customers" element={<CustomersPage />} />
-              <Route path="/quotation" element={<QuotationPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/users" element={<UsersPage />} />
+              <Route path="/dashboard" element={<ErrorBoundary message="Error al cargar el dashboard."><DashboardPage /></ErrorBoundary>} />
+              <Route path="/products" element={<ErrorBoundary message="Error al cargar el inventario."><InventoryPage /></ErrorBoundary>} />
+              <Route path="/transactions" element={<ErrorBoundary message="Error al cargar las transacciones."><TransactionsPage /></ErrorBoundary>} />
+              <Route path="/reports" element={<ErrorBoundary message="Error al cargar los reportes."><ReportsPage /></ErrorBoundary>} />
+              <Route path="/suppliers" element={<ErrorBoundary message="Error al cargar los proveedores."><SuppliersPage /></ErrorBoundary>} />
+              <Route path="/customers" element={<ErrorBoundary message="Error al cargar los clientes."><CustomersPage /></ErrorBoundary>} />
+              <Route path="/quotation" element={<ErrorBoundary message="Error al cargar las cotizaciones."><QuotationPage /></ErrorBoundary>} />
+              <Route path="/profile" element={<ErrorBoundary message="Error al cargar el perfil."><ProfilePage /></ErrorBoundary>} />
+              <Route path="/users" element={<ErrorBoundary message="Error al cargar los usuarios."><UsersPage /></ErrorBoundary>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" />} />

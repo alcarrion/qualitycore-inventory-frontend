@@ -3,12 +3,14 @@
 import React, { useState } from "react";
 import { postCustomer, patchCustomer } from "../services/api";
 import { useApp } from "../contexts/AppContext";
+import { extractFormErrors } from "../utils/errorHandler";
 import {
   validateEcuadorianCedula,
   validateEcuadorianRUC,
   validatePassport
 } from "../utils/ecuadorianValidators";
 import { ERRORS, SUCCESS, ENTITIES } from "../constants/messages";
+import { getDocumentLabel, getDocumentPlaceholder } from "../utils/documentLabels";
 import "../styles/components/Form.css";
 
 /**
@@ -79,27 +81,10 @@ export default function CustomerForm({ customer = null, onSave, onCancel }) {
         : await postCustomer(data);
 
       if (!resp.ok) {
-        // Manejar errores de validación del backend
-        if (resp.data && typeof resp.data === 'object') {
-          const errorMessages = Object.entries(resp.data)
-            .map(([field, messages]) => {
-              if (Array.isArray(messages)) {
-                return messages.join(', ');
-              }
-              return messages;
-            })
-            .join('. ');
-
-          const errorMsg = isEditing
-            ? ERRORS.UPDATE_FAILED(ENTITIES.CUSTOMER)
-            : ERRORS.CREATE_FAILED(ENTITIES.CUSTOMER);
-          showError(errorMessages || errorMsg);
-        } else {
-          const errorMsg = isEditing
-            ? ERRORS.UPDATE_FAILED(ENTITIES.CUSTOMER)
-            : ERRORS.CREATE_FAILED(ENTITIES.CUSTOMER);
-          showError(resp.data?.detail || errorMsg);
-        }
+        const fallback = isEditing
+          ? ERRORS.UPDATE_FAILED(ENTITIES.CUSTOMER)
+          : ERRORS.CREATE_FAILED(ENTITIES.CUSTOMER);
+        showError(extractFormErrors(resp.data, fallback));
         setLoading(false);
         return;
       }
@@ -117,32 +102,6 @@ export default function CustomerForm({ customer = null, onSave, onCancel }) {
       showError(err.message || errorMsg);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getDocumentPlaceholder = () => {
-    switch (documentType) {
-      case "cedula":
-        return "10 dígitos";
-      case "ruc":
-        return "13 dígitos";
-      case "passport":
-        return "6-9 caracteres alfanuméricos";
-      default:
-        return "";
-    }
-  };
-
-  const getDocumentLabel = () => {
-    switch (documentType) {
-      case "cedula":
-        return "Cédula";
-      case "ruc":
-        return "RUC";
-      case "passport":
-        return "Pasaporte";
-      default:
-        return "Documento";
     }
   };
 
@@ -185,11 +144,11 @@ export default function CustomerForm({ customer = null, onSave, onCancel }) {
       </div>
 
       <div className="form-group">
-        <label>{getDocumentLabel()}</label>
+        <label>{getDocumentLabel(documentType)}</label>
         <input
           value={document}
           onChange={(e) => setDocument(e.target.value)}
-          placeholder={getDocumentPlaceholder()}
+          placeholder={getDocumentPlaceholder(documentType)}
           required
         />
       </div>

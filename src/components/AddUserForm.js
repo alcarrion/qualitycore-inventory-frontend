@@ -5,12 +5,14 @@ import { useApp } from "../contexts/AppContext";
 import { Eye, EyeOff } from "lucide-react";
 import { isSuperAdmin as checkIsSuperAdmin } from "../constants/roles";
 import { ERRORS, SUCCESS, ENTITIES } from "../constants/messages";
+import { extractFormErrors } from "../utils/errorHandler";
 import { validatePassword } from "../utils/validatePassword";
+import { getStoredUser } from "../services/authService";
 import "../styles/components/Form.css";
 
 export function AddUserForm({ onSave, onCancel }) {
   const { showSuccess, showError } = useApp();
-  const currentUser = JSON.parse(localStorage.getItem("user"));
+  const currentUser = getStoredUser();
   const isSuperAdmin = checkIsSuperAdmin(currentUser?.role);
 
   const [name, setName] = useState("");
@@ -44,20 +46,7 @@ export function AddUserForm({ onSave, onCancel }) {
       const resp = await postUser({ name, email, phone, role, password });
 
       if (!resp.ok) {
-        if (resp.data && typeof resp.data === 'object') {
-          const errorMessages = Object.entries(resp.data)
-            .map(([field, messages]) => {
-              if (Array.isArray(messages)) {
-                return messages.join(', ');
-              }
-              return messages;
-            })
-            .join('. ');
-
-          showError(errorMessages || ERRORS.CREATE_FAILED(ENTITIES.USER));
-        } else {
-          showError(resp.data?.detail || ERRORS.CREATE_FAILED(ENTITIES.USER));
-        }
+        showError(extractFormErrors(resp.data, ERRORS.CREATE_FAILED(ENTITIES.USER)));
         setLoading(false);
         return;
       }

@@ -1,6 +1,6 @@
 // src/components/ProductForm.js
 // Form unificado para crear y editar productos
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   getSuppliers,
   getCategories,
@@ -8,6 +8,9 @@ import {
   postProduct,
   patchProduct,
 } from "../services/api";
+import SearchableDropdown from "./SearchableDropdown";
+import { useDropdownSearch } from "../hooks/useDropdownSearch";
+import { useAbortSignal } from "../hooks/useAbortSignal";
 import { useApp } from "../contexts/AppContext";
 import { validateImage } from "../utils/validateImage";
 import { ERRORS, SUCCESS, ENTITIES } from "../constants/messages";
@@ -36,6 +39,16 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
   const [status, setStatus] = useState(product?.status || "Activo");
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const getSignal = useAbortSignal();
+
+  const STATUS_OPTIONS = useMemo(() => [
+    { id: "Activo", name: "Activo" },
+    { id: "Inactivo", name: "Inactivo" },
+  ], []);
+
+  const categoryDropdown = useDropdownSearch(categories);
+  const supplierDropdown = useDropdownSearch(suppliers);
+  const statusDropdown = useDropdownSearch(STATUS_OPTIONS);
 
   // Solo para modo edición
   const currentStock = product?.current_stock ?? product?.currentStock;
@@ -43,17 +56,39 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
 
   // Cargar proveedores y categorías
   useEffect(() => {
+    const signal = getSignal();
     (async () => {
-      const ps = await getSuppliers();
+      const ps = await getSuppliers(null, { signal });
+      if (ps.aborted) return;
       const suppliersList = ps.data?.results || ps.data || [];
       const suppliersArray = Array.isArray(suppliersList) ? suppliersList : [];
-      setSuppliers(suppliersArray.filter(p => !p.deleted_at));
+      const filteredSuppliers = suppliersArray.filter(p => !p.deleted_at);
+      setSuppliers(filteredSuppliers);
 
-      const cs = await getCategories();
+      const cs = await getCategories(null, { signal });
+      if (cs.aborted) return;
       const categoriesList = cs.data?.results || cs.data || [];
       const categoriesArray = Array.isArray(categoriesList) ? categoriesList : [];
       setCategories(categoriesArray);
+
+      // Pre-fill dropdowns when editing
+      if (isEditing) {
+        if (product?.supplier) {
+          const sup = filteredSuppliers.find(s => s.id === product.supplier);
+          if (sup) supplierDropdown.select(sup.name);
+        }
+        if (product?.category) {
+          const cat = categoriesArray.find(c => c.id === product.category);
+          if (cat) categoryDropdown.select(cat.name);
+        }
+      }
     })();
+    // Pre-fill status dropdown
+    if (status) {
+      const opt = STATUS_OPTIONS.find(o => o.id === status);
+      if (opt) statusDropdown.select(opt.name);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFileChange = async (e) => {
@@ -85,9 +120,8 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
       }
       const cat = res.data;
       setCategories(prev => [...prev, cat]);
-      setTimeout(() => {
-        setCategory(String(cat.id));
-      }, 0);
+      setCategory(String(cat.id));
+      categoryDropdown.select(cat.name);
       setNewCategory("");
       showSuccess(SUCCESS.CREATED('Categoría'));
     } catch (e) {
@@ -183,19 +217,20 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
       </div>
 
       <div className="form-group">
-        <label>Categoría *</label>
-        <select
-          value={category}
-          onChange={e => setCategory(e.target.value)}
-          required
-          key={categories.length}
-        >
-          <option value="">Seleccione</option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.name}</option>
-          ))}
-        </select>
-        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+        <SearchableDropdown
+          label="Categoría *"
+          dropdown={categoryDropdown}
+          otherDropdowns={[supplierDropdown, statusDropdown]}
+          onSelect={(item) => {
+            categoryDropdown.select(item.name);
+            setCategory(String(item.id));
+          }}
+          onDeselect={() => setCategory("")}
+          placeholder="Buscar categoría..."
+          emptyMessage="No se encontraron categorías"
+          className="form-sd"
+        />
+        <div className="form-inline-row">
           <input
             placeholder="Nueva categoría"
             value={newCategory}
@@ -208,13 +243,19 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
       </div>
 
       <div className="form-group">
-        <label>Proveedor *</label>
-        <select value={supplier} onChange={e => setSupplier(e.target.value)} required>
-          <option value="">Seleccione</option>
-          {suppliers.map(prov => (
-            <option key={prov.id} value={prov.id}>{prov.name}</option>
-          ))}
-        </select>
+        <SearchableDropdown
+          label="Proveedor *"
+          dropdown={supplierDropdown}
+          otherDropdowns={[categoryDropdown, statusDropdown]}
+          onSelect={(item) => {
+            supplierDropdown.select(item.name);
+            setSupplier(String(item.id));
+          }}
+          onDeselect={() => setSupplier("")}
+          placeholder="Buscar proveedor..."
+          emptyMessage="No se encontraron proveedores"
+          className="form-sd"
+        />
       </div>
 
       <div className="form-group">
@@ -250,48 +291,40 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
       </div>
 
       <div className="form-group">
-        <label>Estado *</label>
-        <select value={status} onChange={e => setStatus(e.target.value)} required>
-          <option value="Activo">Activo</option>
-          <option value="Inactivo">Inactivo</option>
-        </select>
+        <SearchableDropdown
+          label="Estado *"
+          dropdown={statusDropdown}
+          otherDropdowns={[categoryDropdown, supplierDropdown]}
+          onSelect={(item) => {
+            statusDropdown.select(item.name);
+            setStatus(item.id);
+          }}
+          onDeselect={() => setStatus("")}
+          placeholder="Seleccionar estado..."
+          emptyMessage="No se encontraron estados"
+          className="form-sd"
+        />
       </div>
 
       <div className="form-group">
         <label>Imagen</label>
         {/* Preview de imagen actual solo en modo edición */}
         {isEditing && currentImageUrl && currentImageUrl.trim() !== '' && (
-          <div style={{ marginBottom: 'var(--space-sm)' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-sm)',
-              padding: 'var(--space-sm)',
-              background: 'var(--bg-tertiary)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-primary)',
-              transition: 'all var(--transition-base)'
-            }}>
+          <div className="form-image-preview">
+            <div className="form-image-preview-card">
               <img
                 src={currentImageUrl}
                 alt="Imagen actual"
-                style={{
-                  width: '60px',
-                  height: '60px',
-                  objectFit: 'cover',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-primary)',
-                  backgroundColor: 'var(--bg-secondary)'
-                }}
+                className="form-image-preview-img"
                 onError={(e) => {
                   e.target.style.display = 'none';
                 }}
               />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', fontWeight: 'var(--font-weight-medium)' }}>
+              <div className="form-image-preview-info">
+                <div className="form-image-preview-label">
                   Imagen actual
                 </div>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginTop: '2px', wordBreak: 'break-all' }}>
+                <div className="form-image-preview-filename">
                   {currentImageUrl.includes('/') ? currentImageUrl.split('/').pop() : currentImageUrl}
                 </div>
               </div>
@@ -299,7 +332,7 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
           </div>
         )}
         <input type="file" accept="image/jpeg,image/jpg,image/png" onChange={handleFileChange} />
-        <small style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+        <small className="form-hint">
           {isEditing && currentImageUrl && currentImageUrl.trim() !== '' ? 'Selecciona una nueva imagen para reemplazar la actual. ' : ''}
           Formatos: JPG, PNG. Tamaño máximo: 2MB. Dimensiones: 300x300px a 2000x2000px.
         </small>
