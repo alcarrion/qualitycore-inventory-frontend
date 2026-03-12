@@ -1,6 +1,8 @@
 // TransactionsPage/AdjustmentFormModal.tsx
 import React from "react";
 import Modal from "../../components/Modal";
+import SearchableDropdown from "../../components/SearchableDropdown";
+import type { DropdownController } from "../../components/SearchableDropdown";
 import { CalendarClock, Boxes, FileText, ArrowUpToLine } from "lucide-react";
 import type { Product } from "../../types/models";
 
@@ -8,12 +10,8 @@ interface Props {
   show: boolean;
   onClose: () => void;
   currentTime: Date;
-  productSearch: string;
-  onProductSearchChange: (val: string) => void;
-  showProductDropdown: boolean;
-  onShowProductDropdownChange: (val: boolean) => void;
-  onProductSelect: (product: Product) => void;
-  filteredProducts: Product[];
+  productDropdown: DropdownController<Product>;
+  onProductSelect: (product: Product, displayText: string) => void;
   selectedProduct: Product | null;
   quantity: string | number;
   onQuantityChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -28,12 +26,8 @@ function AdjustmentFormModal({
   show,
   onClose,
   currentTime,
-  productSearch,
-  onProductSearchChange,
-  showProductDropdown,
-  onShowProductDropdownChange,
+  productDropdown,
   onProductSelect,
-  filteredProducts,
   selectedProduct,
   quantity,
   onQuantityChange,
@@ -95,110 +89,34 @@ function AdjustmentFormModal({
         </div>
 
         {/* Producto */}
-        <div className="formGroup" style={{ position: 'relative' }}>
+        <div className="formGroup">
           <label className="form-label">
             <Boxes size={16} style={{ marginRight: "6px" }} />
             Producto:
           </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="text"
-              value={productSearch}
-              onChange={(e) => {
-                onProductSearchChange(e.target.value);
-                onShowProductDropdownChange(true);
-              }}
-              onFocus={() => onShowProductDropdownChange(true)}
-              placeholder="Buscar producto por nombre o codigo..."
-              className="input"
-              autoComplete="off"
-              style={{ paddingRight: productSearch ? '35px' : '12px' }}
-            />
-            {productSearch && (
-              <button
-                onClick={() => {
-                  onProductSearchChange("");
-                  onShowProductDropdownChange(false);
-                }}
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-secondary)',
-                  fontSize: '18px',
-                  padding: '2px 6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'color 0.2s'
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
-                onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
-                type="button"
-              >
-                X
-              </button>
-            )}
-          </div>
-          {showProductDropdown && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              maxHeight: '250px',
-              overflowY: 'auto',
-              background: 'var(--bg-primary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '6px',
-              marginTop: '4px',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-              zIndex: 1000
-            }}>
-              {filteredProducts.length > 0 ? (
-                filteredProducts.slice(0, 15).map((p) => (
-                  <div
-                    key={p.id}
-                    onClick={() => onProductSelect(p)}
-                    style={{
-                      padding: '10px 12px',
-                      cursor: 'pointer',
-                      borderBottom: '1px solid var(--border-color)',
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-secondary)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '500' }}>{p.name}</div>
-                        <div style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
-                          Codigo: {p.code}
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right', marginLeft: '12px' }}>
-                        <div style={{
-                          fontSize: '0.85em',
-                          fontWeight: '500',
-                          color: p.current_stock > (p.minimum_stock ?? 0) ? 'var(--text-success)' : 'var(--text-danger)',
-                        }}>
-                          Stock: {p.current_stock}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                  No se encontraron productos
+          <SearchableDropdown
+            dropdown={productDropdown}
+            onSelect={(p) => onProductSelect(p, `${p.name} (Stock: ${p.current_stock})`)}
+            placeholder="Buscar producto por nombre o codigo..."
+            emptyMessage="No se encontraron productos"
+            maxItems={15}
+            renderItem={(p) => (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '500' }}>{p.name}</div>
                 </div>
-              )}
-            </div>
-          )}
+                <div style={{ textAlign: 'right', marginLeft: '12px' }}>
+                  <div style={{
+                    fontSize: '0.85em',
+                    fontWeight: '500',
+                    color: p.current_stock > (p.minimum_stock ?? 0) ? 'var(--text-success)' : 'var(--text-danger)',
+                  }}>
+                    Stock: {p.current_stock}
+                  </div>
+                </div>
+              </div>
+            )}
+          />
         </div>
 
         {/* Cantidad del ajuste */}

@@ -1,28 +1,14 @@
 // TransactionsPage/SalesList.tsx
-import React, { useMemo } from "react";
+import React from "react";
 import { ShoppingCart, FileText } from "lucide-react";
 import type { Sale } from "../../types/models";
 
 interface Props {
   sales: Sale[];
   onViewDetails: (sale: Sale) => void;
-  searchTerm?: string;
 }
 
-function SalesList({ sales, onViewDetails, searchTerm = "" }: Props) {
-  const filtered = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return sales;
-    return sales.filter((s) => {
-      const date = new Date(s.date);
-      const dateStr = date.toLocaleDateString("es-EC");
-      const timeStr = date.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
-      const total = parseFloat(String(s.total)).toLocaleString("es-EC", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const searchable = [dateStr, timeStr, `venta #${s.id}`, s.customer_name || "", total, s.user_name || ""].join(" ").toLowerCase();
-      return searchable.includes(term);
-    });
-  }, [sales, searchTerm]);
-
+function SalesList({ sales, onViewDetails }: Props) {
   return (
     <div>
       <h2 className="table-title">Salidas (Ventas)</h2>
@@ -38,14 +24,14 @@ function SalesList({ sales, onViewDetails, searchTerm = "" }: Props) {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {sales.length === 0 ? (
               <tr>
                 <td colSpan={5} className="no-data">
                   No se encontraron ventas.
                 </td>
               </tr>
             ) : (
-              filtered.map((sale, index) => (
+              sales.map((sale, index) => (
                 <tr
                   key={sale.id}
                   className={index % 2 === 0 ? "row-even" : "row-odd"}

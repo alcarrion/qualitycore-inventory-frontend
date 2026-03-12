@@ -1,31 +1,39 @@
 // hooks/useAdjustmentModal.ts
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { WheelEvent } from "react";
 import { postAdjustment } from "../services/api";
 import { useApp } from "../contexts/AppContext";
-import { useDataStore } from "../store/dataStore";
+import { useProductSearch } from "./useProductSearch";
+import { useLazyDropdown } from "./useLazyDropdown";
 import type { Product } from "../types/models";
 
 /**
  * Hook que encapsula toda la lógica del modal de ajuste de inventario:
  * - Estado del formulario (producto, cantidad, motivo)
  * - Reloj (solo activo cuando el modal está abierto)
- * - Búsqueda/selección de producto
+ * - Búsqueda/selección de producto (lazy, server-side via useProductSearch + useLazyDropdown)
  * - Submit con validación
  */
 export function useAdjustmentModal() {
   const { showSuccess, showError } = useApp();
-  const products = useDataStore(state => state.products);
-  const fetchProducts = useDataStore(state => state.fetchProducts);
 
   const [show, setShow] = useState(false);
-  const [productSearch, setProductSearch] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [productSearchText, setProductSearchText] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Búsqueda lazy: llama al API con el texto que escribe el usuario (300ms debounce)
+  const { products: filteredProducts } = useProductSearch(productSearchText);
+
+  // useLazyDropdown: conecta la búsqueda server-side con la UI (highlight + teclado)
+  const { dropdown: productDropdown, confirmSelection: confirmProductSelection, clear: clearProductDropdown } =
+    useLazyDropdown<Product>(filteredProducts, setProductSearchText, {
+      onConfirm: (product) => setSelectedProduct(product),
+      onAfterClear: () => setSelectedProduct(null),
+    });
 
   // Reloj solo activo cuando el modal está abierto
   useEffect(() => {
@@ -34,23 +42,11 @@ export function useAdjustmentModal() {
     return () => clearInterval(interval);
   }, [show]);
 
-  const filteredProducts = useMemo(
-    () => products
-      .filter(p => !p.deleted_at)
-      .filter(p =>
-        p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-        (p.code && String(p.code).includes(productSearch))
-      ),
-    [products, productSearch]
-  );
-
   const reset = useCallback((): void => {
-    setProductSearch("");
-    setShowDropdown(false);
-    setSelectedProduct(null);
+    clearProductDropdown();
     setQuantity("");
     setReason("");
-  }, []);
+  }, [clearProductDropdown]);
 
   const open = useCallback((): void => {
     reset();
@@ -61,12 +57,6 @@ export function useAdjustmentModal() {
     setShow(false);
     reset();
   }, [reset]);
-
-  const selectProduct = useCallback((product: Product): void => {
-    setSelectedProduct(product);
-    setProductSearch(`${product.name} (Stock: ${product.current_stock})`);
-    setShowDropdown(false);
-  }, []);
 
   const handleSubmit = useCallback(async (): Promise<void> => {
     if (!selectedProduct) {
@@ -92,7 +82,8 @@ export function useAdjustmentModal() {
     setIsSubmitting(false);
 
     if (resp.ok) {
-      fetchProducts();
+      // Disparar evento para que InventoryPage refresque su lista server-side
+      window.dispatchEvent(new Event("recargarInventario"));
       close();
       showSuccess("Ajuste de inventario registrado correctamente.");
     } else {
@@ -109,7 +100,7 @@ export function useAdjustmentModal() {
         || "Error al registrar el ajuste de inventario.";
       showError(errMsg);
     }
-  }, [selectedProduct, quantity, reason, fetchProducts, close, showSuccess, showError]);
+  }, [selectedProduct, quantity, reason, close, showSuccess, showError]);
 
   const handleWheel = useCallback((e: WheelEvent<HTMLInputElement>): void => {
     (e.target as HTMLInputElement).blur();
@@ -120,12 +111,8 @@ export function useAdjustmentModal() {
     open,
     close,
     currentTime,
-    productSearch,
-    setProductSearch,
-    showDropdown,
-    setShowDropdown,
-    selectProduct,
-    filteredProducts,
+    productDropdown,
+    confirmProductSelection,
     selectedProduct,
     quantity,
     setQuantity,

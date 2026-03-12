@@ -24,6 +24,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [loadingId, setLoadingId] = useState<number | null>(null);
+  const [sort, setSort] = useState("-id");
 
   const role = user?.role || "";
   const isAdmin = checkIsAdmin(role);
@@ -40,7 +41,7 @@ export default function UsersPage() {
     const signal = getSignal();
     (async () => {
       try {
-        const res = await getUsers({ signal });
+        const res = await getUsers(sort, { signal });
         if ((res as { aborted?: boolean }).aborted) return;
         const usersList = (res.data as { results?: User[] } | null)?.results ?? (Array.isArray(res.data) ? res.data as User[] : []);
         setUsers(usersList);
@@ -57,7 +58,7 @@ export default function UsersPage() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, showAdd, showError]);
+  }, [isAdmin, showAdd, showError, sort]);
 
   const handleChangeRole = async (userId: number, newRole: UserRole) => {
     try {
@@ -102,6 +103,15 @@ export default function UsersPage() {
             Añadir Usuario
           </button>
         )}
+      </div>
+
+      <div className="users-sort">
+        <label>Ordenar:</label>
+        <select value={sort} onChange={(e) => setSort(e.target.value)}>
+          <option value="-id">Lo nuevo</option>
+          <option value="name">Nombre A → Z</option>
+          <option value="-name">Nombre Z → A</option>
+        </select>
       </div>
 
       <table className="users-table">

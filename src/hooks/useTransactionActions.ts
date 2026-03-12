@@ -1,138 +1,173 @@
 // hooks/useTransactionActions.ts
-import { useState, useCallback } from "react";
+// Orquestador delgado: compone useTransactionForm + useTransactionCart + useTransactionSubmit.
+// Expone la misma API pública que antes (backward compatible con TransactionsPage).
+import { useCallback, useMemo } from "react";
 import type { ChangeEvent, WheelEvent } from "react";
-import { useDataStore } from "../store/dataStore";
 import { useApp } from "../contexts/AppContext";
-import { useCart } from "./useCart";
-import { useTransactionModal } from "./useTransactionModal";
-import { useTransactionDropdowns } from "./useTransactionDropdowns";
-import type { TransactionFormData } from "./useTransactionDropdowns";
+import { useTransactionCart } from "./useTransactionCart";
+import { useTransactionForm } from "./useTransactionForm";
 import { useTransactionSubmit } from "./useTransactionSubmit";
 import { ERRORS } from "../constants/messages";
+import type { DropdownController } from "../components/SearchableDropdown";
+import type { Customer, Supplier, Product } from "../types/models";
+import type { CartItem, ProductWithAvailability } from "../types/ui";
+import type { TransactionFormData } from "./useTransactionDropdowns";
 
 /**
- * Hook orquestador para transacciones.
- * Conecta cart, modal, dropdowns y submit.
+ * Agrupa todos los datos y handlers del formulario de transacción en un
+ * objeto estructurado. Se pasa como prop única a TransactionFormModal,
+ * eliminando el prop drilling de 20+ props individuales.
  */
+export interface TransactionFormContext {
+  dropdowns: {
+    supplier: DropdownController<Supplier>;
+    customer: DropdownController<Customer>;
+    product: DropdownController<ProductWithAvailability>;
+  };
+  contact: {
+    selectedSupplier: string | number;
+    selectedCustomer: string | number;
+    onSupplierChange: (val: string | number) => void;
+    onCustomerChange: (val: string | number) => void;
+    onSelectSupplier: (item: Supplier) => void;
+    onSelectCustomer: (item: Customer) => void;
+  };
+  product: {
+    formData: TransactionFormData;
+    onFormDataChange: (e: ChangeEvent<HTMLInputElement>) => void;
+    onWheel: (e: WheelEvent<HTMLInputElement>) => void;
+    onSelectProduct: (item: Product) => void;
+  };
+  cart: {
+    items: CartItem[];
+    onAdd: () => void;
+    onRemove: (productId: number) => void;
+    onUpdateQuantity: (productId: number, qty: number) => void;
+    totalPrice: number;
+  };
+  onSubmit: () => void;
+}
+
 export function useTransactionActions({ loadTransactions }: { loadTransactions: () => void }) {
   const { showError } = useApp();
 
-  const products = useDataStore(state => state.products);
-  const customers = useDataStore(state => state.customers);
-  const suppliers = useDataStore(state => state.suppliers);
+  const cartHook = useTransactionCart();
 
-  const {
-    cart, selectedCustomer, selectedSupplier,
-    setSelectedCustomer, setSelectedSupplier,
-    addToCart: cartAddToCart,
-    removeFromCart: cartRemoveFromCart,
-    updateCartQuantity: cartUpdateQuantity,
-    clearCart: cartClearCart,
-    adjustCartStock, calculateTotal,
-  } = useCart();
-
-  const modal = useTransactionModal();
-
-  const [formData, setFormData] = useState<TransactionFormData>({ quantity: "", product: "", customer: "" });
-
-  const dropdowns = useTransactionDropdowns({
-    products, customers, suppliers,
-    modalType: modal.type, selectedSupplier, cart,
-    cartClearCart, setSelectedCustomer, setSelectedSupplier,
-    showModal: modal.showModal, formData, setFormData,
+  const form = useTransactionForm({
+    cart: cartHook.cart,
+    cartClearCart: cartHook.clearCart,
+    selectedSupplier: cartHook.selectedSupplier,
+    setSelectedCustomer: cartHook.setSelectedCustomer,
+    setSelectedSupplier: cartHook.setSelectedSupplier,
   });
 
-  // --- Clear all ---
-  const clearAll = useCallback(() => {
-    cartClearCart();
-    dropdowns.clearDropdowns();
-    setFormData({ quantity: "", product: "", customer: "" });
-  }, [cartClearCart, dropdowns]);
+  // --- Operaciones cross-cutting (necesitan tanto form como cart) ---
 
-  // --- Modal open/close ---
-  const openModal = useCallback((transactionType: string) => {
-    modal.setType(transactionType);
+  const clearAll = useCallback((): void => {
+    cartHook.clearCart();
+    form.clearForm();
+  }, [cartHook, form]);
+
+  const handleConfirmClose = useCallback((): void => {
+    form.modal.setShowModal(false);
+    form.modal.setShowConfirmClose(false);
     clearAll();
-    modal.setShowModal(true);
-  }, [modal, clearAll]);
+  }, [form.modal, clearAll]);
 
-  const handleConfirmClose = useCallback(() => {
-    modal.setShowModal(false);
-    modal.setShowConfirmClose(false);
-    clearAll();
-  }, [modal, clearAll]);
-
-  // --- Submit & Correction ---
   const { handleSubmit, handleCorrection } = useTransactionSubmit({
-    modalType: modal.type, selectedSupplier, selectedCustomer,
-    cart, adjustCartStock, handleConfirmClose,
-    loadTransactions, modal,
+    modalType: form.modal.type,
+    selectedSupplier: cartHook.selectedSupplier,
+    selectedCustomer: cartHook.selectedCustomer,
+    cart: cartHook.cart,
+    adjustCartStock: cartHook.adjustCartStock,
+    handleConfirmClose,
+    loadTransactions,
+    modal: form.modal,
   });
 
-  // --- Form handlers ---
-  const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement>): void => {
-    const { name, value } = e.target;
-    if (name === "quantity") {
-      const numValue = Number(value);
-      if (value === "" || (numValue > 0 && !isNaN(numValue))) {
-        setFormData((prev) => ({ ...prev, [name]: value }));
-      }
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  }, []);
-
-  const handleWheel = useCallback((e: WheelEvent<HTMLInputElement>): void => {
-    (e.target as HTMLInputElement).blur();
-  }, []);
-
-  // --- Cart wrappers ---
-  const handleAddToCart = useCallback(() => {
-    if (modal.type === "input" && !selectedSupplier) {
+  const handleAddToCart = useCallback((): void => {
+    if (form.modal.type === "input" && !cartHook.selectedSupplier) {
       showError(ERRORS.SELECT_SUPPLIER_FIRST);
       return;
     }
-    if (modal.type === "output" && !selectedCustomer) {
+    if (form.modal.type === "output" && !cartHook.selectedCustomer) {
       showError(ERRORS.SELECT_CUSTOMER_FIRST);
       return;
     }
-    if (!formData.product || !formData.quantity) {
+    if (!form.formData.product || !form.formData.quantity) {
       showError(ERRORS.SELECT_PRODUCT_AND_QUANTITY);
       return;
     }
 
-    const selectedProduct = products.find((p) => p.id === Number(formData.product));
+    // El producto seleccionado está en form.dropdowns.selectedProductObj
+    // (establecido por selectProduct en useTransactionDropdowns)
+    const selectedProduct = form.dropdowns.selectedProductObj;
     if (!selectedProduct) {
       showError(ERRORS.PRODUCT_NOT_FOUND);
       return;
     }
 
-    const success = cartAddToCart(selectedProduct, formData.quantity, modal.type as 'input' | 'output', showError);
+    const success = cartHook.addToCart(
+      selectedProduct,
+      form.formData.quantity,
+      form.modal.type as "input" | "output",
+      showError
+    );
     if (success) {
-      setFormData((prev) => ({ ...prev, product: "", quantity: "" }));
-      dropdowns.productDropdown.clear();
+      form.setFormData((prev) => ({ ...prev, product: "", quantity: "" }));
+      form.dropdowns.productDropdown.clear();
     }
-  }, [modal.type, selectedSupplier, selectedCustomer, formData, products, cartAddToCart, showError, dropdowns]);
+  }, [form, cartHook, showError]);
 
-  const handleUpdateCartQuantity = useCallback((productId: number, newQuantity: number) => {
-    if (isNaN(newQuantity) || newQuantity < 0) return;
-    if (newQuantity === 0) {
-      cartRemoveFromCart(productId);
-      return;
-    }
-    cartUpdateQuantity(productId, newQuantity, modal.type as 'input' | 'output', showError);
-  }, [cartRemoveFromCart, cartUpdateQuantity, modal.type, showError]);
+  // Memoizar el total del carrito para que no se recalcule en cada render del
+  // hook, sino solo cuando el carrito cambia (calculateTotal depende de [cart]).
+  const cartTotal = useMemo(
+    () => cartHook.calculateTotal(),
+    [cartHook.calculateTotal]
+  );
+
+  // Objeto estructurado que reemplaza los 20+ props individuales al modal.
+  // Definido al final para que handleAddToCart y handleSubmit estén disponibles.
+  const formContext: TransactionFormContext = {
+    dropdowns: {
+      supplier: form.dropdowns.supplierDropdown,
+      customer: form.dropdowns.customerDropdown,
+      product: form.dropdowns.productDropdown,
+    },
+    contact: {
+      selectedSupplier: cartHook.selectedSupplier,
+      selectedCustomer: cartHook.selectedCustomer,
+      onSupplierChange: form.dropdowns.handleSupplierChange,
+      onCustomerChange: cartHook.setSelectedCustomer,
+      onSelectSupplier: form.dropdowns.selectSupplier,
+      onSelectCustomer: form.dropdowns.selectCustomer,
+    },
+    product: {
+      formData: form.formData,
+      onFormDataChange: form.handleInputChange,
+      onWheel: form.handleWheel,
+      onSelectProduct: form.dropdowns.selectProduct,
+    },
+    cart: {
+      items: cartHook.cart,
+      onAdd: handleAddToCart,
+      onRemove: cartHook.removeFromCart,
+      onUpdateQuantity: (productId: number, qty: number) =>
+        cartHook.handleUpdateCartQuantity(productId, qty, form.modal.type),
+      totalPrice: cartTotal,
+    },
+    onSubmit: handleSubmit,
+  };
 
   return {
-    modal, openModal, handleConfirmClose,
-    customerDropdown: dropdowns.customerDropdown,
-    supplierDropdown: dropdowns.supplierDropdown,
-    productDropdown: dropdowns.productDropdown,
-    selectedCustomer, setSelectedCustomer, selectCustomer: dropdowns.selectCustomer,
-    selectedSupplier, handleSupplierChange: dropdowns.handleSupplierChange, selectSupplier: dropdowns.selectSupplier,
-    selectProduct: dropdowns.selectProduct,
-    formData, handleInputChange, handleWheel,
-    cart, handleAddToCart, cartRemoveFromCart, handleUpdateCartQuantity, calculateTotal,
-    handleSubmit, handleCorrection,
+    modal: form.modal,
+    openModal: form.openModal,
+    handleConfirmClose,
+    formContext,
+    // Las props individuales se mantienen para otros consumidores (ej. InvoiceModal, ConfirmDialog)
+    selectedCustomer: cartHook.selectedCustomer,
+    setSelectedCustomer: cartHook.setSelectedCustomer,
+    handleSubmit,
+    handleCorrection,
   };
 }

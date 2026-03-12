@@ -29,6 +29,41 @@
   margin: 0;
 }
 
+.users-sort {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+}
+
+.users-sort label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.users-sort select {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1.5px solid var(--input-border);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: border-color var(--transition-base);
+}
+
+.users-sort select:hover {
+  border-color: var(--color-brand-primary);
+}
+
+.users-sort select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(65, 209, 167, 0.1);
+}
+
 /* =============================================================================
    USERS TABLE
    ============================================================================= */

@@ -1,11 +1,10 @@
 // src/App.tsx
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useEffect, lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { setToastHandler } from "./utils/errorHandler";
-import { useDataStore } from "./store/dataStore";
-import { getStoredUser } from "./services/authService";
-import { logoutUser } from "./services/api/auth";
+import { useBootstrap } from "./hooks/useBootstrap";
+import { useAppInit } from "./hooks/useAppInit";
 import Layout from "./components/Layout";
 import ToastContainer from "./components/ToastContainer";
 import LoadingSpinner from "./components/LoadingSpinner";
@@ -25,52 +24,36 @@ const QuotationPage = lazy(() => import("./pages/QuotationPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const UsersPage = lazy(() => import("./pages/UsersPage"));
+const CategoriesPage = lazy(() => import("./pages/CategoriesPage"));
 
 function AppContent() {
   const { toasts, removeToast, addToast } = useApp();
-  const fetchAll = useDataStore(state => state.fetchAll);
-
-  // Inicializa el usuario desde localStorage, si existe
-  const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const { fetchAll, configError } = useBootstrap();
+  const { user, setUser, sessionValidated, handleLogout } = useAppInit();
 
   // Inicializar el error handler con la función de toast
   useEffect(() => {
     setToastHandler(addToast);
   }, [addToast]);
 
-  // Cargar datos globales cuando el usuario está autenticado
+  // Cargar datos globales cuando el usuario está autenticado y la sesión ha sido validada
   useEffect(() => {
-    if (!user) return;
+    if (!user || !sessionValidated) return;
     const controller = new AbortController();
     fetchAll(controller.signal);
     return () => controller.abort();
-  }, [user, fetchAll]);
+  }, [user, sessionValidated, fetchAll]);
 
-  // Escuchar cambios en localStorage para actualizar el usuario
+  // Avisar al usuario si la configuración del servidor no pudo cargarse
   useEffect(() => {
-    const handleStorageChange = () => {
-      const updatedUser = getStoredUser();
-      setUser(updatedUser);
-    };
-
-    // Escuchar evento de storage (solo funciona entre pestañas)
-    window.addEventListener("storage", handleStorageChange);
-
-    // Crear evento personalizado para cambios en la misma pestaña
-    window.addEventListener("userUpdated", handleStorageChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("userUpdated", handleStorageChange);
-    };
-  }, []);
-
-  // Cerrar sesión (borra cookies httpOnly en el servidor + datos locales)
-  const handleLogout = async () => {
-    await logoutUser();
-    setUser(null);
-    window.location.href = "/";
-  };
+    if (configError && user) {
+      addToast('warning', configError);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Intencional: addToast es estable pero incluirla como dep causaría que el
+  // toast se muestre de nuevo si la referencia se recrea. Solo queremos
+  // reaccionar cuando cambia configError (de null → mensaje o viceversa).
+  }, [configError]);
 
   return (
     <>
@@ -107,6 +90,7 @@ function AppContent() {
               <Route path="/quotation" element={<ErrorBoundary message="Error al cargar las cotizaciones."><QuotationPage /></ErrorBoundary>} />
               <Route path="/profile" element={<ErrorBoundary message="Error al cargar el perfil."><ProfilePage /></ErrorBoundary>} />
               <Route path="/users" element={<ErrorBoundary message="Error al cargar los usuarios."><UsersPage /></ErrorBoundary>} />
+              <Route path="/categories" element={<ErrorBoundary message="Error al cargar las categorías."><CategoriesPage /></ErrorBoundary>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" />} />

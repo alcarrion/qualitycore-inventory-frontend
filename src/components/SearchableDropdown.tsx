@@ -1,5 +1,5 @@
 // components/SearchableDropdown.tsx
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import type { KeyboardEvent } from "react";
 import "../styles/components/SearchableDropdown.css";
 
@@ -96,6 +96,20 @@ export default function SearchableDropdown<T extends DropdownItem>({
   disabled = false,
   className = "",
 }: SearchableDropdownProps<T>) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar al hacer click fuera del contenedor
+  useEffect(() => {
+    if (!dropdown.isOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        dropdown.setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdown.isOpen, dropdown.setIsOpen]);
+
   const defaultRenderItem = (item: T) => (
     <>
       <div style={{ fontWeight: "500" }}>{item.name}</div>
@@ -110,7 +124,7 @@ export default function SearchableDropdown<T extends DropdownItem>({
   const itemRenderer = renderItem ?? defaultRenderItem;
 
   return (
-    <div className={`sd-container ${className}`}>
+    <div ref={containerRef} className={`sd-container ${className}`}>
       {label && (
         <label className="sd-label">
           {icon}

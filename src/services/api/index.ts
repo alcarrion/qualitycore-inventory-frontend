@@ -35,13 +35,13 @@ export {
   checkStock,
 } from "./products";
 
-export { getCategories, postCategory } from "./categories";
+export { getCategories, postCategory, patchCategory } from "./categories";
 
 export { getCustomers, postCustomer, patchCustomer } from "./customers";
 
 export { getSuppliers, postSupplier, patchSupplier } from "./suppliers";
 
-export { getUsers, postUser, patchUser } from "./users";
+export { getMe, getUsers, postUser, patchUser } from "./users";
 
 export {
   postQuotation,

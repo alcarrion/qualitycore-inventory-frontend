@@ -108,6 +108,45 @@
 }
 
 /* =============================================================================
+   SORT FILTER
+   ============================================================================= */
+
+.entity-sort {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+}
+
+.entity-sort label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.entity-sort select {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1.5px solid var(--input-border);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: border-color var(--transition-base);
+}
+
+.entity-sort select:hover {
+  border-color: var(--color-brand-primary);
+}
+
+.entity-sort select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(65, 209, 167, 0.1);
+}
+
+/* =============================================================================
    ENTITY LIST
    ============================================================================= */
 

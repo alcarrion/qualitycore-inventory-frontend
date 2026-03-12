@@ -32,10 +32,12 @@ export function usePolling(
   const [isPolling, setIsPolling] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
   const attemptsRef = useRef(0);
+  const startTimeRef = useRef<number>(0);
 
   // Track mount state (compatible with React 18 StrictMode remounts)
   useEffect(() => {
@@ -61,8 +63,10 @@ export function usePolling(
     stop();
     setResult(null);
     setError(null);
+    setElapsedSeconds(0);
     setIsPolling(true);
     attemptsRef.current = 0;
+    startTimeRef.current = Date.now();
 
     intervalRef.current = setInterval(async () => {
       if (!isMountedRef.current) {
@@ -72,6 +76,9 @@ export function usePolling(
       }
 
       attemptsRef.current += 1;
+      if (isMountedRef.current) {
+        setElapsedSeconds(Math.round((Date.now() - startTimeRef.current) / 1000));
+      }
 
       if (attemptsRef.current > maxAttempts) {
         clearInterval(intervalRef.current!);
@@ -103,5 +110,5 @@ export function usePolling(
     }, interval);
   }, [checkStatusFn, interval, maxAttempts, stop]);
 
-  return { start, stop, isPolling, result, error };
+  return { start, stop, isPolling, result, error, elapsedSeconds };
 }

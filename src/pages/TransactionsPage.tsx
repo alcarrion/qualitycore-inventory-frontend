@@ -2,7 +2,8 @@
 import React, { useEffect } from "react";
 import ConfirmDialog from "../components/ConfirmDialog";
 import Pagination from "../components/Pagination";
-import { useDataStore, selectFirstError } from "../store/dataStore";
+import { useShallow } from "zustand/react/shallow";
+import { useTransactionsStore, selectTransactionsError } from "../store/transactionsStore";
 import MovementFilters from "./TransactionsPage/MovementFilters";
 import PurchasesList from "./TransactionsPage/PurchasesList";
 import SalesList from "./TransactionsPage/SalesList";
@@ -24,10 +25,10 @@ import "../styles/pages/TransactionsPage.css";
 function TransactionsPage() {
   const { showError } = useApp();
 
-  const sales = useDataStore(state => state.sales);
-  const purchases = useDataStore(state => state.purchases);
-  const movements = useDataStore(state => state.movements);
-  const dataError = useDataStore(selectFirstError);
+  const { sales, purchases, movements } = useTransactionsStore(
+    useShallow((s) => ({ sales: s.sales, purchases: s.purchases, movements: s.movements }))
+  );
+  const dataError = useTransactionsStore(selectTransactionsError);
 
   const { user } = useOutletContext<LayoutContext>();
   const canCreateMovements = PERMISSIONS.CAN_CREATE_MOVEMENT(user?.role);
@@ -69,59 +70,35 @@ function TransactionsPage() {
       <PurchasesList
         purchases={purchases}
         onViewDetails={actions.modal.setSelectedPurchase}
-        searchTerm={filters.searchTerm}
       />
-      {!filters.searchTerm.trim() && (
-        <Pagination
-          currentPage={filters.currentPagePurchases}
-          totalPages={filters.totalPagesPurchases}
-          onPageChange={filters.setCurrentPagePurchases}
-          totalItems={filters.purchasesCount}
-          pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
-        />
-      )}
+      <Pagination
+        currentPage={filters.currentPagePurchases}
+        totalPages={filters.totalPagesPurchases}
+        onPageChange={filters.setCurrentPagePurchases}
+        totalItems={filters.purchasesCount}
+        pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
+      />
 
       <SalesList
         sales={sales}
         onViewDetails={actions.modal.setSelectedSale}
-        searchTerm={filters.searchTerm}
       />
-      {!filters.searchTerm.trim() && (
-        <Pagination
-          currentPage={filters.currentPageSales}
-          totalPages={filters.totalPagesSales}
-          onPageChange={filters.setCurrentPageSales}
-          totalItems={filters.salesCount}
-          pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
-        />
-      )}
+      <Pagination
+        currentPage={filters.currentPageSales}
+        totalPages={filters.totalPagesSales}
+        onPageChange={filters.setCurrentPageSales}
+        totalItems={filters.salesCount}
+        pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
+      />
 
-      <AdjustmentsList movements={movements} searchTerm={filters.searchTerm} />
+      <AdjustmentsList movements={movements} />
 
       <TransactionFormModal
         show={actions.modal.showModal}
         onClose={actions.modal.handleCloseModalAttempt}
         type={actions.modal.type as 'input' | 'output'}
         currentTime={actions.modal.currentTime}
-        supplierDropdown={actions.supplierDropdown}
-        customerDropdown={actions.customerDropdown}
-        productDropdown={actions.productDropdown}
-        selectedSupplier={actions.selectedSupplier}
-        selectedCustomer={actions.selectedCustomer}
-        onSupplierChange={actions.handleSupplierChange}
-        onCustomerChange={actions.setSelectedCustomer}
-        onSelectSupplier={actions.selectSupplier}
-        onSelectCustomer={actions.selectCustomer}
-        onSelectProduct={actions.selectProduct}
-        formData={actions.formData}
-        onFormDataChange={actions.handleInputChange}
-        onWheel={actions.handleWheel}
-        cart={actions.cart}
-        onAddToCart={actions.handleAddToCart}
-        onRemoveFromCart={actions.cartRemoveFromCart}
-        onUpdateCartQuantity={actions.handleUpdateCartQuantity}
-        totalPrice={actions.calculateTotal()}
-        onSubmit={actions.handleSubmit}
+        formContext={actions.formContext}
       />
 
       <ConfirmDialog

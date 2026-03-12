@@ -1,29 +1,28 @@
 // src/pages/InventoryPage.tsx
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import ProductCard from "../components/ProductCard";
 import Modal from "../components/Modal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import ProductForm from "../components/ProductForm";
 import Pagination from "../components/Pagination";
 import AdjustmentFormModal from "./TransactionsPage/AdjustmentFormModal";
-import SearchableDropdown from "../components/SearchableDropdown";
-import { useDropdownSearch } from "../hooks/useDropdownSearch";
+import MultiSelectDropdown from "../components/MultiSelectDropdown";
 import { Plus, Search, SlidersHorizontal } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import "../styles/pages/InventoryPage.css";
 
 import { patchProductJson } from "../services/api";
-import { useDataStore, selectFirstError } from "../store/dataStore";
+import { clearProductCache } from "../hooks/useProductSearch";
+import { useMasterDataStore } from "../store/masterDataStore";
 import { PERMISSIONS } from "../constants/roles";
 import { ERRORS, SUCCESS, ENTITIES, CONFIRM } from "../constants/messages";
 import { extractFormErrors } from "../utils/errorHandler";
 import { PAGINATION } from "../constants/config";
 import { useAdjustmentModal } from "../hooks/useAdjustmentModal";
-import type { Product, Category, Supplier } from "../types/models";
+import { useInventoryProducts } from "../hooks/useInventoryProducts";
+import type { Product } from "../types/models";
 import type { LayoutContext } from "../types/context";
-
-interface StatusOption { id: string; name: string; }
 
 export default function InventoryPage() {
   const { user } = useOutletContext<LayoutContext>();
@@ -34,106 +33,54 @@ export default function InventoryPage() {
   const canDeleteProduct = PERMISSIONS.CAN_DELETE_PRODUCT(role);
   const canCreateAdjustment = PERMISSIONS.CAN_CREATE_ADJUSTMENT(role);
 
-  const products = useDataStore(state => state.products);
-  const suppliers = useDataStore(state => state.suppliers);
-  const categories = useDataStore(state => state.categories);
-  const fetchProducts = useDataStore(state => state.fetchProducts);
-  const fetchCategories = useDataStore(state => state.fetchCategories);
-  const dataError = useDataStore(selectFirstError);
+  const fetchCategories = useMasterDataStore((state) => state.fetchCategories);
+
+  // Hook server-side: gestiona fetch, filtros, paginación y enriquecimiento de nombres.
+  const inv = useInventoryProducts();
+
+  const adj = useAdjustmentModal();
 
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterSupplier, setFilterSupplier] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
 
-  const STATUS_OPTIONS = useMemo((): StatusOption[] => [
-    { id: "active", name: "Activo" },
-    { id: "inactive", name: "Inactivo" },
-  ], []);
-
-  const categoryDropdown = useDropdownSearch<Category>(categories);
-  const supplierDropdown = useDropdownSearch<Supplier>(suppliers);
-  const statusDropdown = useDropdownSearch<StatusOption>(STATUS_OPTIONS);
-
-  const adj = useAdjustmentModal();
-
+  // El evento 'recargarInventario' (disparado por el modal de ajuste) refresca
+  // la página actual del inventario.
   useEffect(() => {
-    if (dataError) showError(dataError);
-  }, [dataError, showError]);
-
-  useEffect(() => {
-    const handleReload = () => fetchProducts();
+    const handleReload = () => { inv.refresh(); };
     window.addEventListener("recargarInventario", handleReload);
     return () => window.removeEventListener("recargarInventario", handleReload);
-  }, [fetchProducts]);
-
-  const productsWithNames = useMemo(() => {
-    return products.map((p) => {
-      const catId = typeof p.category === 'number' ? p.category : (p.category as Category | null)?.id;
-      const supId = typeof p.supplier === 'number' ? p.supplier : (p.supplier as Supplier)?.id;
-      const cat = categories.find((c) => c.id === catId);
-      const prov = suppliers.find((s) => s.id === supId);
-      return {
-        ...p,
-        category_name: cat ? cat.name : "-",
-        supplier_name: prov ? prov.name : "-",
-      };
-    });
-  }, [products, categories, suppliers]);
-
-  const filtered = useMemo(() => {
-    return productsWithNames.filter((p) => {
-      const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-        (p.category_name && p.category_name.toLowerCase().includes(search.toLowerCase())) ||
-        (p.supplier_name && p.supplier_name.toLowerCase().includes(search.toLowerCase()));
-      const catId = typeof p.category === 'number' ? p.category : (p.category as Category | null)?.id;
-      const supId = typeof p.supplier === 'number' ? p.supplier : (p.supplier as Supplier)?.id;
-      const matchesCategory = !filterCategory || catId === parseInt(filterCategory);
-      const matchesSupplier = !filterSupplier || supId === parseInt(filterSupplier);
-      const matchesStatus = !filterStatus ||
-        (filterStatus === "active" && p.is_active) ||
-        (filterStatus === "inactive" && !p.is_active);
-      return matchesSearch && matchesCategory && matchesSupplier && matchesStatus;
-    });
-  }, [productsWithNames, search, filterCategory, filterSupplier, filterStatus]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filterCategory, filterSupplier, filterStatus]);
-
-  const totalPages = Math.ceil(filtered.length / PAGINATION.DEFAULT_PAGE_SIZE);
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * PAGINATION.DEFAULT_PAGE_SIZE;
-    return filtered.slice(startIndex, startIndex + PAGINATION.DEFAULT_PAGE_SIZE);
-  }, [filtered, currentPage]);
+  }, [inv.refresh]);
 
   const handleEdit = useCallback((product: Product) => {
     setEditingProduct(product);
     setShowEdit(true);
   }, []);
 
-  const handleDelete = useCallback(async (product: Product) => {
-    if (!canDeleteProduct) {
-      showWarning(ERRORS.ONLY_SUPER_ADMIN);
-      return;
-    }
-    setProductToDelete(product);
-    setShowDeleteConfirm(true);
-  }, [canDeleteProduct, showWarning]);
+  const handleDelete = useCallback(
+    async (product: Product) => {
+      if (!canDeleteProduct) {
+        showWarning(ERRORS.ONLY_SUPER_ADMIN);
+        return;
+      }
+      setProductToDelete(product);
+      setShowDeleteConfirm(true);
+    },
+    [canDeleteProduct, showWarning]
+  );
 
   const confirmDelete = useCallback(async () => {
     if (!productToDelete) return;
     setLoading(true);
     try {
-      const resp = await patchProductJson(productToDelete.id, { deleted_at: new Date().toISOString() });
+      const resp = await patchProductJson(productToDelete.id, {
+        deleted_at: new Date().toISOString(),
+      });
       if (resp.ok) {
-        fetchProducts();
+        clearProductCache();
+        inv.refresh();
         showSuccess(SUCCESS.DELETED(ENTITIES.PRODUCT));
       } else {
         showError(extractFormErrors(resp.data, ERRORS.DELETE_FAILED(ENTITIES.PRODUCT)));
@@ -143,7 +90,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [productToDelete, fetchProducts, setLoading, showSuccess, showError]);
+  }, [productToDelete, inv.refresh, setLoading, showSuccess, showError]);
 
   return (
     <div className="inventory-page-container">
@@ -156,8 +103,8 @@ export default function InventoryPage() {
           <Search size={16} />
           <input
             placeholder="Buscar productos..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={inv.search}
+            onChange={(e) => inv.setSearch(e.target.value)}
           />
         </div>
         <div className="inventory-action-buttons">
@@ -176,68 +123,56 @@ export default function InventoryPage() {
 
       <div className="inventory-filters">
         <div className="filter-group">
-          <SearchableDropdown
+          <MultiSelectDropdown
             label="Categoría:"
-            dropdown={categoryDropdown}
-            otherDropdowns={[supplierDropdown, statusDropdown]}
-            onSelect={(item) => {
-              categoryDropdown.select(item.name);
-              setFilterCategory(String(item.id));
-            }}
-            onDeselect={() => setFilterCategory("")}
+            controller={inv.categoriesMulti}
             placeholder="Todas las categorías"
+            searchPlaceholder="Buscar categoría..."
             emptyMessage="No se encontraron categorías"
           />
         </div>
 
         <div className="filter-group">
-          <SearchableDropdown
+          <MultiSelectDropdown
             label="Proveedor:"
-            dropdown={supplierDropdown}
-            otherDropdowns={[categoryDropdown, statusDropdown]}
-            onSelect={(item) => {
-              supplierDropdown.select(item.name);
-              setFilterSupplier(String(item.id));
-            }}
-            onDeselect={() => setFilterSupplier("")}
+            controller={inv.suppliersMulti}
             placeholder="Todos los proveedores"
+            searchPlaceholder="Buscar proveedor..."
             emptyMessage="No se encontraron proveedores"
           />
         </div>
 
         <div className="filter-group">
-          <SearchableDropdown
+          <MultiSelectDropdown
             label="Estado:"
-            dropdown={statusDropdown}
-            otherDropdowns={[categoryDropdown, supplierDropdown]}
-            onSelect={(item) => {
-              statusDropdown.select(item.name);
-              setFilterStatus(item.id);
-            }}
-            onDeselect={() => setFilterStatus("")}
+            controller={inv.statusMulti}
             placeholder="Todos los estados"
+            searchPlaceholder="Buscar estado..."
             emptyMessage="No se encontraron estados"
           />
         </div>
 
-        <button
-          className="btn-clear-filters"
-          onClick={() => {
-            setFilterCategory("");
-            setFilterSupplier("");
-            setFilterStatus("");
-            setSearch("");
-            categoryDropdown.clear();
-            supplierDropdown.clear();
-            statusDropdown.clear();
-          }}
-        >
+        <div className="filter-group">
+          <label>Ordenar:</label>
+          <select value={inv.sort} onChange={(e) => inv.setSort(e.target.value)}>
+            <option value="-id">Lo nuevo</option>
+            <option value="name">Nombre A → Z</option>
+            <option value="-name">Nombre Z → A</option>
+            <option value="price">Menor a mayor precio</option>
+            <option value="-price">Mayor a menor precio</option>
+          </select>
+        </div>
+
+        <button className="btn-clear-filters" onClick={inv.clearFilters}>
           Limpiar filtros
         </button>
       </div>
 
       <div className="product-list">
-        {paginatedProducts.map((product) => (
+        {inv.loading && inv.products.length === 0 && (
+          <div className="loading-placeholder">Cargando productos...</div>
+        )}
+        {inv.products.map((product) => (
           <ProductCard
             key={product.id}
             product={product}
@@ -247,16 +182,16 @@ export default function InventoryPage() {
             onDelete={handleDelete}
           />
         ))}
-        {filtered.length === 0 && (
+        {!inv.loading && inv.count === 0 && (
           <div className="no-data">No hay productos para mostrar.</div>
         )}
       </div>
 
       <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        totalItems={filtered.length}
+        currentPage={inv.page}
+        totalPages={inv.totalPages}
+        onPageChange={inv.setPage}
+        totalItems={inv.count}
         pageSize={PAGINATION.DEFAULT_PAGE_SIZE}
       />
 
@@ -265,8 +200,8 @@ export default function InventoryPage() {
           <ProductForm
             onSave={() => {
               setShowAdd(false);
-              fetchProducts();
               fetchCategories();
+              inv.refresh();
             }}
             onCancel={() => setShowAdd(false)}
           />
@@ -274,16 +209,18 @@ export default function InventoryPage() {
       )}
 
       {showEdit && editingProduct && (
-        <Modal onClose={() => {
-          setShowEdit(false);
-          setEditingProduct(null);
-        }}>
+        <Modal
+          onClose={() => {
+            setShowEdit(false);
+            setEditingProduct(null);
+          }}
+        >
           <ProductForm
             product={editingProduct}
             onSave={() => {
               setShowEdit(false);
               setEditingProduct(null);
-              fetchProducts();
+              inv.refresh();
             }}
             onCancel={() => {
               setShowEdit(false);
@@ -301,7 +238,7 @@ export default function InventoryPage() {
         }}
         onConfirm={confirmDelete}
         title="Eliminar Producto"
-        message={CONFIRM.DELETE(ENTITIES.PRODUCT, productToDelete?.name ?? '')}
+        message={CONFIRM.DELETE(ENTITIES.PRODUCT, productToDelete?.name ?? "")}
         confirmText="Eliminar"
         cancelText="Cancelar"
         type="danger"
@@ -311,12 +248,8 @@ export default function InventoryPage() {
         show={adj.show}
         onClose={adj.close}
         currentTime={adj.currentTime}
-        productSearch={adj.productSearch}
-        onProductSearchChange={adj.setProductSearch}
-        showProductDropdown={adj.showDropdown}
-        onShowProductDropdownChange={adj.setShowDropdown}
-        onProductSelect={adj.selectProduct}
-        filteredProducts={adj.filteredProducts}
+        productDropdown={adj.productDropdown}
+        onProductSelect={adj.confirmProductSelection}
         selectedProduct={adj.selectedProduct}
         quantity={adj.quantity}
         onQuantityChange={(e) => adj.setQuantity(e.target.value)}

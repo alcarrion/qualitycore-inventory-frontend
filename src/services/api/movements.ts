@@ -13,6 +13,9 @@ export async function getMovements(
   const query = new URLSearchParams();
   if (params.page) query.set('page', String(params.page));
   if (params.type) query.set('type', String(params.type));
+  if (params.search) query.set('search', String(params.search));
+  if (params.start_date) query.set('start_date', String(params.start_date));
+  if (params.end_date) query.set('end_date', String(params.end_date));
   const qs = query.toString();
   return await apiFetch<PaginatedResponse<Movement>>(
     `/movements/${qs ? `?${qs}` : ''}`,

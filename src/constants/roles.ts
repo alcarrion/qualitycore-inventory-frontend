@@ -92,4 +92,9 @@ export const PERMISSIONS: Record<string, RoleChecker> = {
 
   // Ajustes de inventario (solo Admin y SuperAdmin)
   CAN_CREATE_ADJUSTMENT: (role) => isAdmin(role),
+
+  // Categorías (datos maestros, solo Admin; eliminar solo SuperAdmin)
+  CAN_ADD_CATEGORY: (role) => isAdmin(role),
+  CAN_EDIT_CATEGORY: (role) => isAdmin(role),
+  CAN_DELETE_CATEGORY: (role) => isSuperAdmin(role),
 };

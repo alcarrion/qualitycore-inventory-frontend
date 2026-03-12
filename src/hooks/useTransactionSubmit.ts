@@ -1,7 +1,7 @@
 // hooks/useTransactionSubmit.ts
 import { useCallback } from "react";
 import { postSale, postPurchase, checkStock, postCorrection, getSale, getPurchase } from "../services/api";
-import { useDataStore } from "../store/dataStore";
+import { useMasterDataStore } from "../store/masterDataStore";
 import { useApp } from "../contexts/AppContext";
 import { ERRORS, SUCCESS } from "../constants/messages";
 import type { Sale, Purchase } from "../types/models";
@@ -33,15 +33,14 @@ export function useTransactionSubmit({
   loadTransactions, modal,
 }: TransactionSubmitParams) {
   const { showSuccess, showError } = useApp();
-  const fetchProducts = useDataStore(state => state.fetchProducts);
-  const fetchAlerts = useDataStore(state => state.fetchAlerts);
-  const fetchDashboard = useDataStore(state => state.fetchDashboard);
+  const fetchAlerts = useMasterDataStore(state => state.fetchAlerts);
+  const fetchDashboard = useMasterDataStore(state => state.fetchDashboard);
 
   const reloadData = useCallback(async () => {
-    await Promise.all([fetchProducts(), fetchAlerts(), fetchDashboard()]);
+    await Promise.all([fetchAlerts(), fetchDashboard()]);
     loadTransactions();
     window.dispatchEvent(new Event("recargarInventario"));
-  }, [fetchProducts, fetchAlerts, fetchDashboard, loadTransactions]);
+  }, [fetchAlerts, fetchDashboard, loadTransactions]);
 
   const handleSubmit = useCallback(async () => {
     const isPurchase = modalType === "input";

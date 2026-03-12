@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Box, BarChart2, Users,
-  User, DollarSign, Truck, LogOut,
+  User, DollarSign, Truck, LogOut, Tag,
 } from "lucide-react";
 import ConfirmDialog from "./ConfirmDialog";
 import { translateRole } from "../utils/translateRole";
@@ -24,6 +24,7 @@ export default function Sidebar({ user, onLogout, isOpen, onClose }: Props) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const role = user?.role || "";
   const canViewUsers = PERMISSIONS.CAN_VIEW_USERS(role);
+  const canManageCategories = PERMISSIONS.CAN_EDIT_CATEGORY(role);
 
   const handleLogout = () => {
     setShowLogoutConfirm(true);
@@ -55,6 +56,10 @@ export default function Sidebar({ user, onLogout, isOpen, onClose }: Props) {
         <NavLink to="/customers" onClick={handleNavClick}><User size={20} /> Clientes</NavLink>
         <NavLink to="/quotation" onClick={handleNavClick}><DollarSign size={20} /> Cotización</NavLink>
         <NavLink to="/reports" onClick={handleNavClick}><BarChart2 size={20} /> Reportes</NavLink>
+
+        {canManageCategories && (
+          <NavLink to="/categories" onClick={handleNavClick}><Tag size={20} /> Categorías</NavLink>
+        )}
 
         {canViewUsers && (
           <NavLink to="/users" onClick={handleNavClick}><Users size={20} /> Usuarios</NavLink>

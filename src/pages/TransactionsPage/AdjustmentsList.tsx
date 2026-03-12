@@ -1,11 +1,28 @@
 // TransactionsPage/AdjustmentsList.tsx
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { SlidersHorizontal, Pencil, FileText } from "lucide-react";
 import type { Movement } from "../../types/models";
 
+const REASON_PREVIEW_LENGTH = 120;
+
+function ExpandableText({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  if (text.length <= REASON_PREVIEW_LENGTH) return <>{text}</>;
+  return (
+    <>
+      {expanded ? text : `${text.slice(0, REASON_PREVIEW_LENGTH)}...`}{" "}
+      <button
+        className="read-more-btn"
+        onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+      >
+        {expanded ? "Leer menos" : "Leer más"}
+      </button>
+    </>
+  );
+}
+
 interface Props {
   movements: Movement[];
-  searchTerm?: string;
 }
 
 type SingleGroup = { type: 'single'; movement: Movement };
@@ -19,35 +36,13 @@ type CorrectionGroup = {
 };
 type AdjustmentGroup = SingleGroup | CorrectionGroup;
 
-function AdjustmentsList({ movements, searchTerm = "" }: Props) {
-  const adjustments = useMemo(() => {
-    const base = movements.filter(
+function AdjustmentsList({ movements }: Props) {
+  // El servidor ya filtra por tipo y búsqueda; solo agrupamos los resultados recibidos.
+  const adjustments = useMemo(() =>
+    movements.filter(
       (m) => m.movement_type === "adjustment" || m.movement_type === "correction"
-    );
-
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return base;
-
-    return base.filter((m) => {
-      const date = new Date(m.date);
-      const dateStr = date.toLocaleDateString("es-EC");
-      const timeStr = date.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
-      const type = m.movement_type === "adjustment" ? "ajuste" : "corrección correccion";
-      const invoice = m.sale ? `venta #${m.sale}` : m.purchase ? `compra #${m.purchase}` : "";
-      const searchable = [
-        dateStr,
-        timeStr,
-        type,
-        invoice,
-        m.product_name || "",
-        m.user_name || "",
-        m.reason || "",
-        String(m.quantity || ""),
-      ].join(" ").toLowerCase();
-
-      return searchable.includes(term);
-    });
-  }, [movements, searchTerm]);
+    ),
+  [movements]);
 
   const groups = useMemo((): AdjustmentGroup[] => {
     const result: AdjustmentGroup[] = [];
@@ -99,7 +94,7 @@ function AdjustmentsList({ movements, searchTerm = "" }: Props) {
               <th>Fecha</th>
               <th>Tipo</th>
               <th className="text-center">Factura</th>
-              <th className="text-center">Detalle</th>
+              <th className="text-center detalle-col">Detalle</th>
               <th>Registrado por</th>
             </tr>
           </thead>
@@ -107,7 +102,7 @@ function AdjustmentsList({ movements, searchTerm = "" }: Props) {
             {groups.length === 0 ? (
               <tr>
                 <td colSpan={5} className="no-data">
-                  {searchTerm.trim() ? "No se encontraron ajustes ni correcciones." : "No hay ajustes ni correcciones registrados."}
+                  No hay ajustes ni correcciones registrados.
                 </td>
               </tr>
             ) : (
@@ -149,7 +144,7 @@ function renderAdjustmentRow(m: Movement) {
         </span>
       </td>
       <td></td>
-      <td>
+      <td className="detalle-col">
         <div className="correction-detail-item">
           <div className="correction-detail-main">
             <span className="correction-detail-product">{m.product_name}</span>
@@ -158,7 +153,9 @@ function renderAdjustmentRow(m: Movement) {
             </span>
           </div>
           {m.reason && (
-            <span className="correction-detail-reason">{m.reason}</span>
+            <span className="correction-detail-reason">
+              <ExpandableText text={m.reason} />
+            </span>
           )}
         </div>
       </td>
@@ -197,7 +194,7 @@ function renderCorrectionGroupRow(group: CorrectionGroup) {
           <FileText size={12} /> {label}
         </div>
       </td>
-      <td>
+      <td className="detalle-col">
         <div className="correction-details-list">
           {group.items.map((m) => {
             const originalQty = m.original_quantity;
@@ -224,7 +221,9 @@ function renderCorrectionGroupRow(group: CorrectionGroup) {
                   )}
                 </div>
                 {m.reason && (
-                  <span className="correction-detail-reason">{m.reason}</span>
+                  <span className="correction-detail-reason">
+                    <ExpandableText text={m.reason} />
+                  </span>
                 )}
               </div>
             );

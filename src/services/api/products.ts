@@ -11,12 +11,30 @@ interface CheckStockItem {
   quantity: number;
 }
 
+interface ProductFetchOptions {
+  signal?: AbortSignal;
+  search?: string;
+  category?: string;
+  supplier?: string;
+  is_active?: string;
+  ordering?: string;
+}
+
 export async function getProducts(
   page: number | null = null,
-  options: { signal?: AbortSignal } = {}
+  options: ProductFetchOptions = {}
 ): Promise<ApiResponse<PaginatedResponse<Product>>> {
-  const url = page ? `/products/?page=${page}` : `/products/`;
-  return await apiFetch<PaginatedResponse<Product>>(url, options);
+  const { signal, search, category, supplier, is_active, ordering } = options;
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (search) params.set('search', search);
+  if (category) params.set('category', category);
+  if (supplier) params.set('supplier', supplier);
+  if (is_active !== undefined) params.set('is_active', is_active);
+  if (ordering) params.set('ordering', ordering);
+  const query = params.toString();
+  const url = query ? `/products/?${query}` : `/products/`;
+  return await apiFetch<PaginatedResponse<Product>>(url, { signal });
 }
 
 export async function postProduct(formData: FormData): Promise<ApiResponse<Product>> {
@@ -40,7 +58,7 @@ export async function patchProductJson(
 export async function checkStock(
   items: CheckStockItem[]
 ): Promise<ApiResponse<StockCheckResult>> {
-  return await apiFetch<StockCheckResult>(`/products/check-stock/`, {
+  return await apiFetch<StockCheckResult>(`/products/check_stock/`, {
     method: "POST",
     body: JSON.stringify({ items }),
   });

@@ -1,11 +1,12 @@
 // hooks/useTransactionDropdowns.ts
-import { useEffect, useCallback, useMemo } from "react";
+// Composición de useContactSearch + useProductDropdown.
+// La API pública es idéntica a antes — cero cambios en consumidores.
+import { useCallback, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { useDropdownSearch } from "./useDropdownSearch";
-import type { Product, Customer, Supplier } from "../types/models";
+import { useContactSearch } from "./useContactSearch";
+import { useProductDropdown } from "./useProductDropdown";
+import type { Customer, Supplier } from "../types/models";
 import type { CartItem } from "../types/ui";
-
-type ProductWithStock = Product & { availableStock?: number };
 
 export interface TransactionFormData {
   quantity: string;
@@ -14,9 +15,6 @@ export interface TransactionFormData {
 }
 
 interface TransactionDropdownsProps {
-  products: Product[];
-  customers: Customer[];
-  suppliers: Supplier[];
   modalType: string;
   selectedSupplier: string | number;
   cart: CartItem[];
@@ -28,43 +26,35 @@ interface TransactionDropdownsProps {
   setFormData: Dispatch<SetStateAction<TransactionFormData>>;
 }
 
-/**
- * Hook para manejar la configuración y selección de dropdowns
- * de cliente, proveedor y producto en transacciones.
- */
 export function useTransactionDropdowns({
-  products, customers, suppliers,
   modalType, selectedSupplier, cart,
   cartClearCart, setSelectedCustomer, setSelectedSupplier,
-  showModal, formData, setFormData,
+  showModal, formData: _formData, setFormData,
 }: TransactionDropdownsProps) {
-  const customerDropdown = useDropdownSearch<Customer>(customers);
-  const supplierDropdown = useDropdownSearch<Supplier>(suppliers);
 
-  const productItems = useMemo((): ProductWithStock[] => {
-    let items: ProductWithStock[] = products;
-    if (modalType === "input" && selectedSupplier) {
-      items = items.filter((p) => p.supplier === Number(selectedSupplier));
-    }
-    if (modalType === "output") {
-      items = items.map((p) => {
-        const cartItem = cart.find((item) => item.product.id === p.id);
-        const availableStock = cartItem ? p.current_stock - cartItem.quantity : p.current_stock;
-        return { ...p, availableStock };
-      });
-    }
-    return items;
-  }, [products, modalType, selectedSupplier, cart]);
+  const contacts = useContactSearch({
+    setSelectedCustomer,
+    setSelectedSupplier,
+    cart,
+    cartClearCart,
+    selectedSupplier,
+  });
 
-  const productDropdown = useDropdownSearch<ProductWithStock>(productItems);
+  const productHook = useProductDropdown({
+    modalType,
+    selectedSupplier,
+    cart,
+    setFormData,
+  });
 
+  // Cierra todos los dropdowns — usado como callback "closeOtherDropdowns"
   const closeAllDropdowns = useCallback(() => {
-    customerDropdown.setIsOpen(false);
-    supplierDropdown.setIsOpen(false);
-    productDropdown.setIsOpen(false);
-  }, [customerDropdown, supplierDropdown, productDropdown]);
+    contacts.customerDropdown.setIsOpen(false);
+    contacts.supplierDropdown.setIsOpen(false);
+    productHook.productDropdown.setIsOpen(false);
+  }, [contacts.customerDropdown, contacts.supplierDropdown, productHook.productDropdown]);
 
-  // Click outside cierra dropdowns
+  // Click fuera de .formGroup cierra todos los dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (!(event.target as Element).closest('.formGroup')) closeAllDropdowns();
@@ -75,48 +65,47 @@ export function useTransactionDropdowns({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showModal, closeAllDropdowns]);
 
-  // --- Select handlers ---
-  const selectCustomer = useCallback((customer: Customer) => {
-    setSelectedCustomer(customer.id);
-    customerDropdown.select(customer.name);
-  }, [setSelectedCustomer, customerDropdown]);
+  // Adapta los handlers de contactSearch para cerrar los otros dropdowns
+  const selectCustomer = useCallback(
+    (customer: Customer) => contacts.selectCustomer(customer, () => {
+      contacts.supplierDropdown.setIsOpen(false);
+      productHook.productDropdown.setIsOpen(false);
+    }),
+    [contacts, productHook.productDropdown]
+  );
 
-  const handleSupplierChange = useCallback((newSupplierId: string | number) => {
-    if (cart.length > 0 && selectedSupplier && selectedSupplier !== newSupplierId) {
-      cartClearCart();
-      productDropdown.clear();
-      setFormData((prev) => ({ ...prev, product: "", quantity: "" }));
-    }
-    setSelectedSupplier(newSupplierId);
-  }, [cart.length, selectedSupplier, cartClearCart, setSelectedSupplier, productDropdown, setFormData]);
+  const selectSupplier = useCallback(
+    (supplier: Supplier) => contacts.selectSupplier(supplier, () => {
+      contacts.customerDropdown.setIsOpen(false);
+      productHook.productDropdown.setIsOpen(false);
+    }),
+    [contacts, productHook.productDropdown]
+  );
 
-  const selectSupplier = useCallback((supplier: Supplier) => {
-    handleSupplierChange(supplier.id);
-    supplierDropdown.select(supplier.name);
-  }, [handleSupplierChange, supplierDropdown]);
-
-  const selectProduct = useCallback((product: ProductWithStock) => {
-    setFormData((prev) => ({ ...prev, product: product.id }));
-    const displayStock = product.availableStock ?? product.current_stock;
-    productDropdown.select(`${product.name} (Stock: ${displayStock})`);
-    customerDropdown.setIsOpen(false);
-    supplierDropdown.setIsOpen(false);
-  }, [productDropdown, customerDropdown, supplierDropdown, setFormData]);
+  const selectProduct = useCallback(
+    (product: Parameters<typeof productHook.selectProduct>[0]) =>
+      productHook.selectProduct(product, () => {
+        contacts.customerDropdown.setIsOpen(false);
+        contacts.supplierDropdown.setIsOpen(false);
+      }),
+    [productHook, contacts.customerDropdown, contacts.supplierDropdown]
+  );
 
   const clearDropdowns = useCallback(() => {
-    customerDropdown.clear();
-    supplierDropdown.clear();
-    productDropdown.clear();
-  }, [customerDropdown, supplierDropdown, productDropdown]);
+    contacts.clearCustomer();
+    contacts.clearSupplier();
+    productHook.clearProduct();
+  }, [contacts, productHook]);
 
   return {
-    customerDropdown,
-    supplierDropdown,
-    productDropdown,
+    customerDropdown: contacts.customerDropdown,
+    supplierDropdown: contacts.supplierDropdown,
+    productDropdown: productHook.productDropdown,
+    selectedProductObj: productHook.selectedProductObj,
     selectCustomer,
     selectSupplier,
     selectProduct,
-    handleSupplierChange,
+    handleSupplierChange: contacts.handleSupplierChange,
     clearDropdowns,
   };
 }

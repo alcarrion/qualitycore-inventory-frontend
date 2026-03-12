@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import Modal from "../../components/Modal";
 import { Calendar, User, Package, Pencil } from "lucide-react";
-import type { Sale, Purchase, InvoiceMovement } from "../../types/models";
+import type { Sale, Purchase, InvoiceMovement, InvoiceMovementsData } from "../../types/models";
 import "../../styles/components/InvoiceModal.css";
 
 type InvoiceType = 'sale' | 'purchase';
@@ -74,7 +74,10 @@ function InvoiceModal({ show, type, invoice, onClose, isAdmin, onCorrect }: Prop
     );
   };
 
-  const movements = invoice.movements ?? [];
+  const movementsData = invoice.movements as InvoiceMovementsData | undefined;
+  const movements = movementsData?.items ?? [];
+  const movementsTruncated = movementsData?.truncated ?? false;
+  const movementsTotal = movementsData?.total ?? 0;
 
   return (
     <Modal onClose={handleClose} className="wide-modal">
@@ -115,6 +118,11 @@ function InvoiceModal({ show, type, invoice, onClose, isAdmin, onCorrect }: Prop
           <div className="invoice-section-title">
             <Package size={20} /> Productos
           </div>
+          {movementsTruncated && (
+            <p className="invoice-truncation-warning">
+              Se muestran {movements.length} de {movementsTotal} productos (límite de visualización).
+            </p>
+          )}
           <table className="invoice-table">
             <thead>
               <tr>

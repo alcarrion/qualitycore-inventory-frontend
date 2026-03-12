@@ -114,6 +114,8 @@ export function showErrorToast(message: string): void {
 export function showSuccessToast(message: string): void {
   if (showToastFn) {
     showToastFn("success", message);
+  } else {
+    logger.warn('[showSuccessToast] Toast handler no inicializado:', message);
   }
 }
 
@@ -123,6 +125,8 @@ export function showSuccessToast(message: string): void {
 export function showWarningToast(message: string): void {
   if (showToastFn) {
     showToastFn("warning", message);
+  } else {
+    logger.warn('[showWarningToast] Toast handler no inicializado:', message);
   }
 }
 

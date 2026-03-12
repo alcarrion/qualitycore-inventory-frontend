@@ -1,10 +1,9 @@
 // src/pages/QuotationPage.tsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import {
   User,
   Package,
   Plus,
-  X,
   FileSpreadsheet,
   Receipt,
   CreditCard,
@@ -13,82 +12,55 @@ import {
   FileDown,
 } from "lucide-react";
 
-import {
-  postQuotation,
-  getQuotationPDF,
-  checkPDFStatus,
-} from "../services/api";
-
-import { useDataStore } from "../store/dataStore";
+import { postQuotation } from "../services/api";
+import { useAppConfigStore } from "../store/appConfigStore";
 import { useApp } from "../contexts/AppContext";
-import { usePolling, POLLING_TIMEOUT } from "../hooks/usePolling";
-import { useDropdownSearch } from "../hooks/useDropdownSearch";
+import { useLazyDropdown } from "../hooks/useLazyDropdown";
+import { useCustomerSearch } from "../hooks/useCustomerSearch";
+import { useQuotationTotals } from "../hooks/useQuotationTotals";
+import { useQuotationPDF } from "../hooks/useQuotationPDF";
+import { QuotedProductRow } from "../components/QuotedProductRow";
 import SearchableDropdown from "../components/SearchableDropdown";
 import { ERRORS, SUCCESS } from "../constants/messages";
 import { logger } from "../utils/logger";
-import type { Product, Customer } from "../types/models";
+import type { QuotedProduct } from "../components/QuotedProductRow";
+import type { Customer } from "../types/models";
 import "../styles/pages/QuotationPage.css";
-
-interface QuotedProduct {
-  product: string;
-  quantity: number | string;
-  unit_price: number | string;
-  subtotal: number;
-}
 
 export default function QuotationPage() {
   const { showSuccess, showError } = useApp();
 
-  const customers = useDataStore(state => state.customers);
-  const products = useDataStore(state => state.products);
-  const appConfig = useDataStore(state => state.appConfig);
+  const appConfig = useAppConfigStore(state => state.appConfig);
+
+  const taxRate = appConfig.tax_rate.iva;
+  const { subtotal, vat, total, recalculateTotals, resetTotals } = useQuotationTotals(taxRate);
+  const pdf = useQuotationPDF();
 
   const [customer, setCustomer] = useState("");
   const [observations, setObservations] = useState("");
   const [quotedProducts, setQuotedProducts] = useState<QuotedProduct[]>([]);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
-  const customerDropdown = useDropdownSearch<Customer>(customers);
-
-  const [subtotal, setSubtotal] = useState<number>(0);
-  const [vat, setVat] = useState<number>(0);
-  const [total, setTotal] = useState<number>(0);
-
-  const pdfPolling = usePolling(checkPDFStatus);
-
-  useEffect(() => {
-    if (pdfPolling.result) {
-      showSuccess(SUCCESS.PDF_GENERATED);
-      const apiUrl = process.env.REACT_APP_API_URL ?? "";
-      setPdfUrl(`${apiUrl.replace(/\/api\/?$/, "")}${pdfPolling.result}`);
-    }
-  }, [pdfPolling.result, showSuccess]);
-
-  useEffect(() => {
-    if (pdfPolling.error) {
-      if (pdfPolling.error === POLLING_TIMEOUT) {
-        showError("Tiempo de espera agotado generando el PDF. Intenta de nuevo.");
-      } else {
-        showError(ERRORS.PDF_GENERATION_FAILED(pdfPolling.error));
-      }
-    }
-  }, [pdfPolling.error, showError]);
-
-  const recalculateTotals = useCallback((items: QuotedProduct[]) => {
-    const newSubtotal = items.reduce((acc, p) => acc + (Number(p.subtotal) || 0), 0);
-    const taxRate = appConfig.tax_rate.iva;
-    const newVat = newSubtotal * taxRate;
-    const newTotal = newSubtotal + newVat;
-    setSubtotal(parseFloat(newSubtotal.toFixed(2)));
-    setVat(parseFloat(newVat.toFixed(2)));
-    setTotal(parseFloat(newTotal.toFixed(2)));
-  }, [appConfig.tax_rate.iva]);
+  // Búsqueda lazy de clientes: solo consulta el servidor cuando el usuario escribe
+  const [customerSearchText, setCustomerSearchText] = useState("");
+  const { customers: serverCustomers } = useCustomerSearch(customerSearchText);
+  const {
+    dropdown: customerDropdown,
+    confirmSelection: confirmCustomer,
+    clear: clearCustomer,
+  } = useLazyDropdown<Customer>(serverCustomers, setCustomerSearchText);
 
   const handleAddProduct = () => {
     setQuotedProducts(prev => [
       ...prev,
       { product: "", quantity: 1, unit_price: 0, subtotal: 0 },
     ]);
+  };
+
+  const handleProductSelect = (index: number, productId: string, price: number) => {
+    const updated = [...quotedProducts];
+    updated[index] = { ...updated[index], product: productId, unit_price: price, quantity: 1, subtotal: price };
+    setQuotedProducts(updated);
+    recalculateTotals(updated);
   };
 
   const handleProductChange = (index: number, field: string, value: string) => {
@@ -101,13 +73,8 @@ export default function QuotationPage() {
       const clean: number | string = value === "" ? "" : Number(String(value).replace(/^0+(?=\d)/, ""));
       updated[index] = { ...updated[index], unit_price: clean };
     } else if (field === "product") {
-      const productObj = products.find((p) => p.id === Number(value));
-      if (productObj) {
-        const price = Number(productObj.price) || 0;
-        updated[index] = { ...updated[index], product: value, unit_price: price, quantity: 1, subtotal: price };
-      } else {
-        updated[index] = { ...updated[index], product: value };
-      }
+      // Caso deselección: limpiar el ID del producto
+      updated[index] = { ...updated[index], product: value };
     }
 
     if (field !== "product") {
@@ -125,8 +92,7 @@ export default function QuotationPage() {
   };
 
   const handleSave = async () => {
-    setPdfUrl(null);
-    pdfPolling.stop();
+    pdf.resetPDF();
 
     if (!customer) {
       showError(ERRORS.SELECT_CUSTOMER);
@@ -160,11 +126,9 @@ export default function QuotationPage() {
 
       if (res.ok && res.data?.quotation?.id) {
         const quotationId = res.data.quotation.id;
-        const pdfResponse = await getQuotationPDF(quotationId);
-
-        if (pdfResponse.ok && (pdfResponse.data as { task_id?: string } | null)?.task_id) {
+        const started = await pdf.startPDFGeneration(quotationId);
+        if (started) {
           showSuccess(SUCCESS.QUOTATION_SAVED_GENERATING_PDF);
-          pdfPolling.start((pdfResponse.data as { task_id: string }).task_id);
         } else {
           showSuccess(SUCCESS.QUOTATION_SAVED);
           showError(ERRORS.PDF_GENERATION_FAILED("No se pudo iniciar la generación del PDF."));
@@ -180,15 +144,12 @@ export default function QuotationPage() {
   };
 
   const handleNewQuotation = () => {
-    pdfPolling.stop();
+    pdf.resetPDF();
     setQuotedProducts([]);
     setCustomer("");
-    customerDropdown.clear();
-    setSubtotal(0);
-    setVat(0);
-    setTotal(0);
+    clearCustomer();
+    resetTotals();
     setObservations("");
-    setPdfUrl(null);
   };
 
   return (
@@ -208,7 +169,7 @@ export default function QuotationPage() {
             dropdown={customerDropdown}
             onSelect={(cli) => {
               setCustomer(String(cli.id));
-              customerDropdown.select(cli.name);
+              confirmCustomer(cli, cli.name);
             }}
             onDeselect={() => setCustomer("")}
             placeholder="Buscar cliente por nombre..."
@@ -252,7 +213,7 @@ export default function QuotationPage() {
                   key={index}
                   item={item}
                   index={index}
-                  products={products}
+                  onProductSelect={handleProductSelect}
                   onProductChange={handleProductChange}
                   onRemove={() => {
                     const copy = [...quotedProducts];
@@ -323,15 +284,19 @@ export default function QuotationPage() {
         </div>
 
         {/* Guardar */}
-        <button onClick={handleSave} className="cotiz-btn cotiz-btn--full" disabled={pdfPolling.isPolling}>
+        <button
+          onClick={handleSave}
+          className="cotiz-btn cotiz-btn--full"
+          disabled={pdf.isPolling}
+        >
           <Save size={16} />
-          {pdfPolling.isPolling ? "Generando PDF..." : "Guardar Cotización"}
+          {pdf.isPolling ? `Generando PDF... (${pdf.pdfElapsedSeconds}s)` : "Guardar Cotización"}
         </button>
 
         {/* PDF de última cotización */}
-        {pdfUrl && (
+        {pdf.pdfUrl && (
           <a
-            href={pdfUrl}
+            href={pdf.pdfUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="cotiz-pdf-link cotiz-btn--full"
@@ -342,79 +307,6 @@ export default function QuotationPage() {
           </a>
         )}
       </div>
-    </div>
-  );
-}
-
-interface RowProps {
-  item: QuotedProduct;
-  index: number;
-  products: Product[];
-  onProductChange: (index: number, field: string, value: string) => void;
-  onRemove: () => void;
-  onWheel: (e: React.WheelEvent<HTMLInputElement>) => void;
-}
-
-function QuotedProductRow({ item, index, products, onProductChange, onRemove, onWheel }: RowProps) {
-  const productDropdown = useDropdownSearch<Product>(products);
-
-  const handleSelectProduct = useCallback((product: Product) => {
-    productDropdown.select(product.name);
-    onProductChange(index, "product", String(product.id));
-  }, [productDropdown, onProductChange, index]);
-
-  const renderProductItem = useCallback((p: Product) => (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <div>
-        <div style={{ fontWeight: "500" }}>{p.name}</div>
-        <div style={{ fontSize: "0.85em", color: "var(--text-secondary)" }}>
-          Código: {p.code}
-        </div>
-      </div>
-      <div style={{ textAlign: "right", marginLeft: "12px" }}>
-        <div style={{ fontSize: "0.85em", fontWeight: "500", color: "var(--primary-color)" }}>
-          ${parseFloat(String(p.price)).toLocaleString("es-EC", { minimumFractionDigits: 2 })}
-        </div>
-        <div style={{ fontSize: "0.75em", color: "var(--text-secondary)" }}>
-          Stock: {p.current_stock}
-        </div>
-      </div>
-    </div>
-  ), []);
-
-  return (
-    <div className="cotiz-prod-row">
-      <SearchableDropdown
-        dropdown={productDropdown}
-        onSelect={handleSelectProduct}
-        onDeselect={() => onProductChange(index, "product", "")}
-        placeholder="Buscar producto..."
-        emptyMessage="No se encontraron productos"
-        maxItems={10}
-        renderItem={renderProductItem}
-        className="cotiz-prod-search"
-      />
-      <input
-        type="number"
-        min="1"
-        value={item.quantity}
-        onChange={(e) => onProductChange(index, "quantity", e.target.value)}
-        onWheel={onWheel}
-        className="cotiz-input"
-      />
-      <input
-        type="number"
-        min="0"
-        step="0.01"
-        value={item.unit_price}
-        onChange={(e) => onProductChange(index, "unit_price", e.target.value)}
-        onWheel={onWheel}
-        className="cotiz-input"
-      />
-      <input type="text" readOnly value={Number(item.subtotal || 0).toFixed(2)} className="cotiz-input" />
-      <button type="button" onClick={onRemove} className="cotiz-remove-btn">
-        <X size={18} />
-      </button>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // hooks/useTransactionFilters.ts
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useDataStore } from "../store/dataStore";
+import { useTransactionsStore } from "../store/transactionsStore";
 import { PAGINATION } from "../constants/config";
 import type { FilterParams } from "../types/api";
 
@@ -8,11 +8,11 @@ import type { FilterParams } from "../types/api";
  * Hook para manejar filtros, paginación y carga server-side de transacciones.
  */
 export function useTransactionFilters() {
-  const fetchSales = useDataStore(state => state.fetchSales);
-  const fetchPurchases = useDataStore(state => state.fetchPurchases);
-  const fetchMovements = useDataStore(state => state.fetchMovements);
-  const salesCount = useDataStore(state => state.salesCount);
-  const purchasesCount = useDataStore(state => state.purchasesCount);
+  const fetchSales = useTransactionsStore(state => state.fetchSales);
+  const fetchPurchases = useTransactionsStore(state => state.fetchPurchases);
+  const fetchMovements = useTransactionsStore(state => state.fetchMovements);
+  const salesCount = useTransactionsStore(state => state.salesCount);
+  const purchasesCount = useTransactionsStore(state => state.purchasesCount);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -28,19 +28,16 @@ export function useTransactionFilters() {
     const filters: FilterParams = {};
     if (startDate) filters.start_date = startDate;
     if (endDate) filters.end_date = endDate;
+    if (debouncedSearch.trim()) filters.search = debouncedSearch.trim();
 
-    // Cuando hay búsqueda, traer todos los registros (sin paginar)
-    // para que el filtro client-side pueda buscar en todo
-    if (debouncedSearch.trim()) {
-      filters.no_page = 'true';
-      fetchSales(filters);
-      fetchPurchases(filters);
-    } else {
-      fetchSales({ ...filters, page: currentPageSales });
-      fetchPurchases({ ...filters, page: currentPagePurchases });
-    }
-
-    fetchMovements({ type: 'adjustment,correction' });
+    fetchSales({ ...filters, page: currentPageSales });
+    fetchPurchases({ ...filters, page: currentPagePurchases });
+    fetchMovements({
+      type: 'adjustment,correction',
+      ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
+      ...(startDate ? { start_date: startDate } : {}),
+      ...(endDate ? { end_date: endDate } : {}),
+    });
   }, [startDate, endDate, debouncedSearch, currentPageSales, currentPagePurchases, fetchSales, fetchPurchases, fetchMovements]);
 
   // Carga inicial + recarga cuando cambian filtros/página

@@ -8,7 +8,7 @@ import { ChangePasswordForm } from "../components/ChangePasswordForm";
 import { AddUserForm } from "../components/AddUserForm";
 import { Package, DollarSign, Users, Activity, Bell, AlertTriangle, XCircle, AlertOctagon, CheckCircle2 } from "lucide-react";
 import { dismissAlert } from "../services/api";
-import { useDataStore } from "../store/dataStore";
+import { useMasterDataStore } from "../store/masterDataStore";
 import { SUCCESS, ERRORS } from "../constants/messages";
 import { TIMEOUTS } from "../constants/config";
 import { setStoredUser } from "../services/authService";
@@ -24,12 +24,11 @@ export default function DashboardPage() {
   const [showPass, setShowPass] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
 
-  const alerts = useDataStore(state => state.alerts);
-  const setAlerts = useDataStore(state => state.setAlerts);
-  const dashboardData = useDataStore(state => state.dashboardData);
-  const loadingAlerts = useDataStore(state => state.loading);
-  const fetchDashboard = useDataStore(state => state.fetchDashboard);
-  const fetchAlerts = useDataStore(state => state.fetchAlerts);
+  const alerts = useMasterDataStore(state => state.alerts);
+  const setAlerts = useMasterDataStore(state => state.setAlerts);
+  const dashboardData = useMasterDataStore(state => state.dashboardData);
+  const fetchDashboard = useMasterDataStore(state => state.fetchDashboard);
+  const fetchAlerts = useMasterDataStore(state => state.fetchAlerts);
 
   useEffect(() => {
     fetchDashboard();
@@ -149,11 +148,7 @@ export default function DashboardPage() {
                 <Bell size={24} />
                 Alertas de Bajo Stock
               </div>
-              {loadingAlerts ? (
-                <div className="dashboard-alert-loading">
-                  Cargando alertas...
-                </div>
-              ) : alerts.length > 0 ? (
+              {alerts.length > 0 ? (
                 <ul className="dashboard-alert-list">
                   {alerts.map((alert) => (
                     <li key={alert.id} className={`dashboard-alert-item alert-${alert.type}`}>

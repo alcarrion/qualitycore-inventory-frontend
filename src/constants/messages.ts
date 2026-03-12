@@ -43,7 +43,7 @@ export const ERRORS = {
   PASSWORD_CHANGE_FAILED: 'Error al cambiar la contraseña.',
 
   // Imagen
-  IMAGE_FORMAT: 'Solo se permiten imágenes JPG o PNG.',
+  IMAGE_FORMAT: 'Solo se permiten imágenes JPG, PNG o WebP.',
   IMAGE_SIZE: 'El archivo debe ser menor a 2MB.',
   IMAGE_DIMENSIONS: (min: number, max: number): string => `La imagen debe tener entre ${min}x${min} y ${max}x${max} píxeles.`,
   IMAGE_MIN_DIMENSIONS: (min: number): string => `La imagen debe tener al menos ${min}x${min} píxeles.`,

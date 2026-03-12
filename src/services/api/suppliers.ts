@@ -8,9 +8,16 @@ import type { Supplier } from '../../types/models';
 
 export async function getSuppliers(
   page: number | null = null,
+  search: string = '',
+  ordering: string = '',
   options: { signal?: AbortSignal } = {}
 ): Promise<ApiResponse<PaginatedResponse<Supplier>>> {
-  const url = page ? `/suppliers/?page=${page}` : `/suppliers/`;
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (search) params.set('search', search);
+  if (ordering) params.set('ordering', ordering);
+  const query = params.toString();
+  const url = `/suppliers/${query ? `?${query}` : ''}`;
   return await apiFetch<PaginatedResponse<Supplier>>(url, options);
 }
 

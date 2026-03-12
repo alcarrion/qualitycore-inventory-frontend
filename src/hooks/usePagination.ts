@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { logger } from "../utils/logger";
 import type { ApiResponse } from "../types/api";
 
-type PaginationData<T> = { count?: number; results?: T[]; detail?: string } | T[];
+export type PaginationData<T> = { count?: number; results?: T[]; detail?: string } | T[];
 
 interface PaginationOptions<T> {
   pageSize?: number;

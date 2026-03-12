@@ -2,7 +2,6 @@
 import React from "react";
 import Modal from "../../components/Modal";
 import SearchableDropdown, { ClearButton, DropdownList, DropdownItem } from "../../components/SearchableDropdown";
-import type { DropdownController } from "../../components/SearchableDropdown";
 import {
   CalendarClock,
   User,
@@ -10,66 +9,24 @@ import {
   ArrowUpToLine,
   ShoppingCart,
 } from "lucide-react";
-import type { Product, Supplier, Customer } from "../../types/models";
-import type { CartItem } from "../../types/ui";
-import type { TransactionFormData } from "../../hooks/useTransactionDropdowns";
+import type { TransactionFormContext } from "../../hooks/useTransactionActions";
 
 interface Props {
   show: boolean;
   onClose: () => void;
   type: 'input' | 'output';
   currentTime: Date;
-  supplierDropdown: DropdownController<Supplier>;
-  customerDropdown: DropdownController<Customer>;
-  productDropdown: DropdownController<Product>;
-  selectedSupplier: string | number;
-  selectedCustomer: string | number;
-  onSupplierChange: (val: string | number) => void;
-  onCustomerChange: (val: string | number) => void;
-  onSelectSupplier: (item: Supplier) => void;
-  onSelectCustomer: (item: Customer) => void;
-  onSelectProduct: (item: Product) => void;
-  formData: TransactionFormData;
-  onFormDataChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onWheel: (e: React.WheelEvent<HTMLInputElement>) => void;
-  cart: CartItem[];
-  onAddToCart: () => void;
-  onRemoveFromCart: (productId: number) => void;
-  onUpdateCartQuantity: (productId: number, qty: number) => void;
-  totalPrice: number;
-  onSubmit: () => void;
+  formContext: TransactionFormContext;
 }
 
-function TransactionFormModal({
-  show,
-  onClose,
-  type,
-  currentTime,
-  supplierDropdown,
-  customerDropdown,
-  productDropdown,
-  selectedSupplier,
-  selectedCustomer,
-  onSupplierChange,
-  onCustomerChange,
-  onSelectSupplier,
-  onSelectCustomer,
-  onSelectProduct,
-  formData,
-  onFormDataChange,
-  onWheel,
-  cart,
-  onAddToCart,
-  onRemoveFromCart,
-  onUpdateCartQuantity,
-  totalPrice,
-  onSubmit,
-}: Props) {
+function TransactionFormModal({ show, onClose, type, currentTime, formContext }: Props) {
   if (!show) return null;
+
+  const { dropdowns, contact, product, cart, onSubmit } = formContext;
 
   return (
     <Modal
-      title={`${type === "input" ? "📈 Añadir Entrada" : "📉 Añadir Salida"}`}
+      title={`${type === "input" ? "Añadir Entrada" : "Añadir Salida"}`}
       onClose={onClose}
     >
       <div className="formContainer">
@@ -120,10 +77,10 @@ function TransactionFormModal({
           <SearchableDropdown
             label="Proveedor:"
             icon={<User size={16} />}
-            dropdown={supplierDropdown}
-            otherDropdowns={[productDropdown]}
-            onDeselect={() => onSupplierChange("")}
-            onSelect={onSelectSupplier}
+            dropdown={dropdowns.supplier}
+            otherDropdowns={[dropdowns.product]}
+            onDeselect={() => contact.onSupplierChange("")}
+            onSelect={contact.onSelectSupplier}
             placeholder="Buscar proveedor..."
             emptyMessage="No se encontraron proveedores"
             maxItems={10}
@@ -135,10 +92,10 @@ function TransactionFormModal({
           <SearchableDropdown
             label="Cliente:"
             icon={<User size={16} />}
-            dropdown={customerDropdown}
-            otherDropdowns={[productDropdown]}
-            onDeselect={() => onCustomerChange("")}
-            onSelect={onSelectCustomer}
+            dropdown={dropdowns.customer}
+            otherDropdowns={[dropdowns.product]}
+            onDeselect={() => contact.onCustomerChange("")}
+            onSelect={contact.onSelectCustomer}
             placeholder="Buscar cliente..."
             emptyMessage="No se encontraron clientes"
             maxItems={10}
@@ -154,46 +111,50 @@ function TransactionFormModal({
           <div style={{ position: 'relative' }}>
             <input
               type="text"
-              value={productDropdown.search}
+              value={dropdowns.product.search}
               onChange={(e) => {
-                productDropdown.setSearch(e.target.value);
-                productDropdown.setIsOpen(true);
-                supplierDropdown.setIsOpen(false);
-                customerDropdown.setIsOpen(false);
+                dropdowns.product.setSearch(e.target.value);
+                dropdowns.product.setIsOpen(true);
+                dropdowns.supplier.setIsOpen(false);
+                dropdowns.customer.setIsOpen(false);
               }}
               onFocus={() => {
-                productDropdown.setIsOpen(true);
-                supplierDropdown.setIsOpen(false);
-                customerDropdown.setIsOpen(false);
+                dropdowns.product.setIsOpen(true);
+                dropdowns.supplier.setIsOpen(false);
+                dropdowns.customer.setIsOpen(false);
               }}
               onKeyDown={(e) => {
-                const selected = productDropdown.onKeyDown(e);
-                if (selected) onSelectProduct(selected);
+                const selected = dropdowns.product.onKeyDown(e);
+                if (selected) product.onSelectProduct(selected);
               }}
               placeholder="Buscar producto por nombre o código..."
               className="input"
               autoComplete="off"
-              disabled={(type === "input" && !selectedSupplier) || (type === "output" && !selectedCustomer)}
-              style={{ paddingRight: productDropdown.search ? '35px' : '12px' }}
+              disabled={
+                (type === "input" && !contact.selectedSupplier) ||
+                (type === "output" && !contact.selectedCustomer)
+              }
+              style={{ paddingRight: dropdowns.product.search ? '35px' : '12px' }}
             />
-            {productDropdown.search && (
+            {dropdowns.product.search && (
               <ClearButton onClick={() => {
-                productDropdown.setSearch("");
-                productDropdown.setIsOpen(false);
+                dropdowns.product.setSearch("");
+                dropdowns.product.setIsOpen(false);
               }} />
             )}
           </div>
-          {productDropdown.isOpen && (
+          {dropdowns.product.isOpen && (
             <DropdownList maxHeight="250px">
-              {productDropdown.filtered.length > 0 ? (
-                productDropdown.filtered.slice(0, 15).map((p, idx) => (
-                  <DropdownItem key={p.id} highlighted={idx === productDropdown.highlightedIndex} onClick={() => onSelectProduct(p)}>
+              {dropdowns.product.filtered.length > 0 ? (
+                dropdowns.product.filtered.slice(0, 15).map((p, idx) => (
+                  <DropdownItem
+                    key={p.id}
+                    highlighted={idx === dropdowns.product.highlightedIndex}
+                    onClick={() => product.onSelectProduct(p)}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: '500' }}>{p.name}</div>
-                        <div style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
-                          Código: {p.code}
-                        </div>
                       </div>
                       <div style={{ textAlign: 'right', marginLeft: '12px' }}>
                         <div style={{ fontSize: '0.85em', fontWeight: '500', color: 'var(--primary-color)' }}>
@@ -219,7 +180,7 @@ function TransactionFormModal({
           )}
         </div>
 
-        {formData.product && (
+        {product.formData.product && (
           <div className="formGroup">
             <label className="form-label">
               <ArrowUpToLine size={16} style={{ marginRight: "6px" }} />
@@ -229,20 +190,26 @@ function TransactionFormModal({
               <input
                 type="number"
                 name="quantity"
-                value={formData.quantity}
-                onChange={onFormDataChange}
-                onWheel={onWheel}
+                value={product.formData.quantity}
+                onChange={product.onFormDataChange}
+                onWheel={product.onWheel}
                 className="input"
                 min={1}
                 style={{ flex: 1 }}
-                disabled={(type === "input" && !selectedSupplier) || (type === "output" && !selectedCustomer)}
+                disabled={
+                  (type === "input" && !contact.selectedSupplier) ||
+                  (type === "output" && !contact.selectedCustomer)
+                }
               />
               <button
                 type="button"
-                onClick={onAddToCart}
+                onClick={cart.onAdd}
                 className="btn-primary"
                 style={{ padding: '8px 16px', whiteSpace: 'nowrap' }}
-                disabled={(type === "input" && !selectedSupplier) || (type === "output" && !selectedCustomer)}
+                disabled={
+                  (type === "input" && !contact.selectedSupplier) ||
+                  (type === "output" && !contact.selectedCustomer)
+                }
               >
                 + Agregar
               </button>
@@ -250,7 +217,7 @@ function TransactionFormModal({
           </div>
         )}
 
-        {cart.length > 0 && (
+        {cart.items.length > 0 && (
           <div className="formGroup" style={{ marginTop: '16px' }}>
             <label className="form-label" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>
               <ShoppingCart size={16} /> Productos en el carrito:
@@ -263,7 +230,7 @@ function TransactionFormModal({
               maxHeight: '300px',
               overflowY: 'auto'
             }}>
-              {cart.map((item) => (
+              {cart.items.map((item) => (
                 <div
                   key={item.product.id}
                   style={{
@@ -289,8 +256,8 @@ function TransactionFormModal({
                     <input
                       type="number"
                       value={item.quantity}
-                      onChange={(e) => onUpdateCartQuantity(item.product.id, Number(e.target.value))}
-                      onWheel={onWheel}
+                      onChange={(e) => cart.onUpdateQuantity(item.product.id, Number(e.target.value))}
+                      onWheel={product.onWheel}
                       min={1}
                       max={item.product.current_stock}
                       style={{
@@ -303,7 +270,7 @@ function TransactionFormModal({
                       }}
                     />
                     <button
-                      onClick={() => onRemoveFromCart(item.product.id)}
+                      onClick={() => cart.onRemove(item.product.id)}
                       style={{
                         padding: '4px 8px',
                         background: '#ef4444',
@@ -333,7 +300,7 @@ function TransactionFormModal({
               }}>
                 <span>Total:</span>
                 <span style={{ color: 'var(--primary-color)' }}>
-                  ${totalPrice.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${cart.totalPrice.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
@@ -342,8 +309,8 @@ function TransactionFormModal({
 
         <button type="button" onClick={onSubmit} className="formButton">
           {type === "input"
-            ? `Guardar Compra (${cart.length} producto${cart.length !== 1 ? 's' : ''})`
-            : `Guardar Venta (${cart.length} producto${cart.length !== 1 ? 's' : ''})`
+            ? `Guardar Compra (${cart.items.length} producto${cart.items.length !== 1 ? 's' : ''})`
+            : `Guardar Venta (${cart.items.length} producto${cart.items.length !== 1 ? 's' : ''})`
           }
         </button>
       </div>

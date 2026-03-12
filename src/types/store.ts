@@ -1,8 +1,6 @@
 import type {
-  Product,
   Supplier,
   Category,
-  Customer,
   Alert,
   DashboardSummary,
   Sale,
@@ -13,10 +11,8 @@ import type {
 import type { FilterParams } from './api';
 
 export interface StoreErrors {
-  products?: string | null;
   suppliers?: string | null;
   categories?: string | null;
-  customers?: string | null;
   alerts?: string | null;
   dashboard?: string | null;
   sales?: string | null;
@@ -29,10 +25,8 @@ export interface StoreErrors {
 export interface DataStoreState {
   appConfig: AppConfig;
   configLoaded: boolean;
-  products: Product[];
   suppliers: Supplier[];
   categories: Category[];
-  customers: Customer[];
   alerts: Alert[];
   dashboardData: DashboardSummary;
   sales: Sale[];
@@ -41,15 +35,14 @@ export interface DataStoreState {
   purchasesCount: number;
   movements: Movement[];
   movementsCount: number;
-  loading: boolean;
+  /** Contador de fetches activos; reemplaza loading: boolean para evitar race conditions. */
+  loadingCount: number;
   errors: StoreErrors;
 }
 
 export interface DataStoreActions {
   fetchAppConfig: (signal?: AbortSignal) => Promise<void>;
-  fetchProducts: (signal?: AbortSignal) => Promise<void>;
   fetchSuppliers: (signal?: AbortSignal) => Promise<void>;
-  fetchCustomers: (signal?: AbortSignal) => Promise<void>;
   fetchCategories: (signal?: AbortSignal) => Promise<void>;
   fetchAlerts: (signal?: AbortSignal) => Promise<void>;
   fetchSales: (params?: FilterParams, signal?: AbortSignal) => Promise<void>;
@@ -58,8 +51,6 @@ export interface DataStoreActions {
   fetchDashboard: (signal?: AbortSignal) => Promise<void>;
   fetchAll: (signal?: AbortSignal) => Promise<void>;
   setAlerts: (alerts: Alert[]) => void;
-  setProducts: (products: Product[]) => void;
-  setCustomers: (customers: Customer[]) => void;
   clearErrors: () => void;
 }
 

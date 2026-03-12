@@ -19,6 +19,23 @@ let _refreshPromise: Promise<boolean> | null = null;
 const join = (b: string, p: string): string =>
   b.replace(/\/+$/, "") + "/" + p.replace(/^\/+/, "");
 
+/**
+ * Polyfill de AbortSignal.any() para navegadores que no lo soportan
+ * (Safari < 17.4, Chrome < 116). Combina múltiples señales en una sola.
+ */
+function combineSignals(signals: AbortSignal[]): AbortSignal {
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any(signals);
+  }
+  const controller = new AbortController();
+  const abort = (reason?: unknown) => controller.abort(reason);
+  for (const signal of signals) {
+    if (signal.aborted) { abort(signal.reason); break; }
+    signal.addEventListener('abort', () => abort(signal.reason), { once: true });
+  }
+  return controller.signal;
+}
+
 
 // ===================== TOKEN REFRESH =====================
 
@@ -154,7 +171,7 @@ export async function apiFetch<T = unknown>(
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), timeout);
   const combinedSignal = signal
-    ? AbortSignal.any([signal, timeoutController.signal])
+    ? combineSignals([signal, timeoutController.signal])
     : timeoutController.signal;
 
   const doFetch = (): Promise<Response> =>
@@ -230,7 +247,7 @@ export async function apiFetchForm<T = unknown>(
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), timeout);
   const combinedSignal = signal
-    ? AbortSignal.any([signal, timeoutController.signal])
+    ? combineSignals([signal, timeoutController.signal])
     : timeoutController.signal;
 
   const doFetch = (): Promise<Response> =>

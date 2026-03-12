@@ -44,15 +44,16 @@ export const RETRY_CONFIG = {
 /**
  * Configuración de imágenes
  */
+const _IMAGE_MAX_SIZE_MB = 2;
 export const IMAGE_CONFIG = {
-  MAX_SIZE_MB: 2,
-  MAX_SIZE_BYTES: 2 * 1024 * 1024,
+  MAX_SIZE_MB: _IMAGE_MAX_SIZE_MB,
+  MAX_SIZE_BYTES: _IMAGE_MAX_SIZE_MB * 1024 * 1024, // fuente única: derivado de MAX_SIZE_MB
   MIN_WIDTH: 300,
   MIN_HEIGHT: 300,
   MAX_WIDTH: 2000,
   MAX_HEIGHT: 2000,
-  ALLOWED_TYPES: ['image/jpeg', 'image/png'] as string[],
-  ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png'] as string[],
+  ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/webp'] as string[],
+  ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.webp'] as string[],
 } as const;
 
 /**

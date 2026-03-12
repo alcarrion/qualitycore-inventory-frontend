@@ -18,12 +18,9 @@ function ProductCard({ product, onEdit, onDelete, isAdmin, canDelete = false }: 
 
   const imageUrl = product.image_url ?? product.image;
 
-  // Solo mostrar imagen si es URL HTTPS de Cloudinary válida y no hubo error de carga
-  const showImage = !imgError &&
-    imageUrl &&
-    typeof imageUrl === 'string' &&
-    imageUrl.startsWith('https://') &&
-    imageUrl.includes('cloudinary.com');
+  // Mostrar imagen si el backend provee una URL y no hubo error de carga.
+  // La validación del origen (CDN, S3, etc.) corresponde al backend — no al componente.
+  const showImage = !imgError && !!imageUrl && typeof imageUrl === 'string';
 
   return (
     <div className="product-card">

@@ -1,28 +1,14 @@
 // TransactionsPage/PurchasesList.tsx
-import React, { useMemo } from "react";
+import React from "react";
 import { ShoppingCart, FileText } from "lucide-react";
 import type { Purchase } from "../../types/models";
 
 interface Props {
   purchases: Purchase[];
   onViewDetails: (purchase: Purchase) => void;
-  searchTerm?: string;
 }
 
-function PurchasesList({ purchases, onViewDetails, searchTerm = "" }: Props) {
-  const filtered = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return purchases;
-    return purchases.filter((p) => {
-      const date = new Date(p.date);
-      const dateStr = date.toLocaleDateString("es-EC");
-      const timeStr = date.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" });
-      const total = parseFloat(String(p.total)).toLocaleString("es-EC", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const searchable = [dateStr, timeStr, `compra #${p.id}`, p.supplier_name || "", total, p.user_name || ""].join(" ").toLowerCase();
-      return searchable.includes(term);
-    });
-  }, [purchases, searchTerm]);
-
+function PurchasesList({ purchases, onViewDetails }: Props) {
   return (
     <div>
       <h2 className="table-title">Entradas (Compras)</h2>
@@ -38,14 +24,14 @@ function PurchasesList({ purchases, onViewDetails, searchTerm = "" }: Props) {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {purchases.length === 0 ? (
               <tr>
                 <td colSpan={5} className="no-data">
                   No se encontraron compras.
                 </td>
               </tr>
             ) : (
-              filtered.map((purchase, index) => (
+              purchases.map((purchase, index) => (
                 <tr
                   key={purchase.id}
                   className={index % 2 === 0 ? "row-even" : "row-odd"}

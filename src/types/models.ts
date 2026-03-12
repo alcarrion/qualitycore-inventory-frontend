@@ -2,6 +2,11 @@ export type DocumentType = 'cedula' | 'ruc' | 'passport';
 export type MovementType = 'input' | 'output' | 'adjustment' | 'correction';
 export type UserRole = 'SuperAdmin' | 'Administrator' | 'User';
 
+/** Referencia a una entidad: puede ser su ID (número) o el objeto completo. */
+export type Ref<T> = number | T;
+/** Referencia opcional que también puede ser null. */
+export type NullableRef<T> = Ref<T> | null;
+
 export interface Category {
   id: number;
   name: string;
@@ -10,14 +15,13 @@ export interface Category {
 export interface Product {
   id: number;
   name: string;
-  code?: string;
   price: number;
   current_stock: number;
   stock?: number;
   minimum_stock?: number;
-  supplier: number | Supplier;
+  supplier: Ref<Supplier>;
   supplier_name?: string;
-  category?: number | Category | null;
+  category?: NullableRef<Category>;
   category_name?: string | null;
   description?: string;
   status?: string | null;
@@ -25,7 +29,6 @@ export interface Product {
   image?: string | null;
   image_url?: string | null;
   deleted_at: string | null;
-  availableStock?: number;
 }
 
 export interface Customer {
@@ -62,7 +65,7 @@ export interface User {
 }
 
 export interface SaleItem {
-  product: number | Product;
+  product: Ref<Product>;
   quantity: number;
   price?: number;
 }
@@ -77,39 +80,45 @@ export interface InvoiceMovement {
   original_quantity?: number | null;
 }
 
+export interface InvoiceMovementsData {
+  items: InvoiceMovement[];
+  truncated: boolean;
+  total: number;
+}
+
 export interface Sale {
   id: number;
-  customer: number | Customer;
+  customer: Ref<Customer>;
   customer_name: string;
   date: string;
   total: number;
   user_name: string;
   items: SaleItem[];
-  movements?: InvoiceMovement[];
+  movements?: InvoiceMovementsData;
   created_at?: string;
 }
 
 export interface PurchaseItem {
-  product: number | Product;
+  product: Ref<Product>;
   quantity: number;
   price?: number;
 }
 
 export interface Purchase {
   id: number;
-  supplier: number | Supplier;
+  supplier: Ref<Supplier>;
   supplier_name: string;
   date: string;
   total: number;
   user_name: string;
   items: PurchaseItem[];
-  movements?: InvoiceMovement[];
+  movements?: InvoiceMovementsData;
   created_at?: string;
 }
 
 export interface Movement {
   id: number;
-  product: number | Product;
+  product: Ref<Product>;
   product_name?: string;
   quantity: number;
   movement_type: MovementType;
